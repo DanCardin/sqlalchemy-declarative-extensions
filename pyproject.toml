@@ -1,0 +1,91 @@
+[tool.poetry]
+name = "sqlalchemy-declarative-extensions"
+version = "0.1.0"
+description = ""
+authors = []
+packages = [
+    { include = "sqlalchemy_declarative_extensions", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<4"
+
+typing_extensions = {version = ">=4.0", python = "<3.11"}
+sqlalchemy = ">=1.0"
+
+psycopg2 = { version = "*", optional = true }
+psycopg2-binary = { version = "*", optional = true }
+alembic = { version = ">=1.0", optional = true }
+
+[tool.poetry.dev-dependencies]
+black = ">=22.3.0"
+coverage = ">=5"
+flake8 = ">=3.9.0"
+isort = ">=5"
+mypy = ">=0.942"
+pydocstyle = {version = ">=4.0.0", extras =["toml"]}
+pytest = ">=7"
+pytest-alembic = "*"
+pytest-mock-resources = { version = ">=2.6", extras = ["docker"] }
+sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
+
+[tool.poetry.extras]
+postgres = ["psycopg2"]
+postgres-binary = ["psycopg2-binary"]
+
+[tool.isort]
+profile = 'black'
+known_first_party = 'tests'
+line_length = 88
+float_to_top = true
+order_by_type = false
+use_parentheses = true
+
+[tool.mypy]
+strict_optional = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+implicit_reexport = true
+incremental = true
+plugins = ['sqlalchemy.ext.mypy.plugin']
+exclude = "tests/examples"
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.pydocstyle]
+ignore = 'D1,D200,D202,D203,D204,D213,D406,D407,D413'
+match_dir = '^[^\.{]((?!igrations).)*'
+
+[tool.pytest.ini_options]
+doctest_optionflags = "NORMALIZE_WHITESPACE IGNORE_EXCEPTION_DETAIL ELLIPSIS"
+addopts = "--doctest-modules -vv --ff --strict-markers"
+norecursedirs = ".* build dist *.egg bin tests/examples --junitxml=junit.xml"
+filterwarnings = [
+  'error',
+  'ignore:invalid escape sequence.*',
+  'ignore:urllib.parse.splitnport.*:DeprecationWarning',
+  'ignore:distutils Version classes are deprecated. Use packaging.version instead.:DeprecationWarning',
+]
+pytester_example_dir = "tests/examples"
+markers = [
+    'grant',
+    'schema',
+    'role',
+    'model',
+    'alembic',
+]
+
+[build-system]
+requires = ["poetry_core>=1.0.8"]
+build-backend = "poetry.core.masonry.api"
