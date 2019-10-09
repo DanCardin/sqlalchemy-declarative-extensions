@@ -1,0 +1,78 @@
+from typing import Optional
+
+from alembic.autogenerate.api import AutogenContext
+from alembic.autogenerate.compare import comparators
+from alembic.autogenerate.render import renderers
+from alembic.operations import Operations
+
+from sqlalchemy_declarative_extensions import row
+from sqlalchemy_declarative_extensions.row.base import Rows
+from sqlalchemy_declarative_extensions.row.compare import (
+    DeleteRowOp,
+    InsertRowOp,
+    UpdateRowOp,
+)
+
+Operations.register_operation("insert_table_row")(InsertRowOp)
+Operations.register_operation("update_table_row")(UpdateRowOp)
+Operations.register_operation("delete_table_row")(DeleteRowOp)
+
+
+@comparators.dispatch_for("schema")
+def compare_rows(autogen_context: AutogenContext, upgrade_ops, _):
+    if autogen_context.metadata is None or autogen_context.connection is None:
+        return
+
+    rows: Optional[Rows] = autogen_context.metadata.info.get("rows")
+    if not rows:
+        return
+
+    result = row.compare.compare_rows(
+        autogen_context.connection, autogen_context.metadata, rows
+    )
+    upgrade_ops.ops.extend(result)
+
+
+@renderers.dispatch_for(InsertRowOp)
+def render_insert_table_row(_, op):
+    return "op.insert_table_row('{table}', {values})".format(
+        table=op.table, values=op.values
+    )
+
+
+@renderers.dispatch_for(UpdateRowOp)
+def render_update_table_row(_, op):
+    return "op.update_table_row('{}', from_values={}, to_values={})".format(
+        op.table, op.from_values, op.to_values
+    )
+
+
+@renderers.dispatch_for(DeleteRowOp)
+def render_delete_table_row(_, op):
+    return "op.delete_table_row('{table}', {values})".format(
+        table=op.table, values=op.values
+    )
+
+
+@Operations.implementation_for(InsertRowOp)
+def insert_row(operations: Operations, operation: InsertRowOp):
+    metadata = operations.migration_context.opts["target_metadata"]
+    query = operation.render(metadata)
+    conn = operations.get_bind()
+    conn.execute(query)
+
+
+@Operations.implementation_for(UpdateRowOp)
+def update_row(operations: Operations, operation: UpdateRowOp):
+    metadata = operations.migration_context.opts["target_metadata"]
+    query = operation.render(metadata)
+    conn = operations.get_bind()
+    conn.execute(query)
+
+
+@Operations.implementation_for(DeleteRowOp)
+def delete_row(operations: Operations, operation: DeleteRowOp):
+    metadata = operations.migration_context.opts["target_metadata"]
+    query = operation.render(metadata)
+    conn = operations.get_bind()
+    conn.execute(query)
