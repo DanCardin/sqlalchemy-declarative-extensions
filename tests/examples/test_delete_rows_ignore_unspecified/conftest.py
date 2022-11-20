@@ -6,4 +6,4 @@ alembic_engine = create_postgres_fixture(scope="function", engine_kwargs={"echo"
 
 @pytest.fixture(scope="session")
 def pmr_postgres_config():
-    return PostgresConfig(port=None)
+    return PostgresConfig(port=None, ci_port=None)

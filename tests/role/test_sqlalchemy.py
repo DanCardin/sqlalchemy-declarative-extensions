@@ -3,7 +3,12 @@ from datetime import datetime, timezone
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, PGRole, Roles
+from sqlalchemy_declarative_extensions import (
+    declarative_database,
+    PGRole,
+    register_sqlalchemy_events,
+    Roles,
+)
 from sqlalchemy_declarative_extensions.role.compare import get_existing_roles_postgresql
 from sqlalchemy_declarative_extensions.role.ddl import postgres_render_create_role
 
@@ -33,6 +38,9 @@ class Base(Base_):
 
 
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
+
+
+register_sqlalchemy_events(Base.metadata, roles=True)
 
 
 def test_createall_role(pg):

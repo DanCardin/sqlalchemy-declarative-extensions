@@ -2,7 +2,12 @@ from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, Row, Rows
+from sqlalchemy_declarative_extensions import (
+    declarative_database,
+    register_sqlalchemy_events,
+    Row,
+    Rows,
+)
 from sqlalchemy_declarative_extensions.row.compare import (
     compare_rows,
     DeleteRowOp,
@@ -30,6 +35,8 @@ class Foo(Base):
     name = Column(types.Unicode(), nullable=False)
     active = Column(types.Boolean())
 
+
+register_sqlalchemy_events(Base.metadata, rows=True)
 
 pg = create_postgres_fixture(
     scope="function", engine_kwargs={"echo": True}, session=True

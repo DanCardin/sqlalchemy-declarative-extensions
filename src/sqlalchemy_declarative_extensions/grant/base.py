@@ -11,6 +11,35 @@ G = TypeVar("G", postgresql.DefaultGrantStatement, postgresql.GrantStatement)
 
 @dataclass
 class Grants(Generic[G]):
+    """A collection of grants and the settings for diff/collection.
+
+    Arguments:
+        grants: The list of grants
+        ignore_unspecified: Optionally ignore detected grants which do not match
+            the set of defined grants.
+        ignore_grants_in: Optionally ignore grants in a particular set of schemas.
+
+    Examples:
+        - No grants
+
+        >>> grants = Grants()
+
+        - Some options set
+
+        >>> grants = Grants().options(ignore_unspecified=True)
+
+        - With some actual grants
+
+        >>> from sqlalchemy_declarative_extensions import PGGrant
+        >>> grants = Grants().are(PGGrant(...), PGGrant(...), ...)
+
+    Note, the "benefit" of using the above fluent interface is that it coerces obvious
+    substitutes for the types required by a `Grant`, for example `ignore_grants_in` is
+    a `List[Schema]`, but the string name of a schema can be used to produce that object.
+    If that's not meaningful to you, then using the direct constructor can work
+    equally well.
+    """
+
     grants: List[G] = field(default_factory=list)
     ignore_unspecified: bool = False
     ignore_grants_in: Optional[List[Schema]] = None

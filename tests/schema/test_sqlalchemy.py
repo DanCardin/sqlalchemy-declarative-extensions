@@ -2,7 +2,11 @@ import sqlalchemy
 from pytest_mock_resources import create_postgres_fixture, create_sqlite_fixture
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, Schemas
+from sqlalchemy_declarative_extensions import (
+    declarative_database,
+    register_sqlalchemy_events,
+    Schemas,
+)
 
 Base_ = declarative_base()
 
@@ -20,6 +24,8 @@ class Foo(Base):
 
     id = sqlalchemy.Column(sqlalchemy.types.Integer(), primary_key=True)
 
+
+register_sqlalchemy_events(Base.metadata, schemas=True)
 
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 sqlite = create_sqlite_fixture()

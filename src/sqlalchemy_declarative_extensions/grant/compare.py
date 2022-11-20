@@ -82,7 +82,9 @@ def get_default_grants_postgresql(connection: Connection):
 
     result = []
     for permission in default_permissions:
-        grant_permissions = parse_acl(permission.acl, permission.object_type)
+        grant_permissions = parse_acl(
+            permission.acl, permission.schema_name, permission.object_type
+        )
         result.extend(grant_permissions)
     return result
 

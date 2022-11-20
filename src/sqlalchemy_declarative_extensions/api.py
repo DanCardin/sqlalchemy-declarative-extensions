@@ -110,12 +110,40 @@ def declare_database(
         grants: The set of grants to ensure are applied to the roles/schemas/tables.
         rows: The set of rows to ensure are applied to the roles/schemas/tables.
     """
-    concrete_schemas = metadata.info["schemas"] = Schemas.coerce_from_unknown(schemas)
-    concrete_roles = metadata.info["roles"] = Roles.coerce_from_unknown(roles)
-    concrete_grants = metadata.info["grants"] = Grants.coerce_from_unknown(grants)
-    concrete_rows = metadata.info["rows"] = Rows.coerce_from_unknown(rows)
+    metadata.info["schemas"] = Schemas.coerce_from_unknown(schemas)
+    metadata.info["roles"] = Roles.coerce_from_unknown(roles)
+    metadata.info["grants"] = Grants.coerce_from_unknown(grants)
+    metadata.info["rows"] = Rows.coerce_from_unknown(rows)
 
-    if concrete_schemas:
+
+def register_sqlalchemy_events(
+    maybe_metadata: MetaData | DeclarativeMeta,
+    schemas=False,
+    roles=False,
+    grants=False,
+    rows=False,
+):
+    """Register handlers for supported object types into SQLAlchemy's event system.
+
+    By default all object types are disabled, but each can be individually enabled.
+    We assume most execution environments where one is using `MetaData.create_all`
+    will be in tests; where roles and grants, in particular, are database-wide
+    objects which can cause issues.
+
+    Note this is the opposite of the defaults when registering against SQLAlchemy's
+    event system.
+    """
+    if isinstance(maybe_metadata, MetaData):
+        metadata = maybe_metadata
+    else:
+        metadata = maybe_metadata.metadata
+
+    concrete_schemas = metadata.info["schemas"]
+    concrete_roles = metadata.info["roles"]
+    concrete_grants = metadata.info["grants"]
+    concrete_rows = metadata.info["rows"]
+
+    if concrete_schemas and schemas:
         for schema in concrete_schemas:
             event.listen(
                 metadata,
@@ -123,7 +151,7 @@ def declare_database(
                 schema_ddl(schema),
             )
 
-    if concrete_roles:
+    if concrete_roles and roles:
         for role in topological_sort(concrete_roles):
             event.listen(
                 metadata,
@@ -131,7 +159,7 @@ def declare_database(
                 role_ddl(role),
             )
 
-    if concrete_grants:
+    if concrete_grants and grants:
         event.listen(
             metadata,
             "before_create",
@@ -144,7 +172,7 @@ def declare_database(
             grant_ddl(concrete_grants, default=False),
         )
 
-    if concrete_rows:
+    if concrete_rows and rows:
         event.listen(
             metadata,
             "after_create",

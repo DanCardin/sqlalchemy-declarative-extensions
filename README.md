@@ -2,7 +2,7 @@
 
 [![Actions Status](https://github.com/dancardin/sqlalchemy-declarative-extensions/workflows/test/badge.svg)](https://github.com/dancardin/sqlalchemy-declarative-extensions/actions) [![Coverage Status](https://coveralls.io/repos/github/DanCardin/sqlalchemy-declarative-extensions/badge.svg?branch=main)](https://coveralls.io/github/DanCardin/sqlalchemy-declarative-extensions?branch=main) [![Documentation Status](https://readthedocs.org/projects/sqlalchemy-declarative-extensions/badge/?version=latest)](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/?badge=latest)
 
-See the full documentation [here](https://readthedocs.org/projects/sqlalchemy-declarative-extensions).
+See the full documentation [here](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/).
 
 Adds extensions to SqlAlchemy (and/or Alembic) which allows declaratively
 stating the existence of additional kinds of objects about your database
@@ -28,7 +28,7 @@ The primary function(s) of this library include:
 from sqlalchemy import Column, types
 from sqlalchemy.orm import as_declarative
 from sqlalchemy_declarative_extensions import (
-    declarative_database, Schemas, Roles, Role, Grants, Grant, Rows, Row
+    declarative_database, Schemas, Roles, Role, Grants, PGGrant, Rows, Row
 )
 
 @declarative_database
@@ -43,8 +43,8 @@ class Base:
         ),
     )
     grants = Grants().are(
-        Grant("read").grant("select").default().on_tables_in_schema("public", 'example'),
-        Grant("app").grant("insert", "update", "delete").default().on_tables_in_schema("public"),
+        PGGrant("read").grant("select").default().on_tables_in_schema("public", 'example'),
+        PGGrant("app").grant("insert", "update", "delete").default().on_tables_in_schema("public"),
     )
     rows = Rows().are(
         Row('foo', id=1),
@@ -59,6 +59,52 @@ class Foo(Base):
 
 Note, there is also support for declaring objects directly through the `MetaData` for
 users not using sqlalchemy's declarative API.
+
+## Event Registration
+
+By default, the above example does not automatically do anything. Depending on the context,
+you can use one of two registration hooks: `register_sqlalchemy_events` or `register_alembic_events`.
+
+### `register_sqlalchemy_events`
+
+This registers events in SqlAlchemy's event system such that a `metadata.create_all(...)` call
+will create the declared database objects.
+
+```python
+from sqlalchemy_declarative_extensions import register_sqlalchemy_events
+
+metadata = Base.metadata  # Given the example above.
+register_sqlalchemy_events(metadata)
+# Which is equivalent to...
+register_sqlalchemy_events(metadata, schemas=False, roles=False, grants=False, rows=False)
+```
+
+All object types are opt in, and should be explicitly included in order to get registered.
+
+Practically, this is to avoid issues with testing. In **most** cases the `metadata.create_all` call
+will be run in tests, a context where it's more likely that you dont **need** grants or grants,
+and where parallel test execution could lead to issues with role or schema creation, depending
+on your setup.
+
+### `register_alembic_events`
+
+This registers comparators in Alembic's registration system such that an `alembic revision --autogenerate`
+command will diff the existing database state against the declared database objects, and issue
+statements to create/update/delete objects in order to match the declared state.
+
+```python
+# alembic's `env.py`
+from sqlalchemy_declarative_extensions import register_alembic_events
+
+register_alembic_events()
+# Which is equivalent to...
+register_sqlalchemy_events(schemas=True, roles=True, grants=True, rows=True)
+```
+
+All object types are opt out but can be excluded.
+
+In contrast to `register_sqlalchemy_events`, it's much more likely that you're declaring most of these
+object types in order to have alembic track them
 
 ## Database support
 

@@ -135,7 +135,7 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> List
             ).all()
 
             for record in to_delete:
-                op = DeleteRowOp(table.name, dict(record))
+                op = DeleteRowOp(table.fullname, dict(record))
                 result.append(op)
 
     return result

@@ -48,3 +48,5 @@ autoapi_dirs = ["../../src/sqlalchemy_declarative_extensions"]
 autoapi_generate_api_docs = False
 
 autodoc_typehints = "description"
+
+autosectionlabel_prefix_document = True

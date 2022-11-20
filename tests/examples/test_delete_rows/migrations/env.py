@@ -8,7 +8,7 @@ from models import Base
 
 target_metadata = Base.metadata
 
-register_alembic_events(roles=True, schemas=True)
+register_alembic_events(rows=True)
 
 connectable = context.config.attributes.get("connection", None)
 

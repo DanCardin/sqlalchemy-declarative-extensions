@@ -27,7 +27,7 @@ def render_sql(text: TextClause) -> str:
     return str(statement)
 
 
-def successful_test_run(pytester, *, count=None, skipped_count=0, in_process=False):
+def successful_test_run(pytester, *, count=None, skipped_count=0):
     pytester.copy_example()
-    result = pytester.inline_run("-vv", "--capture=no", "--log-cli-level=WARNING")
+    result = pytester.inline_run("--capture=no", "--log-cli-level=WARNING")
     result.assertoutcome(passed=count, skipped=skipped_count, failed=0)

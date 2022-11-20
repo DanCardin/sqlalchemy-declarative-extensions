@@ -45,30 +45,26 @@ from sqlalchemy_declarative_extensions.schema.base import Schema
 
 
 @dataclass(frozen=True)
-class Grant(Generic[G]):
+class PGGrant(Generic[G]):
     target_role: str
 
     grants: Tuple[G, ...] = field(default_factory=tuple)
     grant_option: bool = False
     revoke_: bool = False
-    grantor: Optional[str] = None
 
     @classmethod
-    def for_role(cls, role: Union[str, Role]) -> Grant:
+    def for_role(cls, role: Union[str, Role]) -> PGGrant:
         role_name = role.name if isinstance(role, Role) else role
         return cls(role_name)
 
-    def grant(self, grant: str, *grants: str) -> Grant:
+    def grant(self, grant: str, *grants: str) -> PGGrant:
         return replace(self, grants=tuple([grant, *grants]))
 
-    def revoke(self, grant: str, *grants: str) -> Grant:
+    def revoke(self, grant: str, *grants: str) -> PGGrant:
         return replace(self, grants=tuple([grant, *grants]), revoke_=True)
 
     def with_grant_option(self):
         return replace(self, grant_option=True)
-
-    def granted_by(self, grantor: str):
-        return replace(self, grantor=grantor)
 
     def default(self):
         return DefaultGrantOption(self)
@@ -106,7 +102,7 @@ class Grant(Generic[G]):
 
 @dataclass(frozen=True)
 class DefaultGrantOption:
-    privileges: Grant
+    privileges: PGGrant
 
     def _schema_names(self, *schemas: Union[str, Schema]):
         return [s.name if isinstance(s, Schema) else s for s in schemas]
@@ -158,7 +154,7 @@ class DefaultGrantOption:
 
 @dataclass(frozen=True)
 class DefaultGrantStatement(Generic[G]):
-    privileges: Grant[G]
+    privileges: PGGrant[G]
     grant_type: DefaultGrantTypes
     in_schemas: Tuple[str, ...]
     for_role: Optional[str]
@@ -186,7 +182,7 @@ class DefaultGrantStatement(Generic[G]):
 
 @dataclass(frozen=True)
 class GrantStatement(Generic[G]):
-    privileges: Grant[G]
+    privileges: PGGrant[G]
     grant_type: GrantTypes
     targets: Tuple[str, ...]
 

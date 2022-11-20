@@ -24,12 +24,12 @@ class DatabaseGrants(Grants):
     def default(self):
         return [self.connect, self.temporary]
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            DatabaseGrants.create: "C",
-            DatabaseGrants.connect: "c",
-            DatabaseGrants.temporary: "T",
+            cls.create: "C",
+            cls.connect: "c",
+            cls.temporary: "T",
         }
 
 
@@ -37,10 +37,10 @@ class ForeignDataWrapperGrants(Grants):
     usage = "USAGE"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            ForeignDataWrapperGrants.usage: "U",
+            cls.usage: "U",
         }
 
 
@@ -48,10 +48,10 @@ class ForeignServerGrants(Grants):
     usage = "USAGE"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            ForeignServerGrants.usage: "U",
+            cls.usage: "U",
         }
 
 
@@ -59,10 +59,10 @@ class ForeignTableGrants(Grants):
     select = "SELECT"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            ForeignTableGrants.select: "s",
+            cls.select: "s",
         }
 
 
@@ -73,10 +73,10 @@ class FunctionGrants(Grants):
     def default(self):
         return [self.execute]
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            self.execute: "X",
+            cls.execute: "X",
         }
 
 
@@ -87,10 +87,10 @@ class LanguageGrants(Grants):
     def default(self):
         return [self.usage]
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            LanguageGrants.usage: "U",
+            cls.usage: "U",
         }
 
 
@@ -99,11 +99,11 @@ class LargeObjectGrants(Grants):
     update = "UPDATE"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            LargeObjectGrants.select: "r",
-            LargeObjectGrants.update: "w",
+            cls.select: "r",
+            cls.update: "w",
         }
 
 
@@ -117,16 +117,16 @@ class TableGrants(Grants):
     trigger = "TRIGGER"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            self.select: "r",
-            self.update: "w",
-            self.insert: "a",
-            self.references: "x",
-            self.delete: "d",
-            self.trigger: "t",
-            self.truncate: "D",
+            cls.select: "r",
+            cls.update: "w",
+            cls.insert: "a",
+            cls.references: "x",
+            cls.delete: "d",
+            cls.trigger: "t",
+            cls.truncate: "D",
         }
 
 
@@ -134,10 +134,10 @@ class TablespaceGrants(Grants):
     create = "CREATE"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            TablespaceGrants.create: "C",
+            cls.create: "C",
         }
 
 
@@ -148,10 +148,10 @@ class TypeGrants(Grants):
     def default(self):
         return [self.usage]
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            TypeGrants.usage: "U",
+            cls.usage: "U",
         }
 
 
@@ -160,11 +160,11 @@ class SchemaGrants(Grants):
     usage = "USAGE"
     all = "ALL"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            self.create: "C",
-            self.usage: "C",
+            cls.create: "C",
+            cls.usage: "C",
         }
 
 
@@ -189,12 +189,12 @@ class SequenceGrants(Grants):
     select = "SELECT"
     update = "UPDATE"
 
-    @property
-    def acl_symbols(self):
+    @classmethod
+    def acl_symbols(cls):
         return {
-            self.select: "r",
-            self.update: "w",
-            self.usage: "a",
+            cls.select: "r",
+            cls.update: "w",
+            cls.usage: "a",
         }
 
 
@@ -225,10 +225,10 @@ class GrantTypes(FromStrings):
 
 
 class DefaultGrantTypes(FromStrings):
-    sequence = "SEQUENCE"
-    table = "TABLE"
     function = "FUNCTION"
+    table = "TABLE"
     type = "TYPE"
+    sequence = "SEQUENCE"
 
     def to_variants(self):
         return {

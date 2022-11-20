@@ -21,3 +21,8 @@ def test_alter_existing_grants(pytester):
 @pytest.mark.alembic
 def test_delete_unspecified_grants(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_grant_disabled(pytester):
+    successful_test_run(pytester, count=1)

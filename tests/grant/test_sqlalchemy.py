@@ -4,9 +4,14 @@ from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, PGRole, Roles
-from sqlalchemy_declarative_extensions.grant import Grants
-from sqlalchemy_declarative_extensions.grant.postgresql import Grant
+from sqlalchemy_declarative_extensions import (
+    declarative_database,
+    Grants,
+    PGGrant,
+    PGRole,
+    register_sqlalchemy_events,
+    Roles,
+)
 from sqlalchemy_declarative_extensions.role.compare import get_existing_roles_postgresql
 
 Base_ = declarative_base()
@@ -22,14 +27,14 @@ class Base(Base_):
         PGRole("app", login=False, in_roles=["read", "write"]),
     )
     grants = Grants().are(
-        Grant("read").grant("select").default().on_tables_in_schema("public"),
+        PGGrant("read").grant("select").default().on_tables_in_schema("public"),
         (
-            Grant("write")
+            PGGrant("write")
             .grant("insert", "update", "delete")
             .default()
             .on_tables_in_schema("public")
         ),
-        Grant("write").grant("usage").default().on_sequences_in_schema("public"),
+        PGGrant("write").grant("usage").default().on_sequences_in_schema("public"),
     )
 
 
@@ -40,6 +45,9 @@ class Foo(Base):
 
 
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
+
+
+register_sqlalchemy_events(Base.metadata, roles=True, grants=True)
 
 
 @pytest.mark.grant

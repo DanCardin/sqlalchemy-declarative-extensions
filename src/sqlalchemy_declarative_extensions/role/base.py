@@ -32,6 +32,10 @@ class PGRole(Role):
     """Define a role object.
 
     postgres: https://www.postgresql.org/docs/current/sql-createrole.html
+
+    Note, the password field can be supplied, but it will be ignored when
+    performing comparisons against existing roles. That is, changing the
+    password field will not produce any (alembic) changes!
     """
 
     superuser: Optional[bool] = False
