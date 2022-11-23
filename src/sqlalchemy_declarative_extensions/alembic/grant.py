@@ -5,6 +5,8 @@ from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 from alembic.operations import Operations
 from alembic.operations.ops import UpgradeOps
+from alembic.runtime.migration import MigrationContext
+from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions.grant import compare
 from sqlalchemy_declarative_extensions.grant.base import Grants
@@ -44,20 +46,20 @@ Operations.register_operation("revoke_privileges")(RevokePrivilegesOp)
 
 
 @renderers.dispatch_for(GrantPrivilegesOp)
-def render_grant(autogen_context, op):
-    return f'op.grant_privileges(sa.text("{op.grant.to_sql()}"))'
+def render_grant(_, op: RevokePrivilegesOp):
+    return f'op.execute(sa.text("""{op.grant.to_sql()}"""))'
 
 
 @renderers.dispatch_for(RevokePrivilegesOp)
-def render_revoke(autogen_context, op):
-    return f'op.revoke_privileges(sa.text("{op.grant.to_sql()}"))'
+def render_revoke(_, op: RevokePrivilegesOp):
+    return f'op.execute(sa.text("""{op.grant.to_sql()}"""))'
 
 
 @Operations.implementation_for(GrantPrivilegesOp)
-def grant_op(operations, op):
-    operations.execute(op.grant)
+def grant_op(operations, op: GrantPrivilegesOp):
+    operations.execute(op.grant.to_sql())
 
 
 @Operations.implementation_for(RevokePrivilegesOp)
-def revoke_op(operations, op):
-    operations.execute(op.grant)
+def revoke_op(operations, op: RevokePrivilegesOp):
+    operations.execute(op.grant.to_sql())

@@ -65,6 +65,13 @@ class PGRole(Role):
             in_roles=r.memberof or None,
         )
 
+    @classmethod
+    def from_unknown_role(cls, r: Union[Role, PGRole]) -> PGRole:
+        if isinstance(r, Role):
+            return PGRole(r.name, in_roles=r.in_roles)
+
+        return r
+
     @property
     def has_option(self):
         _, *options = astuple(self)

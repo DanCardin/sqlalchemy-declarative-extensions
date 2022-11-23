@@ -103,6 +103,8 @@ markers = [
     'alembic',
 ]
 pmr_multiprocess_safe = true
+log_level = 'WARNING'
+log_cli_level = 'WARNING'
 
 [build-system]
 requires = ["poetry_core>=1.0.8"]

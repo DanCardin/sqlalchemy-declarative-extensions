@@ -32,6 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Generic, Optional, Tuple, Union
 
+from sqlalchemy.sql import quoted_name
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
 
@@ -165,7 +166,7 @@ class DefaultGrantStatement(Generic[G]):
         result.append("ALTER DEFAULT PRIVILEGES")
 
         if self.for_role:
-            result.append(f"FOR ROLE {self.for_role}")
+            result.append(f'FOR ROLE "{self.for_role}"')
 
         schemas_str = ", ".join(self.in_schemas)
         result.append(f"IN SCHEMA {schemas_str}")

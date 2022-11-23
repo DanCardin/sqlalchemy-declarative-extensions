@@ -6,6 +6,7 @@ from typing import List, Union
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from sqlalchemy_declarative_extensions.dialect.postgresql import default_acl_query
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.grant.postgresql.base import (
     DefaultGrantStatement,
@@ -65,27 +66,17 @@ def compare_grants(connection: Connection, grants: Grants) -> List[Operation]:
 def get_default_grants_postgresql(connection: Connection):
     from sqlalchemy_declarative_extensions.grant.postgresql.parse import parse_acl
 
-    default_permissions_query = text(
-        """
-        SELECT
-            pg_authid.rolname as role_name,
-            pg_namespace.nspname as schema_name,
-            pg_default_acl.defaclobjtype as object_type,
-            pg_default_acl.defaclacl as acl
-        FROM pg_default_acl
-        JOIN pg_authid ON pg_default_acl.defaclrole = pg_authid.oid
-        JOIN pg_namespace ON pg_default_acl.defaclnamespace = pg_namespace.oid
-    """
-    )
-
-    default_permissions = connection.execute(default_permissions_query).fetchall()
+    default_permissions = connection.execute(default_acl_query).fetchall()
 
     result = []
     for permission in default_permissions:
-        grant_permissions = parse_acl(
-            permission.acl, permission.schema_name, permission.object_type
-        )
-        result.extend(grant_permissions)
+        for acl_item in permission.acl:
+            grant_permissions = parse_acl(
+                acl_item,
+                permission.object_type,
+                permission.schema_name,
+            )
+            result.extend(grant_permissions)
     return result
 
 
