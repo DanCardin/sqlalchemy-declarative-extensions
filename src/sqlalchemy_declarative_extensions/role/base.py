@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import astuple, dataclass, field, fields, replace
 from datetime import datetime
-from typing import Generic, Iterable, List, Optional, TypeVar, Union
+from typing import Generator, Generic, Iterable, List, Optional, TypeVar, Union
 
 
 @dataclass(frozen=True)
@@ -196,7 +196,7 @@ class Roles(Generic[R]):
 
         return None
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[R, None, None]:
         for role in self.roles:
             yield role
 

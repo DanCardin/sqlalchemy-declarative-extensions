@@ -32,7 +32,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Generic, Optional, Tuple, Union
 
-from sqlalchemy.sql import quoted_name
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
 
@@ -46,7 +45,7 @@ from sqlalchemy_declarative_extensions.schema.base import Schema
 
 
 @dataclass(frozen=True)
-class PGGrant(Generic[G]):
+class Grant(Generic[G]):
     target_role: str
 
     grants: Tuple[G, ...] = field(default_factory=tuple)
@@ -54,15 +53,15 @@ class PGGrant(Generic[G]):
     revoke_: bool = False
 
     @classmethod
-    def for_role(cls, role: Union[str, Role]) -> PGGrant:
+    def for_role(cls, role: Union[str, Role]) -> Grant:
         role_name = role.name if isinstance(role, Role) else role
         return cls(role_name)
 
-    def grant(self, grant: str, *grants: str) -> PGGrant:
-        return replace(self, grants=tuple([grant, *grants]))
+    def grant(self, grant: str, *grants: str) -> Grant:
+        return replace(self, grants=tuple(sorted([grant, *grants])))
 
-    def revoke(self, grant: str, *grants: str) -> PGGrant:
-        return replace(self, grants=tuple([grant, *grants]), revoke_=True)
+    def revoke(self, grant: str, *grants: str) -> Grant:
+        return replace(self, grants=tuple(sorted([grant, *grants])), revoke_=True)
 
     def with_grant_option(self):
         return replace(self, grant_option=True)
@@ -103,70 +102,76 @@ class PGGrant(Generic[G]):
 
 @dataclass(frozen=True)
 class DefaultGrantOption:
-    privileges: PGGrant
-
-    def _schema_names(self, *schemas: Union[str, Schema]):
-        return [s.name if isinstance(s, Schema) else s for s in schemas]
+    privileges: Grant
 
     def on_tables_in_schema(
         self, *in_schemas: Union[str, Schema], for_role: Optional[Role] = None
     ) -> DefaultGrantStatement:
-        schemas = self._schema_names(*in_schemas)
+        schemas = _map_schema_names(*in_schemas)
         return DefaultGrantStatement(
             self.privileges,
             grant_type=DefaultGrantTypes.table,
             in_schemas=tuple(schemas),
-            for_role=for_role.name if isinstance(for_role, Role) else for_role,
+            target_role=for_role.name if isinstance(for_role, Role) else for_role,
         )
 
     def on_sequences_in_schema(
         self, *in_schemas: Union[str, Schema], for_role: Optional[Role] = None
     ) -> DefaultGrantStatement:
-        schemas = self._schema_names(*in_schemas)
+        schemas = _map_schema_names(*in_schemas)
         return DefaultGrantStatement(
             self.privileges,
             grant_type=DefaultGrantTypes.sequence,
             in_schemas=tuple(schemas),
-            for_role=for_role.name if isinstance(for_role, Role) else for_role,
+            target_role=for_role.name if isinstance(for_role, Role) else for_role,
         )
 
     def on_types_in_schema(
         self, *in_schemas: Union[str, Schema], for_role: Optional[Role] = None
     ) -> DefaultGrantStatement:
-        schemas = self._schema_names(*in_schemas)
+        schemas = _map_schema_names(*in_schemas)
         return DefaultGrantStatement(
             self.privileges,
             grant_type=DefaultGrantTypes.type,
             in_schemas=tuple(schemas),
-            for_role=for_role.name if isinstance(for_role, Role) else for_role,
+            target_role=for_role.name if isinstance(for_role, Role) else for_role,
         )
 
     def on_functions_in_schema(
         self, *in_schemas: Union[str, Schema], for_role: Optional[Role] = None
     ) -> DefaultGrantStatement:
-        schemas = self._schema_names(*in_schemas)
+        schemas = _map_schema_names(*in_schemas)
         return DefaultGrantStatement(
             self.privileges,
             grant_type=DefaultGrantTypes.function,
             in_schemas=tuple(schemas),
-            for_role=for_role.name if isinstance(for_role, Role) else for_role,
+            target_role=for_role.name if isinstance(for_role, Role) else for_role,
         )
+
+
+DefaultGrant.on_tables_in_schema().grant("select")
 
 
 @dataclass(frozen=True)
 class DefaultGrantStatement(Generic[G]):
-    privileges: PGGrant[G]
+    privileges: Grant[G]
     grant_type: DefaultGrantTypes
     in_schemas: Tuple[str, ...]
-    for_role: Optional[str]
+    target_role: Optional[str]
+
+    def for_role(self, role: str):
+        return replace(self, target_role=role)
+
+    def revoke(self) -> DefaultGrantStatement:
+        return replace(self, privileges=replace(self.privileges, revoke_=True))
 
     def to_sql(self) -> TextClause:
         result = []
 
         result.append("ALTER DEFAULT PRIVILEGES")
 
-        if self.for_role:
-            result.append(f'FOR ROLE "{self.for_role}"')
+        if self.target_role:
+            result.append(f'FOR ROLE "{self.target_role}"')
 
         schemas_str = ", ".join(self.in_schemas)
         result.append(f"IN SCHEMA {schemas_str}")
@@ -183,9 +188,12 @@ class DefaultGrantStatement(Generic[G]):
 
 @dataclass(frozen=True)
 class GrantStatement(Generic[G]):
-    privileges: PGGrant[G]
+    privileges: Grant[G]
     grant_type: GrantTypes
     targets: Tuple[str, ...]
+
+    def revoke(self) -> GrantStatement:
+        return replace(self, privileges=replace(self.privileges, revoke_=True))
 
     def to_sql(self) -> TextClause:
         result = []
@@ -203,3 +211,7 @@ class GrantStatement(Generic[G]):
 
         text_result = " ".join(result)
         return text(text_result)
+
+
+def _map_schema_names(*schemas: Union[str, Schema]):
+    return sorted([s.name if isinstance(s, Schema) else s for s in schemas])

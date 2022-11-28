@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.1.1"
+version = "0.2.0"
 description = "Library to declare additional kinds of objects not natively supported by SqlAlchemy/Alembic."
 
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
@@ -91,7 +91,6 @@ norecursedirs = ".* build dist *.egg bin tests/examples --junitxml=junit.xml"
 filterwarnings = [
   'error',
   'ignore:invalid escape sequence.*',
-  'ignore:urllib.parse.splitnport.*:DeprecationWarning',
   'ignore:distutils Version classes are deprecated. Use packaging.version instead.:DeprecationWarning',
 ]
 pytester_example_dir = "tests/examples"

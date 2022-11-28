@@ -7,12 +7,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_declarative_extensions import (
     declarative_database,
     Grants,
-    PGGrant,
     PGRole,
     register_sqlalchemy_events,
     Roles,
 )
-from sqlalchemy_declarative_extensions.role.compare import get_existing_roles_postgresql
+from sqlalchemy_declarative_extensions.dialects import get_roles
+from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 
 Base_ = declarative_base()
 
@@ -27,14 +27,11 @@ class Base(Base_):
         PGRole("app", login=False, in_roles=["read", "write"]),
     )
     grants = Grants().are(
-        PGGrant("read").grant("select").default().on_tables_in_schema("public"),
-        (
-            PGGrant("write")
-            .grant("insert", "update", "delete")
-            .default()
-            .on_tables_in_schema("public")
+        DefaultGrant.on_tables_in_schema("public").grant("select", to="read"),
+        DefaultGrant.on_tables_in_schema("public").grant(
+            "insert", "update", "delete", to="write"
         ),
-        PGGrant("write").grant("usage").default().on_sequences_in_schema("public"),
+        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="write"),
     )
 
 
@@ -54,7 +51,7 @@ register_sqlalchemy_events(Base.metadata, roles=True, grants=True)
 def test_createall_grant(pg):
     Base.metadata.create_all(bind=pg)
 
-    roles = get_existing_roles_postgresql(pg, exclude=[pg.pmr_credentials.username])
+    roles = get_roles(pg, exclude=[pg.pmr_credentials.username])
     result = [role.name for role in roles]
 
     expected_result = [

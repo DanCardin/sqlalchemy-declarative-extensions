@@ -1,85 +1,146 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Union
+from itertools import groupby
+from typing import Container, List, Optional, Set, Union
 
-from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialect.postgresql import default_acl_query
-from sqlalchemy_declarative_extensions.grant.base import Grants
-from sqlalchemy_declarative_extensions.grant.postgresql.base import (
-    DefaultGrantStatement,
+from sqlalchemy_declarative_extensions.dialects import (
+    get_default_grants,
+    get_grants,
+    get_objects,
 )
-from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    DefaultGrantStatement,
+    GrantStatement,
+    GrantTypes,
+)
+from sqlalchemy_declarative_extensions.grant.base import Grants
+from sqlalchemy_declarative_extensions.role.base import Roles
 
 
 @dataclass
 class GrantPrivilegesOp:
-    grant: DefaultGrantStatement
-
-    @classmethod
-    def grant_privileges(cls, operations, grant):
-        op = cls(grant)
-        return operations.invoke(op)
+    grant: Union[DefaultGrantStatement, GrantStatement]
 
     def reverse(self):
-        return RevokePrivilegesOp(self.grant)
+        return RevokePrivilegesOp(self.grant.invert())
 
 
 @dataclass
 class RevokePrivilegesOp:
-    grant: DefaultGrantStatement
-
-    @classmethod
-    def revoke_privileges(cls, operations, grant):
-        op = cls(grant)
-        return operations.invoke(op)
+    grant: Union[DefaultGrantStatement, GrantStatement]
 
     def reverse(self):
-        return GrantPrivilegesOp(self.grant)
+        return GrantPrivilegesOp(self.grant.invert())
 
 
 Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp]
 
 
-def compare_grants(connection: Connection, grants: Grants) -> List[Operation]:
+def compare_grants(
+    connection: Connection, grants: Grants, roles: Optional[Roles] = None
+) -> List[Operation]:
     result: List[Operation] = []
-    if not grants:
-        return result
 
-    existing_default_grants = get_default_grants(connection)
+    current_role: str = connection.engine.url.username  # type: ignore
 
-    missing_grants = set(grants) - set(existing_default_grants)
-    extra_grants = set(existing_default_grants) - set(grants)
+    filtered_roles: Optional[Set[str]] = None
+    if grants.only_defined_roles:
+        filtered_roles = {r.name for r in (roles or [])}
+
+    default_grant_ops = compare_default_grants(
+        connection, grants, username=current_role, roles=filtered_roles
+    )
+    result.extend(default_grant_ops)
+
+    if grants.default_grants_imply_grants:
+        grant_ops = compare_object_grants(
+            connection, grants, username=current_role, roles=filtered_roles
+        )
+        result.extend(grant_ops)
+
+    return result
+
+
+def compare_default_grants(
+    connection: Connection,
+    grants: Grants,
+    username: str,
+    roles: Optional[Container[str]] = None,
+):
+    result: List[Operation] = []
+
+    existing_default_grants = get_default_grants(connection, roles=roles)
+
+    expected_grants = [
+        g.for_role(username) for g in grants if isinstance(g, DefaultGrantStatement)
+    ]
+
+    missing_grants = set(expected_grants) - set(existing_default_grants)
+    extra_grants = set(existing_default_grants) - set(expected_grants)
+
+    if not grants.ignore_unspecified:
+        for extra_grant in extra_grants:
+            revoke_statement = extra_grant.invert()
+            result.append(RevokePrivilegesOp(revoke_statement))
 
     for missing_grant in missing_grants:
         result.append(GrantPrivilegesOp(missing_grant))
 
+    return result
+
+
+def compare_object_grants(
+    connection: Connection,
+    grants: Grants,
+    username: str,
+    roles: Optional[Container[str]] = None,
+):
+    result: List[Operation] = []
+
+    expected_grants = [g for g in grants if isinstance(g, GrantStatement)]
+
+    existing_tables = get_objects(connection)
+    existing_tables_by_schema = {
+        s: list(g) for s, g in groupby(existing_tables, lambda r: r[0])
+    }
+    for grant in grants:
+        if not isinstance(grant, DefaultGrantStatement):
+            continue
+
+        grant_type = grant.default_grant.grant_type.to_grant_type()
+
+        for schema in grant.default_grant.in_schemas:
+            existing_tables = existing_tables_by_schema.get(schema)
+            if not existing_tables:
+                continue
+
+            for _, table, relkind in existing_tables:
+                object_type = GrantTypes.from_relkind(relkind)
+
+                if object_type == grant_type:
+                    expected_grants.extend(
+                        grant.grant.on_objects(table, object_type=object_type).explode()
+                    )
+
+    existing_grants = get_grants(connection, roles=roles, expanded=True)
+
+    if grants.ignore_self_grants:
+        existing_grants = [
+            g for g in existing_grants if g.grant.target_role != username
+        ]
+
+    missing_grants = set(expected_grants) - set(existing_grants)
+    extra_grants = set(existing_grants) - set(expected_grants)
+
     if not grants.ignore_unspecified:
         for extra_grant in extra_grants:
-            result.append(RevokePrivilegesOp(extra_grant))
+            revoke_statement = extra_grant.invert()
+            result.append(RevokePrivilegesOp(revoke_statement))
+
+    for missing_grant in missing_grants:
+        result.append(GrantPrivilegesOp(missing_grant))
 
     return result
-
-
-def get_default_grants_postgresql(connection: Connection):
-    from sqlalchemy_declarative_extensions.grant.postgresql.parse import parse_acl
-
-    default_permissions = connection.execute(default_acl_query).fetchall()
-
-    result = []
-    for permission in default_permissions:
-        for acl_item in permission.acl:
-            grant_permissions = parse_acl(
-                acl_item,
-                permission.object_type,
-                permission.schema_name,
-            )
-            result.extend(grant_permissions)
-    return result
-
-
-get_default_grants = dialect_dispatch(
-    postgresql=get_default_grants_postgresql,
-)

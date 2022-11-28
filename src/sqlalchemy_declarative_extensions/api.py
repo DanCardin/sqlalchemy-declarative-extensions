@@ -81,7 +81,7 @@ def declare_database(
     *,
     schemas: Union[None, Iterable[Union[Schema, str]], Schemas] = None,
     roles: Union[None, Iterable[R_unknown], Roles] = None,
-    grants: Union[None, Iterable[G], Grants[G]] = None,
+    grants: Union[None, Iterable[G], Grants] = None,
     rows: Union[None, Iterable[Row], Rows] = None,
 ):
     """Register declaratively specified database extension handlers.
@@ -163,13 +163,13 @@ def register_sqlalchemy_events(
         event.listen(
             metadata,
             "before_create",
-            grant_ddl(concrete_grants, default=True),
+            grant_ddl(concrete_grants, after=False),
         )
 
         event.listen(
             metadata,
             "after_create",
-            grant_ddl(concrete_grants, default=False),
+            grant_ddl(concrete_grants, after=True),
         )
 
     if concrete_rows and rows:

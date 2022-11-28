@@ -1,13 +1,13 @@
-from sqlalchemy_declarative_extensions.grant.postgresql.base import (
-    DefaultGrantOption,
+from sqlalchemy_declarative_extensions.dialects.postgresql.grant import (
+    DefaultGrant,
     DefaultGrantStatement,
+    Grant,
     GrantStatement,
-    GrantTypes,
-    PGGrant,
 )
-from sqlalchemy_declarative_extensions.grant.postgresql.grant_type import (
+from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     DefaultGrantTypes,
     FunctionGrants,
+    GrantTypes,
     SchemaGrants,
     SequenceGrants,
     TableGrants,
@@ -22,8 +22,12 @@ __all__ = [
     "TypeGrants",
     "GrantTypes",
     "DefaultGrantTypes",
-    "PGGrant",
-    "DefaultGrantOption",
+    "Grant",
+    "DefaultGrant",
     "DefaultGrantStatement",
+    "GrantStatement",
+    "DefaultGrant",
+    "DefaultGrantStatement",
+    "Grant",
     "GrantStatement",
 ]

@@ -1,9 +1,12 @@
 from typing import List, TypeVar
 
-from sqlalchemy_declarative_extensions.sql import FromStrings, FromStringsSelf
+from sqlalchemy_declarative_extensions.dialects.from_string import (
+    FromStrings,
+    FromStringsSelf,
+)
 
 
-class Grants(FromStrings):
+class GrantOptions(FromStrings):
     def default(self: FromStringsSelf) -> List[FromStringsSelf]:
         """Return the default grants given by postgres for the current grant kind.
 
@@ -15,11 +18,10 @@ class Grants(FromStrings):
         return []
 
 
-class DatabaseGrants(Grants):
+class DatabaseGrants(GrantOptions):
     create = "CREATE"
     connect = "CONNECT"
     temporary = "TEMPORARY"
-    all = "ALL"
 
     def default(self):
         return [self.connect, self.temporary]
@@ -33,9 +35,8 @@ class DatabaseGrants(Grants):
         }
 
 
-class ForeignDataWrapperGrants(Grants):
+class ForeignDataWrapperGrants(GrantOptions):
     usage = "USAGE"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -44,9 +45,8 @@ class ForeignDataWrapperGrants(Grants):
         }
 
 
-class ForeignServerGrants(Grants):
+class ForeignServerGrants(GrantOptions):
     usage = "USAGE"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -55,9 +55,8 @@ class ForeignServerGrants(Grants):
         }
 
 
-class ForeignTableGrants(Grants):
+class ForeignTableGrants(GrantOptions):
     select = "SELECT"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -66,9 +65,8 @@ class ForeignTableGrants(Grants):
         }
 
 
-class FunctionGrants(Grants):
+class FunctionGrants(GrantOptions):
     execute = "EXECUTE"
-    all = "ALL"
 
     def default(self):
         return [self.execute]
@@ -80,9 +78,8 @@ class FunctionGrants(Grants):
         }
 
 
-class LanguageGrants(Grants):
+class LanguageGrants(GrantOptions):
     usage = "USAGE"
-    all = "ALL"
 
     def default(self):
         return [self.usage]
@@ -94,10 +91,9 @@ class LanguageGrants(Grants):
         }
 
 
-class LargeObjectGrants(Grants):
+class LargeObjectGrants(GrantOptions):
     select = "SELECT"
     update = "UPDATE"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -107,7 +103,7 @@ class LargeObjectGrants(Grants):
         }
 
 
-class TableGrants(Grants):
+class TableGrants(GrantOptions):
     select = "SELECT"
     insert = "INSERT"
     update = "UPDATE"
@@ -115,7 +111,6 @@ class TableGrants(Grants):
     truncate = "TRUNCATE"
     references = "REFERENCES"
     trigger = "TRIGGER"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -130,9 +125,8 @@ class TableGrants(Grants):
         }
 
 
-class TablespaceGrants(Grants):
+class TablespaceGrants(GrantOptions):
     create = "CREATE"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -141,9 +135,8 @@ class TablespaceGrants(Grants):
         }
 
 
-class TypeGrants(Grants):
+class TypeGrants(GrantOptions):
     usage = "USAGE"
-    all = "ALL"
 
     def default(self):
         return [self.usage]
@@ -155,10 +148,9 @@ class TypeGrants(Grants):
         }
 
 
-class SchemaGrants(Grants):
+class SchemaGrants(GrantOptions):
     create = "CREATE"
     usage = "USAGE"
-    all = "ALL"
 
     @classmethod
     def acl_symbols(cls):
@@ -184,7 +176,7 @@ G = TypeVar(
 )
 
 
-class SequenceGrants(Grants):
+class SequenceGrants(GrantOptions):
     usage = "USAGE"
     select = "SELECT"
     update = "UPDATE"
@@ -194,7 +186,7 @@ class SequenceGrants(Grants):
         return {
             cls.select: "r",
             cls.update: "w",
-            cls.usage: "a",
+            cls.usage: "U",
         }
 
 
@@ -211,6 +203,26 @@ class GrantTypes(FromStrings):
     table = "TABLE"
     tablespace = "TABLESPACE"
     type = "TYPE"
+
+    @classmethod
+    def _str_to_kind(cls):
+        return {
+            "f": cls.function,
+            "n": cls.schema,
+            "S": cls.sequence,
+            "r": cls.table,
+            "T": cls.type,
+        }
+
+    @classmethod
+    def from_relkind(cls, relkind: str):
+        return cls._str_to_kind()[relkind]
+
+    def to_relkind(self) -> str:
+        for k, v in self._str_to_kind().items():
+            if v == self:
+                return k
+        raise NotImplementedError()
 
     def to_variants(self):
         return {
@@ -230,10 +242,37 @@ class DefaultGrantTypes(FromStrings):
     type = "TYPE"
     sequence = "SEQUENCE"
 
+    @classmethod
+    def _str_to_kind(cls):
+        return {
+            "f": cls.function,
+            "r": cls.table,
+            "T": cls.type,
+            "S": cls.sequence,
+        }
+
+    @classmethod
+    def from_relkind(cls, relkind: str):
+        return cls._str_to_kind()[relkind]
+
+    def to_relkind(self) -> str:
+        for k, v in self._str_to_kind().items():
+            if v == self:
+                return k
+        raise NotImplementedError()
+
     def to_variants(self):
         return {
             self.table: TableGrants,
             self.sequence: SequenceGrants,
             self.function: FunctionGrants,
             self.type: TypeGrants,
+        }[self]
+
+    def to_grant_type(self):
+        return {
+            self.table: GrantTypes.table,
+            self.sequence: GrantTypes.sequence,
+            self.function: GrantTypes.function,
+            self.type: GrantTypes.type,
         }[self]

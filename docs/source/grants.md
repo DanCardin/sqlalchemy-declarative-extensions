@@ -4,15 +4,13 @@ Due to the inconsistent set of available options there are dialect-specific gran
 options, there are currently **only** dialect-specific grant definition options.
 
 ```python
-from sqlalchemy_declarative_extensions import Grants, PGGrant
+from sqlalchemy_declarative_extensions import Grants
+from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 
 grants = Grants().are(
-    PGGrant("o2_read").grant("select").default().on_tables_in_schema("public"),
-    PGGrant("o2_write")
-    .grant("insert", "update", "delete")
-    .default()
-    .on_tables_in_schema("public"),
-    PGGrant("o2_write").grant("usage").default().on_sequences_in_schema("public"),
+    DefaultGrant.on_tables_in_schema("public").grant("select", to="read"),
+    DefaultGrant.on_tables_in_schema("public").grant("insert", "update", "delete", to="write"),
+    DefaultGrant.on_sequences_in_schema("public").grant("usage", to="write"),
 )
 ```
 

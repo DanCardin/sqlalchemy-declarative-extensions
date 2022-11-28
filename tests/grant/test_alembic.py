@@ -9,10 +9,9 @@ def test_identify_grants(pytester):
     successful_test_run(pytester, count=1)
 
 
-@pytest.mark.skip
 @pytest.mark.grant
 @pytest.mark.alembic
-def test_alter_existing_grants(pytester):
+def test_grant_update_existing(pytester):
     successful_test_run(pytester, count=1)
 
 

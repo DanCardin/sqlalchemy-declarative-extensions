@@ -5,8 +5,6 @@ from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 from alembic.operations import Operations
 from alembic.operations.ops import UpgradeOps
-from alembic.runtime.migration import MigrationContext
-from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions.grant import compare
 from sqlalchemy_declarative_extensions.grant.base import Grants
@@ -14,6 +12,7 @@ from sqlalchemy_declarative_extensions.grant.compare import (
     GrantPrivilegesOp,
     RevokePrivilegesOp,
 )
+from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.role.compare import RoleOp
 
 
@@ -26,7 +25,9 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     if not grants:
         return
 
-    result = compare.compare_grants(autogen_context.connection, grants)
+    roles: Optional[Roles] = autogen_context.metadata.info.get("roles")
+
+    result = compare.compare_grants(autogen_context.connection, grants, roles=roles)
     if not result:
         return
 
@@ -39,10 +40,6 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     # Insert after that point
     after_last_role_index = last_role_index + 1
     upgrade_ops.ops[after_last_role_index:after_last_role_index] = result  # type: ignore
-
-
-Operations.register_operation("grant_privileges")(GrantPrivilegesOp)
-Operations.register_operation("revoke_privileges")(RevokePrivilegesOp)
 
 
 @renderers.dispatch_for(GrantPrivilegesOp)

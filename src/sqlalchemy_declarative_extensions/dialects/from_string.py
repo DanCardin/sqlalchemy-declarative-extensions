@@ -1,9 +1,11 @@
 import enum
+import functools
 from typing import Iterable, List, Type, TypeVar, Union
 
 FromStringsSelf = TypeVar("FromStringsSelf", bound="FromStrings")
 
 
+@functools.total_ordering
 class FromStrings(enum.Enum):
     @classmethod
     def from_strings(
@@ -20,3 +22,8 @@ class FromStrings(enum.Enum):
             return cls(normalized_str)
         else:
             return string
+
+    def __lt__(self, other):
+        if isinstance(other, self.__class__):
+            return self.value < other.value
+        return self.value < other

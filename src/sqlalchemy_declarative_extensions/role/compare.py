@@ -3,12 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Union
 
-from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.role.base import PGRole, Roles
 from sqlalchemy_declarative_extensions.role.topological_sort import topological_sort
-from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch
 
 
 class RoleOp:
@@ -66,7 +65,7 @@ def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
     roles_by_name = {r.name: r for r in roles.roles}
     expected_role_names = set(roles_by_name)
 
-    existing_roles = get_existing_roles(connection)
+    existing_roles = get_roles(connection)
     existing_roles_by_name = {r.name: r for r in existing_roles}
     existing_role_names = set(existing_roles_by_name)
 
@@ -103,35 +102,3 @@ def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
             result.append(DropRoleOp(PGRole(removed_role)))
 
     return result
-
-
-def get_existing_roles_postgresql(connection: Connection, exclude=None):
-    select_roles = text(
-        """
-        SELECT r.rolname, r.rolsuper, r.rolinherit,
-          r.rolcreaterole, r.rolcreatedb, r.rolcanlogin,
-          r.rolconnlimit, r.rolvaliduntil,
-          ARRAY(SELECT b.rolname
-                FROM pg_catalog.pg_auth_members m
-                JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
-                WHERE m.member = r.oid) as memberof
-        , r.rolreplication
-        , r.rolbypassrls
-        FROM pg_catalog.pg_roles r
-        WHERE r.rolname !~ '^pg_'
-        ORDER BY 1;
-        """
-    )
-    result = [
-        PGRole.from_pg_role(r)
-        for r in connection.execute(select_roles).fetchall()
-        if not r.rolname.startswith("pg_")
-    ]
-    if exclude:
-        result = [role for role in result if role.name not in exclude]
-    return result
-
-
-get_existing_roles = dialect_dispatch(
-    postgresql=get_existing_roles_postgresql,
-)

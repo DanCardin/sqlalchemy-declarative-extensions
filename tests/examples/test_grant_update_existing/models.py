@@ -1,10 +1,13 @@
 from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database
+from sqlalchemy_declarative_extensions import (
+    declarative_database,
+    Grants,
+    PGRole,
+    Roles,
+)
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
-from sqlalchemy_declarative_extensions.grant import Grants
-from sqlalchemy_declarative_extensions.role import PGRole, Roles
 
 _Base = declarative_base()
 
@@ -19,9 +22,10 @@ class Base(_Base):
         PGRole("o1_app", login=False, in_roles=["o2_read", "o2_write"]),
     )
     grants = Grants().are(
-        DefaultGrant.on_tables_in_schema("public").grant("select", to="o2_read"),
-        DefaultGrant.on_tables_in_schema("public").grant("insert", to="o2_write"),
-        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="o2_write"),
+        DefaultGrant.on_tables_in_schema("public").grant(
+            "select", "insert", "update", "delete", to="o2_read"
+        ),
+        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="o2_read"),
     )
 
 

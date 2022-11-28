@@ -20,18 +20,12 @@ class Schemas:
 
         - Some options set
 
-        >>> schemas = Schemas().options(ignore_unspecified=True)
+        >>> schemas = Schemas(ignore_unspecified=True)
 
         - With some actual schemas
 
         >>> from sqlalchemy_declarative_extensions import Schema, Schemas
         >>> schema = Schemas().are("foo", Schema("bar"), ...)
-
-    Note, the "benefit" of using the above fluent interface is that it coerces obvious
-    substitutes for the types required by a `Schemas`, for example `ignore_unspecified` is
-    a `Sequence[Schema]`, but the string name of a schema can be used to produce that object.
-    If that's not meaningful to you, then using the direct constructor can work
-    equally well.
     """
 
     schemas: Sequence[Schema] = ()
@@ -48,10 +42,6 @@ class Schemas:
             return cls().are(*unknown)
 
         return None
-
-    @classmethod
-    def options(cls, ignore_unspecified=False):
-        return cls(ignore_unspecified=ignore_unspecified)
 
     def __iter__(self):
         for schema in self.schemas:

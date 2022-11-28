@@ -28,8 +28,10 @@ The primary function(s) of this library include:
 from sqlalchemy import Column, types
 from sqlalchemy.orm import as_declarative
 from sqlalchemy_declarative_extensions import (
-    declarative_database, Schemas, Roles, Role, Grants, PGGrant, Rows, Row
+    declarative_database, Schemas, Roles, Role, Grants, Rows, Row
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
+
 
 @declarative_database
 @as_declarative
@@ -43,8 +45,9 @@ class Base:
         ),
     )
     grants = Grants().are(
-        PGGrant("read").grant("select").default().on_tables_in_schema("public", 'example'),
-        PGGrant("app").grant("insert", "update", "delete").default().on_tables_in_schema("public"),
+        DefaultGrant.on_tables_in_schema("public", 'example').grant("select", to="read"),
+        DefaultGrant.on_tables_in_schema("public").grant("insert", "update", "delete", to="write"),
+        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="write"),
     )
     rows = Rows().are(
         Row('foo', id=1),
