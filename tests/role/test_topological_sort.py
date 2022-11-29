@@ -1,6 +1,6 @@
 import pytest
 
-from sqlalchemy_declarative_extensions.role.base import Role
+from sqlalchemy_declarative_extensions.role.generic import Role
 from sqlalchemy_declarative_extensions.role.topological_sort import topological_sort
 
 

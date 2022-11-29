@@ -7,17 +7,14 @@ from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.schema import MetaData
 
 from sqlalchemy_declarative_extensions.grant.base import Grants
-from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
 from sqlalchemy_declarative_extensions.role.base import Roles
-from sqlalchemy_declarative_extensions.role.ddl import role_ddl
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
-from sqlalchemy_declarative_extensions.row.query import rows_query
 from sqlalchemy_declarative_extensions.schema.base import Schemas
-from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
 
 if TYPE_CHECKING:
+    from sqlalchemy_declarative_extensions.dialects import postgresql
     from sqlalchemy_declarative_extensions.grant.base import G
-    from sqlalchemy_declarative_extensions.role.base import R_unknown
+    from sqlalchemy_declarative_extensions.role import generic
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
 
@@ -80,7 +77,9 @@ def declare_database(
     metadata: MetaData,
     *,
     schemas: Union[None, Iterable[Union[Schema, str]], Schemas] = None,
-    roles: Union[None, Iterable[R_unknown], Roles] = None,
+    roles: Union[
+        None, Iterable[Union[generic.Role, postgresql.Role, str]], Roles
+    ] = None,
     grants: Union[None, Iterable[G], Grants] = None,
     rows: Union[None, Iterable[Row], Rows] = None,
 ):
@@ -133,6 +132,11 @@ def register_sqlalchemy_events(
     Note this is the opposite of the defaults when registering against SQLAlchemy's
     event system.
     """
+    from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
+    from sqlalchemy_declarative_extensions.role.ddl import role_ddl
+    from sqlalchemy_declarative_extensions.row.query import rows_query
+    from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
+
     if isinstance(maybe_metadata, MetaData):
         metadata = maybe_metadata
     else:

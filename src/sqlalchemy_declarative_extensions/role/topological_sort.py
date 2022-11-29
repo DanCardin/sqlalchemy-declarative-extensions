@@ -1,6 +1,6 @@
 from typing import Dict, Iterable, Set
 
-from sqlalchemy_declarative_extensions.role.base import Role
+from sqlalchemy_declarative_extensions.role.generic import Role
 
 
 def topological_sort(roles: Iterable[Role]):

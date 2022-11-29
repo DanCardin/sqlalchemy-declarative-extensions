@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import astuple, dataclass, field, fields
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from typing import List, Optional, Union
 

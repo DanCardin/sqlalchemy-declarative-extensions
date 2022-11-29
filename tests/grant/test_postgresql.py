@@ -1,11 +1,11 @@
 import pytest
 
+from sqlalchemy_declarative_extensions import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql import (
     DefaultGrant,
     Grant,
     TableGrants,
 )
-from sqlalchemy_declarative_extensions.role.base import Role
 from tests.utilities import render_sql
 
 

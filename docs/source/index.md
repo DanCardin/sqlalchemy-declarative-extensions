@@ -22,6 +22,13 @@ Rows <rows>
 ```
 
 ```{toctree}
+:caption: Dialect Specific Support
+:hidden:
+
+Postgresql <dialects/postgresql>
+```
+
+```{toctree}
 :caption: Useful Links
 :hidden:
 

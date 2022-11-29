@@ -19,5 +19,5 @@ possible to create the underlying grants objects directly!
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.grant.base
-   :members:
+   :members: Grants
 ```
