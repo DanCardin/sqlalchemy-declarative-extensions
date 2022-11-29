@@ -7,12 +7,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy_declarative_extensions import (
     declarative_database,
     Grants,
-    PGRole,
     register_sqlalchemy_events,
     Roles,
     Schemas,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
+from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
 
 Base_ = declarative_base()
@@ -26,7 +25,7 @@ class Base(Base_):
     roles = Roles(ignore_unspecified=True).are(
         "read",
         "write",
-        PGRole("app", login=False, in_roles=["read", "write"]),
+        Role("app", login=False, in_roles=["read", "write"]),
     )
     grants = Grants().are(
         DefaultGrant.on_tables_in_schema("public").grant("select", to="read"),

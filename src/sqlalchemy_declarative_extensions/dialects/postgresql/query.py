@@ -8,6 +8,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
     parse_acl,
     parse_default_acl,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     default_acl_query,
     object_acl_query,
@@ -18,19 +19,6 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
 
 def get_objects_postgresql(connection: Connection):
     return sorted(connection.execute(objects_query).fetchall())
-
-
-def get_roles_postgresql(connection: Connection, exclude=None):
-    from sqlalchemy_declarative_extensions.role import PGRole
-
-    result = [
-        PGRole.from_pg_role(r)
-        for r in connection.execute(roles_query).fetchall()
-        if not r.rolname.startswith("pg_")
-    ]
-    if exclude:
-        result = [role for role in result if role.name not in exclude]
-    return result
 
 
 def get_default_grants_postgresql(
@@ -77,6 +65,17 @@ def get_grants_postgresql(
             for grant in grants:
                 if roles is None or grant.grant.target_role in roles:
                     result.append(grant)
+    return result
+
+
+def get_roles_postgresql(connection: Connection, exclude=None):
+    result = [
+        Role.from_pg_role(r)
+        for r in connection.execute(roles_query).fetchall()
+        if not r.rolname.startswith("pg_")
+    ]
+    if exclude:
+        result = [role for role in result if role.name not in exclude]
     return result
 
 

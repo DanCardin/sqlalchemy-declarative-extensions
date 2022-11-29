@@ -2,8 +2,8 @@ import sqlalchemy
 from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database
-from sqlalchemy_declarative_extensions.role import PGRole, Roles
+from sqlalchemy_declarative_extensions import declarative_database, Roles
+from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 
 _Base = declarative_base()
 
@@ -15,8 +15,8 @@ class Base(_Base):
     roles = Roles(ignore_unspecified=True).are(
         "read",
         "write",
-        PGRole("app", login=True, in_roles=["read", "write"]),
-        PGRole(
+        Role("app", login=True, in_roles=["read", "write"]),
+        Role(
             "admin",
             login=False,
             superuser=True,

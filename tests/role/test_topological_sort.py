@@ -1,12 +1,12 @@
 import pytest
 
-from sqlalchemy_declarative_extensions.role.base import PGRole
+from sqlalchemy_declarative_extensions.role.base import Role
 from sqlalchemy_declarative_extensions.role.topological_sort import topological_sort
 
 
 def test_topological_sort_duplicate():
     with pytest.raises(ValueError) as e:
-        topological_sort([PGRole("foo"), PGRole("foo"), PGRole("bar")])
+        topological_sort([Role("foo"), Role("foo"), Role("bar")])
     assert "foo" in str(e.value)
     assert "duplicate" in str(e.value).lower()
 
@@ -15,8 +15,8 @@ def test_topological_sort_cycle_simple():
     with pytest.raises(ValueError) as e:
         topological_sort(
             [
-                PGRole("foo", in_roles=["bar"]),
-                PGRole("bar", in_roles=["bar"]),
+                Role("foo", in_roles=["bar"]),
+                Role("bar", in_roles=["bar"]),
             ]
         )
     assert "bar, foo" in str(e.value)
@@ -24,7 +24,7 @@ def test_topological_sort_cycle_simple():
 
 
 def test_topological_missing_item():
-    foo = PGRole("foo", in_roles=["bar"])
+    foo = Role("foo", in_roles=["bar"])
 
     with pytest.raises(ValueError) as e:
         topological_sort([foo])
@@ -37,10 +37,10 @@ def test_topological_sort_circle_cycle():
     with pytest.raises(ValueError) as e:
         topological_sort(
             [
-                PGRole("foo", in_roles=["bar"]),
-                PGRole("bar", in_roles=["bax"]),
-                PGRole("bax", in_roles=["baz"]),
-                PGRole("baz", in_roles=["foo"]),
+                Role("foo", in_roles=["bar"]),
+                Role("bar", in_roles=["bax"]),
+                Role("bax", in_roles=["baz"]),
+                Role("baz", in_roles=["foo"]),
             ]
         )
     assert "bar, bax, baz, foo" in str(e.value)
@@ -48,8 +48,8 @@ def test_topological_sort_circle_cycle():
 
 
 def test_topological_sort_no_deps():
-    foo = PGRole("foo")
-    bar = PGRole("bar")
+    foo = Role("foo")
+    bar = Role("bar")
     result = topological_sort([foo, bar])
 
     expected_result = [foo, bar]
@@ -57,8 +57,8 @@ def test_topological_sort_no_deps():
 
 
 def test_topological_sort_simple():
-    foo = PGRole("foo", in_roles=["bar"])
-    bar = PGRole("bar")
+    foo = Role("foo", in_roles=["bar"])
+    bar = Role("bar")
     result = topological_sort([foo, bar])
 
     expected_result = [bar, foo]
@@ -66,10 +66,10 @@ def test_topological_sort_simple():
 
 
 def test_topological_sort_chain():
-    foo = PGRole("foo", in_roles=["bar"])
-    bar = PGRole("bar", in_roles=["bax"])
-    bax = PGRole("bax", in_roles=["baz"])
-    baz = PGRole("baz")
+    foo = Role("foo", in_roles=["bar"])
+    bar = Role("bar", in_roles=["bax"])
+    bax = Role("bax", in_roles=["baz"])
+    baz = Role("baz")
     result = topological_sort([foo, baz, bar, bax])
 
     expected_result = [baz, bax, bar, foo]
@@ -77,10 +77,10 @@ def test_topological_sort_chain():
 
 
 def test_topological_fork():
-    foo = PGRole("foo", in_roles=["bar"])
-    bax = PGRole("bax", in_roles=["bar"])
-    bar = PGRole("bar", in_roles=["baz"])
-    baz = PGRole("baz")
+    foo = Role("foo", in_roles=["bar"])
+    bax = Role("bax", in_roles=["bar"])
+    bar = Role("bar", in_roles=["baz"])
+    baz = Role("baz")
     result = topological_sort([foo, baz, bar, bax])
 
     expected_result = [baz, bar, foo, bax]

@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from pytest_mock_resources import create_postgres_fixture, PostgresConfig
 from pytest_mock_resources.container.base import get_container
@@ -11,6 +13,8 @@ def pytest_sessionstart(session):
         import coverage
 
         coverage.process_startup()
+
+    os.environ["PYTHONUNBUFFERED"] = "1"
 
 
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})

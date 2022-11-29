@@ -13,6 +13,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     TableGrants,
     TypeGrants,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 
 __all__ = [
     "TableGrants",
@@ -30,4 +31,5 @@ __all__ = [
     "DefaultGrantStatement",
     "Grant",
     "GrantStatement",
+    "Role",
 ]

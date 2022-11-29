@@ -5,12 +5,11 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     declarative_database,
-    PGRole,
     register_sqlalchemy_events,
     Roles,
 )
 from sqlalchemy_declarative_extensions.dialects import get_roles
-from sqlalchemy_declarative_extensions.role.ddl import postgres_render_create_role
+from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 
 Base_ = declarative_base()
 
@@ -19,9 +18,9 @@ Base_ = declarative_base()
 class Base(Base_):
     __abstract__ = True
 
-    roles = Roles().are(
+    roles = Roles(ignore_unspecified=True).are(
         "nooptions",
-        PGRole(
+        Role(
             "most_options",
             superuser=True,
             createdb=True,
@@ -49,7 +48,7 @@ def test_createall_role(pg):
     result = get_roles(pg, exclude=[pg.pmr_credentials.username])
 
     expected_result = [
-        PGRole(
+        Role(
             "most_options",
             superuser=True,
             createdb=True,
@@ -61,7 +60,7 @@ def test_createall_role(pg):
             valid_until=datetime(2999, 1, 1, tzinfo=timezone.utc),
             in_roles=["nooptions"],
         ),
-        PGRole(
+        Role(
             "nooptions",
             superuser=False,
             createdb=False,
@@ -82,7 +81,7 @@ def test_pg_role_default(pg):
     argumentless_role = get_roles(pg, exclude=[pg.pmr_credentials.username])[0]
     pg.execute("drop role foo")
 
-    pg.execute(postgres_render_create_role(PGRole("foo")))
+    pg.execute(Role("foo").to_sql_create())
     default_role = get_roles(pg, exclude=[pg.pmr_credentials.username])[0]
 
     assert argumentless_role == default_role

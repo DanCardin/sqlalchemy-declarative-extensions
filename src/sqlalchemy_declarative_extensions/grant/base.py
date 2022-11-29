@@ -40,7 +40,7 @@ class Grants:
         - With some actual grants
 
         >>> from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
-        >>> grants = Grants().are(...)
+        >>> grants = Grants().are(DefaultGrant(..., ...), ...)
     """
 
     grants: List[G] = field(default_factory=list)

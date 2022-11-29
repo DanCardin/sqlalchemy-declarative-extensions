@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Union
 
+from alembic.operations import Operations
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialects import get_roles
-from sqlalchemy_declarative_extensions.role.base import PGRole, Roles
+from sqlalchemy_declarative_extensions.dialects import get_role_cls, get_roles
+from sqlalchemy_declarative_extensions.role.base import Role, Roles
 from sqlalchemy_declarative_extensions.role.topological_sort import topological_sort
 
 
@@ -16,42 +17,54 @@ class RoleOp:
 
 @dataclass
 class CreateRoleOp(RoleOp):
-    role: PGRole
+    role: Role
 
     @classmethod
-    def create_role(cls, operations, role, **options):
-        op = cls(PGRole(role, **options))
-        return operations.invoke(op)
+    def create_role(cls, operations: Operations, role_name: str, **options):
+        assert operations.migration_context.connection
+        role_cls = get_role_cls(operations.migration_context.connection)
+        role = role_cls(role_name, **options)
+        op = cls(role)
+        return operations.invoke(op)  # type: ignore
 
     def reverse(self):
         return DropRoleOp(self.role)
 
+    def to_sql(self):
+        return self.role.to_sql_create()
+
 
 @dataclass
 class UpdateRoleOp(RoleOp):
-    from_role: PGRole
-    to_role: PGRole
+    from_role: Role
+    to_role: Role
 
     @classmethod
-    def update_role(cls, operations, from_role: PGRole, to_role: PGRole):
+    def update_role(cls, operations, from_role: Role, to_role: Role):
         op = cls(from_role, to_role)
         return operations.invoke(op)
 
     def reverse(self):
         return UpdateRoleOp(from_role=self.to_role, to_role=self.from_role)
 
+    def to_sql(self):
+        return self.from_role.to_sql_update(self.to_role)
+
 
 @dataclass
 class DropRoleOp(RoleOp):
-    role: PGRole
+    role: Role
 
     @classmethod
     def drop_role(cls, operations, role):
-        op = cls(PGRole(role))
+        op = cls(Role(role))
         return operations.invoke(op)
 
     def reverse(self):
         return CreateRoleOp(self.role)
+
+    def to_sql(self):
+        return self.role.to_sql_drop()
 
 
 Operation = Union[CreateRoleOp, UpdateRoleOp, DropRoleOp]
@@ -71,6 +84,8 @@ def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
 
     new_role_names = expected_role_names - existing_role_names
     removed_role_names = existing_role_names - expected_role_names
+
+    role_cls = get_role_cls(connection)
 
     for role in topological_sort(roles.roles):
         role_name = role.name
@@ -99,6 +114,6 @@ def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
         for removed_role in removed_role_names:
             if removed_role in roles.ignore_roles:
                 continue
-            result.append(DropRoleOp(PGRole(removed_role)))
+            result.append(DropRoleOp(role_cls(removed_role)))
 
     return result

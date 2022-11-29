@@ -10,7 +10,6 @@ from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.role.ddl import role_ddl
-from sqlalchemy_declarative_extensions.role.topological_sort import topological_sort
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.row.query import rows_query
 from sqlalchemy_declarative_extensions.schema.base import Schemas
@@ -40,7 +39,8 @@ def declarative_database(
         >>> from sqlalchemy.orm import declarative_base
         >>> Base_ = declarative_base()
         >>>
-        >>> from sqlalchemy_declarative_extensions import declarative_database, PGRole, Roles
+        >>> from sqlalchemy_declarative_extensions import declarative_database, Roles
+        >>> from sqlalchemy_declarative_extensions.dialects.postgresql import Role
         >>> @declarative_database
         ... class Base(Base_):
         ...     __abstract__ = True
@@ -50,7 +50,7 @@ def declarative_database(
         ...         Roles(ignore_unspecified=True)
         ...         .are(
         ...             'read',
-        ...             PGRole('fancy', createrole=True, in_roles=['read']),
+        ...             Role('fancy', createrole=True, in_roles=['read']),
         ...         )
         ...     )
 
@@ -152,12 +152,11 @@ def register_sqlalchemy_events(
             )
 
     if concrete_roles and roles:
-        for role in topological_sort(concrete_roles):
-            event.listen(
-                metadata,
-                "before_create",
-                role_ddl(role),
-            )
+        event.listen(
+            metadata,
+            "before_create",
+            role_ddl,
+        )
 
     if concrete_grants and grants:
         event.listen(

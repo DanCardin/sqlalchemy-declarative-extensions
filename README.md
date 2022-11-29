@@ -28,9 +28,9 @@ The primary function(s) of this library include:
 from sqlalchemy import Column, types
 from sqlalchemy.orm import as_declarative
 from sqlalchemy_declarative_extensions import (
-    declarative_database, Schemas, Roles, Role, Grants, Rows, Row
+    declarative_database, Schemas, Roles, Grants, Rows, Row
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
+from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
 
 
 @declarative_database
@@ -38,8 +38,8 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 class Base:
     schemas = Schemas().are("example")
     roles = Roles(ignore_unspecified=True).are(
-        PGRole("read", login=False),
-        PGRole(
+        Role("read", login=False),
+        Role(
             "app",
             in_roles=['read']
         ),
