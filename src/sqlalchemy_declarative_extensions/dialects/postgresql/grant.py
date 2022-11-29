@@ -30,10 +30,11 @@ GRANT { USAGE | ALL [ PRIVILEGES ] }
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Generic, Optional, Protocol, runtime_checkable, Tuple, Union
+from typing import Generic, Optional, Tuple, Union
 
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
+from typing_extensions import Protocol, runtime_checkable
 
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     DefaultGrantTypes,
