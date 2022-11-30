@@ -55,6 +55,18 @@ roles_query = text(
         """
 )
 
+schemas_query = (
+    select(pg_namespace.c.nspname)
+    .where(pg_namespace.c.nspname.not_in(["information_schema", "public"]))
+    .where(pg_namespace.c.nspname.not_like("pg_%"))
+)
+
+
+schema_exists_query = text(
+    "SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema"
+)
+
+
 default_acl_query = select(
     pg_authid.c.rolname.label("role_name"),
     pg_namespace.c.nspname.label("schema_name"),

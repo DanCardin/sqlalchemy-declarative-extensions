@@ -16,13 +16,13 @@ class Base(_Base):
         "o2_write",
         Role("o1_app", login=False, in_roles=["o2_read", "o2_write"]),
     )
-    grants = Grants().are(
+    grants = [
         DefaultGrant.on_tables_in_schema("public").grant("select", to="o2_read"),
         DefaultGrant.on_tables_in_schema("public").grant(
             "insert", "update", "delete", to="o2_write"
         ),
         DefaultGrant.on_sequences_in_schema("public").grant("usage", to="o2_write"),
-    )
+    ]
 
 
 class Foo(Base):
