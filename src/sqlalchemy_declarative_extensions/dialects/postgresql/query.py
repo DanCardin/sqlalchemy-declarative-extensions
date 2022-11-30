@@ -18,14 +18,21 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
 
 
 def get_objects_postgresql(connection: Connection):
-    return sorted(connection.execute(objects_query).fetchall())
+    return sorted(
+        [
+            (r.schema, qualify_name(r.schema, r.object_name), r.relkind)
+            for r in connection.execute(objects_query).fetchall()
+        ]
+    )
 
 
 def get_default_grants_postgresql(
     connection: Connection,
     roles: Optional[Container[str]] = None,
+    expanded: bool = False,
 ):
     default_permissions = connection.execute(default_acl_query).fetchall()
+    current_role: str = connection.engine.url.username  # type: ignore
 
     result = []
     for permission in default_permissions:
@@ -34,6 +41,8 @@ def get_default_grants_postgresql(
                 acl_item,
                 permission.object_type,
                 permission.schema_name,
+                current_role=current_role,
+                expanded=expanded,
             )
             for default_grant in default_grants:
                 if roles is None or default_grant.grant.target_role in roles:

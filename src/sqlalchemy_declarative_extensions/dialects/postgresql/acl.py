@@ -37,9 +37,15 @@ def parse_default_acl(
     object_type: str,
     schema_name: str = "public",
     expanded: bool = False,
+    current_role: Optional[str] = None,
 ) -> List[DefaultGrantStatement]:
     type = DefaultGrantTypes.from_relkind(object_type)
+
+    grantor: Optional[str]
     grantor, grants = _parse_acl(acl, type, expanded=expanded)
+
+    if current_role == grantor:
+        grantor = None
 
     return [
         DefaultGrantStatement(

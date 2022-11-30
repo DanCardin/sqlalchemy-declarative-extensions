@@ -50,9 +50,7 @@ def compare_grants(
     if grants.only_defined_roles:
         filtered_roles = {r.name for r in (roles or [])}
 
-    default_grant_ops = compare_default_grants(
-        connection, grants, username=current_role, roles=filtered_roles
-    )
+    default_grant_ops = compare_default_grants(connection, grants, roles=filtered_roles)
     result.extend(default_grant_ops)
 
     if grants.default_grants_imply_grants:
@@ -67,27 +65,29 @@ def compare_grants(
 def compare_default_grants(
     connection: Connection,
     grants: Grants,
-    username: str,
     roles: Optional[Container[str]] = None,
 ):
     result: List[Operation] = []
 
-    existing_default_grants = get_default_grants(connection, roles=roles)
+    existing_default_grants = get_default_grants(connection, roles=roles, expanded=True)
 
-    expected_grants = [
-        g.for_role(username) for g in grants if isinstance(g, DefaultGrantStatement)
-    ]
+    expected_grants = []
+    for grant in grants:
+        if not isinstance(grant, DefaultGrantStatement):
+            continue
+
+        expected_grants.extend(grant.explode())
 
     missing_grants = set(expected_grants) - set(existing_default_grants)
     extra_grants = set(existing_default_grants) - set(expected_grants)
 
     if not grants.ignore_unspecified:
-        for extra_grant in extra_grants:
-            revoke_statement = extra_grant.invert()
-            result.append(RevokePrivilegesOp(revoke_statement))
+        revoke_statements = [extra_grant.invert() for extra_grant in extra_grants]
+        for revoke in DefaultGrantStatement.combine(revoke_statements):
+            result.append(RevokePrivilegesOp(revoke))
 
-    for missing_grant in missing_grants:
-        result.append(GrantPrivilegesOp(missing_grant))
+    for grant in DefaultGrantStatement.combine(list(missing_grants)):
+        result.append(RevokePrivilegesOp(grant))
 
     return result
 
@@ -113,11 +113,11 @@ def compare_object_grants(
         grant_type = grant.default_grant.grant_type.to_grant_type()
 
         for schema in grant.default_grant.in_schemas:
-            existing_tables = existing_tables_by_schema.get(schema)
-            if not existing_tables:
+            existing_tables_in_schema = existing_tables_by_schema.get(schema)
+            if not existing_tables_in_schema:
                 continue
 
-            for _, table, relkind in existing_tables:
+            for _, table, relkind in existing_tables_in_schema:
                 object_type = GrantTypes.from_relkind(relkind)
 
                 if object_type == grant_type:
@@ -136,11 +136,11 @@ def compare_object_grants(
     extra_grants = set(existing_grants) - set(expected_grants)
 
     if not grants.ignore_unspecified:
-        for extra_grant in extra_grants:
-            revoke_statement = extra_grant.invert()
-            result.append(RevokePrivilegesOp(revoke_statement))
+        revoke_statements = [extra_grant.invert() for extra_grant in extra_grants]
+        for revoke in GrantStatement.combine(revoke_statements):
+            result.append(RevokePrivilegesOp(revoke))
 
-    for missing_grant in missing_grants:
-        result.append(GrantPrivilegesOp(missing_grant))
+    for grant in GrantStatement.combine(list(missing_grants)):
+        result.append(RevokePrivilegesOp(grant))
 
     return result

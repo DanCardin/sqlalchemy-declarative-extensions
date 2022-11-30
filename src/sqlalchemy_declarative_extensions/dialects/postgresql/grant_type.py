@@ -222,7 +222,7 @@ class GrantTypes(FromStrings):
         for k, v in self._str_to_kind().items():
             if v == self:
                 return k
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def to_variants(self):
         return {
@@ -259,7 +259,7 @@ class DefaultGrantTypes(FromStrings):
         for k, v in self._str_to_kind().items():
             if v == self:
                 return k
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: nocover
 
     def to_variants(self):
         return {
