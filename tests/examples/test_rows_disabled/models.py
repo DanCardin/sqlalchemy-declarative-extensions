@@ -10,10 +10,10 @@ _Base = declarative_base()
 class Base(_Base):
     __abstract__ = True
 
-    rows = Rows().are(
+    rows = [
         Row("foo", id=2, name="asdf"),
         Row("foo", id=3, name="qwer", active=False),
-    )
+    ]
 
 
 class Foo(Base):

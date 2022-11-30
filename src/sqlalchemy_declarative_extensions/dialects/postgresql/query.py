@@ -14,7 +14,22 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     object_acl_query,
     objects_query,
     roles_query,
+    schema_exists_query,
+    schemas_query,
 )
+
+
+def get_schemas_postgresql(connection: Connection):
+    from sqlalchemy_declarative_extensions.schema.base import Schema
+
+    return {
+        Schema(schema) for schema, *_ in connection.execute(schemas_query).fetchall()
+    }
+
+
+def check_schema_exists_postgresql(connection: Connection, name: str) -> bool:
+    row = connection.execute(schema_exists_query, schema=name).scalar()
+    return not bool(row)
 
 
 def get_objects_postgresql(connection: Connection):

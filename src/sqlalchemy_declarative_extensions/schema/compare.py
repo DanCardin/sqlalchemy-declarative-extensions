@@ -4,10 +4,9 @@ from dataclasses import dataclass
 from typing import List, Union
 
 from sqlalchemy.engine.base import Connection
-from sqlalchemy.sql.expression import text
 
+from sqlalchemy_declarative_extensions.dialects import get_schemas
 from sqlalchemy_declarative_extensions.schema.base import Schema, Schemas
-from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch
 
 
 @dataclass
@@ -40,7 +39,7 @@ SchemaOp = Union[CreateSchemaOp, DropSchemaOp]
 
 
 def compare_schemas(connection: Connection, schemas: Schemas) -> List[SchemaOp]:
-    existing_schemas = get_existing_schemas(connection)
+    existing_schemas = get_schemas(connection)
 
     expected_schemas = set(schemas.schemas)
     new_schemas = expected_schemas - existing_schemas
@@ -55,20 +54,3 @@ def compare_schemas(connection: Connection, schemas: Schemas) -> List[SchemaOp]:
             result.append(DropSchemaOp(schema))
 
     return result
-
-
-def get_existing_schemas_postgresql(connection: Connection):
-    default_schema = connection.dialect.default_schema_name
-    select_schemas = text("SELECT nspname FROM pg_catalog.pg_namespace")
-
-    return {
-        Schema(schema)
-        for schema, *_ in connection.execute(select_schemas).fetchall()
-        if not schema.startswith("pg_")
-        and schema not in {"information_schema", default_schema}
-    }
-
-
-get_existing_schemas = dialect_dispatch(
-    postgresql=get_existing_schemas_postgresql,
-)
