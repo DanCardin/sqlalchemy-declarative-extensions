@@ -3,7 +3,6 @@ from typing import Optional
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
-from alembic.operations import Operations
 from alembic.operations.ops import UpgradeOps
 
 from sqlalchemy_declarative_extensions.grant import compare
@@ -19,7 +18,7 @@ from sqlalchemy_declarative_extensions.role.compare import RoleOp
 @comparators.dispatch_for("schema")
 def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     if autogen_context.metadata is None or autogen_context.connection is None:
-        return
+        return  # pragma: no cover
 
     grants: Optional[Grants] = autogen_context.metadata.info.get("grants")
     if not grants:
@@ -50,13 +49,3 @@ def render_grant(_, op: RevokePrivilegesOp):
 @renderers.dispatch_for(RevokePrivilegesOp)
 def render_revoke(_, op: RevokePrivilegesOp):
     return f'op.execute(sa.text("""{op.grant.to_sql()}"""))'
-
-
-@Operations.implementation_for(GrantPrivilegesOp)
-def grant_op(operations, op: GrantPrivilegesOp):
-    operations.execute(op.grant.to_sql())
-
-
-@Operations.implementation_for(RevokePrivilegesOp)
-def revoke_op(operations, op: RevokePrivilegesOp):
-    operations.execute(op.grant.to_sql())

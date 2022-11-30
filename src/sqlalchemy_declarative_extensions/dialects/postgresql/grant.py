@@ -29,8 +29,9 @@ GRANT { USAGE | ALL [ PRIVILEGES ] }
 """
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass, replace
-from typing import Generic, Optional, Tuple, Union
+from typing import Generic, List, Optional, Tuple, Union
 
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
@@ -85,6 +86,12 @@ class Grant(Generic[G]):
 
     def on_tables(self, *tables: Union[str, HasName]):
         return self.on_objects(*tables, object_type=GrantTypes.table)
+
+    def on_sequences(
+        self,
+        *sequences: Union[str, HasName],
+    ):
+        return self.on_objects(*sequences, object_type=GrantTypes.sequence)
 
     def on_schemas(self, *schemas: Union[str, HasName]):
         return self.on_objects(*schemas, object_type=GrantTypes.schema)
@@ -194,6 +201,63 @@ class DefaultGrantStatement(Generic[G]):
         text_result = " ".join(result)
         return text(text_result + ";")
 
+    def explode(self):
+        return [
+            DefaultGrantStatement(
+                default_grant=DefaultGrant(
+                    grant_type=self.default_grant.grant_type,
+                    in_schemas=(schema,),
+                    target_role=self.default_grant.target_role,
+                ),
+                grant=Grant(
+                    grants=(grant,),
+                    target_role=self.grant.target_role,
+                    grant_option=self.grant.grant_option,
+                    revoke_=self.grant.revoke_,
+                ),
+            )
+            for schema in self.default_grant.in_schemas
+            for grant in self.grant.grants
+        ]
+
+    @classmethod
+    def combine(cls, grants: List[DefaultGrantStatement]):
+        def by_statement(g: DefaultGrantStatement):
+            return (
+                g.default_grant.grant_type,
+                g.default_grant.in_schemas,
+                g.default_grant.target_role or "",
+                g.grant.target_role,
+                g.grant.grant_option,
+                g.grant.revoke_,
+            )
+
+        result = []
+        groups = itertools.groupby(sorted(grants, key=by_statement), key=by_statement)
+        for (
+            grant_type,
+            in_schemas,
+            default_target_role,
+            target_role,
+            grant_option,
+            revoke,
+        ), group in groups:
+            item = cls(
+                default_grant=DefaultGrant(
+                    grant_type=grant_type,
+                    in_schemas=in_schemas,
+                    target_role=default_target_role or None,
+                ),
+                grant=Grant(
+                    target_role=target_role,
+                    grant_option=grant_option,
+                    revoke_=revoke,
+                    grants=tuple([g for i in group for g in i.grant.grants]),
+                ),
+            )
+            result.append(item)
+        return result
+
 
 @dataclass(frozen=True)
 class GrantStatement(Generic[G]):
@@ -214,7 +278,7 @@ class GrantStatement(Generic[G]):
         result.append(_render_privilege(self.grant, self.grant_type))
         result.append(f"ON {self.grant_type.value}")
 
-        result.append(", ".join([f'"{t}"' for t in self.targets]))
+        result.append(", ".join([_quote_table_name(t) for t in self.targets]))
         result.append(_render_to_or_from(self.grant))
 
         grant_option = _render_grant_option(self.grant)
@@ -240,6 +304,33 @@ class GrantStatement(Generic[G]):
             for grant in self.grant.grants
         ]
 
+    @classmethod
+    def combine(cls, grants: List[GrantStatement]):
+        def by_statement(g: GrantStatement):
+            return (
+                g.grant_type,
+                g.targets,
+                g.grant.target_role,
+                g.grant.grant_option,
+                g.grant.revoke_,
+            )
+
+        result = []
+        groups = itertools.groupby(sorted(grants, key=by_statement), key=by_statement)
+        for (grant_type, targets, target_role, grant_option, revoke), group in groups:
+            item = cls(
+                grant_type=grant_type,
+                targets=targets,
+                grant=Grant(
+                    target_role=target_role,
+                    grant_option=grant_option,
+                    revoke_=revoke,
+                    grants=tuple([g for i in group for g in i.grant.grants]),
+                ),
+            )
+            result.append(item)
+        return result
+
 
 def _render_grant_or_revoke(grant: Grant) -> str:
     if grant.revoke_:
@@ -251,6 +342,17 @@ def _render_to_or_from(grant: Grant) -> str:
     if grant.revoke_:
         return f'FROM "{grant.target_role}"'
     return f'TO "{grant.target_role}"'
+
+
+def _quote_table_name(name: str):
+    if "." in name:
+        schema, name = name.split(".")
+    else:
+        schema = None
+
+    if schema:
+        return f'"{schema}"."{name}"'
+    return f'"{name}"'
 
 
 def _render_privilege(
