@@ -21,7 +21,7 @@ def compare_schemas(autogen_context, upgrade_ops, schemas: Schemas):
         return
 
     result = schema.compare.compare_schemas(autogen_context.connection, schemas)
-    upgrade_ops.ops.extend(result)
+    upgrade_ops.ops[0:0] = result
 
 
 @renderers.dispatch_for(CreateSchemaOp)

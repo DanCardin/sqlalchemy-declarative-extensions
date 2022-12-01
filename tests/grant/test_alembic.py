@@ -24,3 +24,14 @@ def test_delete_unspecified_grants(pytester):
 @pytest.mark.alembic
 def test_grant_disabled(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_grant_after_schema(pytester):
+    """Assert grants are emitted after schema creates.
+
+    This is necessary because they may reference schemas which have not
+    yet been created. (note we cannot test this outside alembic because
+    PMR auto-creates schemas itself, before the create-all statement.)
+    """
+    successful_test_run(pytester, count=1)
