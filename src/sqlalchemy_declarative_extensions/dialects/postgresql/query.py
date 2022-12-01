@@ -62,6 +62,7 @@ def get_default_grants_postgresql(
             for default_grant in default_grants:
                 if roles is None or default_grant.grant.target_role in roles:
                     result.append(default_grant)
+
     return result
 
 
@@ -89,6 +90,7 @@ def get_grants_postgresql(
             for grant in grants:
                 if roles is None or grant.grant.target_role in roles:
                     result.append(grant)
+
     return result
 
 
@@ -104,6 +106,6 @@ def get_roles_postgresql(connection: Connection, exclude=None):
 
 
 def qualify_name(schema, name):
-    if schema == "public":
+    if not schema or schema == "public":
         return name
     return f"{schema}.{name}"

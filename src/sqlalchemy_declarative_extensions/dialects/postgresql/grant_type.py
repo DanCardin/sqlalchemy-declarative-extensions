@@ -156,7 +156,7 @@ class SchemaGrants(GrantOptions):
     def acl_symbols(cls):
         return {
             cls.create: "C",
-            cls.usage: "C",
+            cls.usage: "U",
         }
 
 
@@ -218,12 +218,6 @@ class GrantTypes(FromStrings):
     def from_relkind(cls, relkind: str):
         return cls._str_to_kind()[relkind]
 
-    def to_relkind(self) -> str:
-        for k, v in self._str_to_kind().items():
-            if v == self:
-                return k
-        raise NotImplementedError()  # pragma: nocover
-
     def to_variants(self):
         return {
             self.database: DatabaseGrants,
@@ -254,12 +248,6 @@ class DefaultGrantTypes(FromStrings):
     @classmethod
     def from_relkind(cls, relkind: str):
         return cls._str_to_kind()[relkind]
-
-    def to_relkind(self) -> str:
-        for k, v in self._str_to_kind().items():
-            if v == self:
-                return k
-        raise NotImplementedError()  # pragma: nocover
 
     def to_variants(self):
         return {
