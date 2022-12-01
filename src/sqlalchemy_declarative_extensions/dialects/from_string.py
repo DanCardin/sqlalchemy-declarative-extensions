@@ -24,6 +24,4 @@ class FromStrings(enum.Enum):
             return string
 
     def __lt__(self, other):
-        if isinstance(other, self.__class__):
-            return self.value < other.value
-        return self.value < other
+        return self.value < other.value

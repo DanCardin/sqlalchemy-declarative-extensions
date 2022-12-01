@@ -1,4 +1,4 @@
-from sqlalchemy import column, select, String, table, text
+from sqlalchemy import and_, column, literal, select, String, table, text, union
 from sqlalchemy.dialects.postgresql import ARRAY
 
 pg_class = table(
@@ -15,6 +15,8 @@ pg_namespace = table(
     "pg_namespace",
     column("oid"),
     column("nspname"),
+    column("nspowner"),
+    column("nspacl"),
 )
 
 pg_roles = table(
@@ -55,10 +57,15 @@ roles_query = text(
         """
 )
 
+_schema_not_pg = and_(
+    pg_namespace.c.nspname != "information_schema",
+    pg_namespace.c.nspname.not_like("pg_%"),
+)
+_schema_not_public = pg_namespace.c.nspname != "public"
+_table_not_pg = pg_class.c.relname.not_like("pg_%")
+
 schemas_query = (
-    select(pg_namespace.c.nspname)
-    .where(pg_namespace.c.nspname.not_in(["information_schema", "public"]))
-    .where(pg_namespace.c.nspname.not_like("pg_%"))
+    select(pg_namespace.c.nspname).where(_schema_not_pg).where(_schema_not_public)
 )
 
 
@@ -78,7 +85,7 @@ default_acl_query = select(
     )
 )
 
-object_acl_query = (
+object_acl_query = union(
     select(
         pg_namespace.c.nspname.label("schema"),
         pg_class.c.relname.label("name"),
@@ -92,8 +99,20 @@ object_acl_query = (
         )
     )
     .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
-    .where(pg_class.c.relname.not_like("pg_%"))
-    .where(pg_namespace.c.nspname != "information_schema")
+    .where(_table_not_pg)
+    .where(_schema_not_pg),
+    select(
+        literal(None).label("schema"),
+        pg_namespace.c.nspname.label("name"),
+        literal("n").label("relkind"),
+        pg_authid.c.rolname.label("owner"),
+        pg_namespace.c.nspacl.cast(ARRAY(String)),
+    )
+    .select_from(
+        pg_namespace.join(pg_authid, pg_namespace.c.nspowner == pg_authid.c.oid)
+    )
+    .where(_schema_not_pg)
+    .where(_schema_not_public),
 )
 
 objects_query = (
@@ -106,6 +125,6 @@ objects_query = (
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
     )
     .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
-    .where(pg_class.c.relname.not_like("pg_%"))
-    .where(pg_namespace.c.nspname != "information_schema")
+    .where(_table_not_pg)
+    .where(_schema_not_pg)
 )

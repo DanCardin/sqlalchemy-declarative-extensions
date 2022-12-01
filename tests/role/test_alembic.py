@@ -16,3 +16,8 @@ def test_update_role(pytester):
 @pytest.mark.alembic
 def test_role_disabled(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_role_operations(pytester):
+    successful_test_run(pytester, count=1)

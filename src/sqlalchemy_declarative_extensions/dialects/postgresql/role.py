@@ -47,7 +47,7 @@ class Role(generic.Role):
 
     @classmethod
     def from_unknown_role(cls, r: Union[generic.Role, Role]) -> Role:
-        if isinstance(r, generic.Role):
+        if not isinstance(r, Role):
             return Role(r.name, in_roles=r.in_roles)
 
         return r

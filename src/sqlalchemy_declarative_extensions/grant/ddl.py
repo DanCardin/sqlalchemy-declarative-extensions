@@ -10,10 +10,6 @@ from sqlalchemy_declarative_extensions.role.base import Roles
 
 def grant_ddl(grants: Grants, after: bool):
     def receive_event(metadata: MetaData, connection: Connection, **_):
-        grants: Optional[Grants] = metadata.info.get("grants")
-        if not grants:
-            return
-
         roles: Optional[Roles] = metadata.info.get("roles")
         result = compare_grants(connection, grants, roles=roles)
         for op in result:

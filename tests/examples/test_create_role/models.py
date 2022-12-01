@@ -8,7 +8,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 _Base = declarative_base()
 
 
-@declarative_database
+@declarative_database()
 class Base(_Base):
     __abstract__ = True
 
