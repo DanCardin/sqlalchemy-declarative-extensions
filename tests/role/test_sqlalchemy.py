@@ -39,7 +39,7 @@ class Base(Base_):
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 
-register_sqlalchemy_events(Base.metadata, roles=True)
+register_sqlalchemy_events(Base, roles=True)
 
 
 def test_createall_role(pg):

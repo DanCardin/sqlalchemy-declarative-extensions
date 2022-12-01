@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Optional, Type, TYPE_CHECKING, Union
 from sqlalchemy import event
 from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.schema import MetaData
+from typing_extensions import Protocol
 
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.role.base import Roles
@@ -115,8 +116,12 @@ def declare_database(
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
 
 
+class HasMetaData(Protocol):
+    metadata: MetaData
+
+
 def register_sqlalchemy_events(
-    maybe_metadata: MetaData | DeclarativeMeta,
+    maybe_metadata: Union[MetaData, HasMetaData],
     schemas=False,
     roles=False,
     grants=False,

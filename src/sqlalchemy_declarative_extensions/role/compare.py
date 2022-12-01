@@ -41,7 +41,14 @@ class UpdateRoleOp(RoleOp):
     to_role: Role
 
     @classmethod
-    def update_role(cls, operations, from_role: Role, to_role: Role):
+    def update_role(
+        cls, operations, role_name: str, *, from_options=None, **to_options
+    ):
+        assert operations.migration_context.connection
+        role_cls = get_role_cls(operations.migration_context.connection)
+
+        from_role = role_cls(role_name, **(from_options or {}))
+        to_role = role_cls(role_name, **to_options)
         op = cls(from_role, to_role)
         return operations.invoke(op)
 
@@ -57,8 +64,8 @@ class DropRoleOp(RoleOp):
     role: Role
 
     @classmethod
-    def drop_role(cls, operations, role):
-        op = cls(Role(role))
+    def drop_role(cls, operations, role_name: str):
+        op = cls(Role(role_name))
         return operations.invoke(op)
 
     def reverse(self):
@@ -109,7 +116,12 @@ def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
             role_updated = existing_role != concrete_defined_role
             if role_updated:
                 existing_role = existing_roles_by_name[role_name]
-                result.append(UpdateRoleOp(from_role=existing_role, to_role=role))
+                result.append(
+                    UpdateRoleOp(
+                        from_role=existing_role,
+                        to_role=role_cls.from_unknown_role(role),
+                    )
+                )
 
     if not roles.ignore_unspecified:
         for removed_role in removed_role_names:

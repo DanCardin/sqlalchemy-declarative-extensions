@@ -21,7 +21,9 @@ Operations.register_operation("delete_table_row")(DeleteRowOp)
 
 @comparators.dispatch_for("schema")
 def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
-    if autogen_context.metadata is None or autogen_context.connection is None:
+    if (
+        autogen_context.metadata is None or autogen_context.connection is None
+    ):  # pragma: no cover
         return
 
     rows: Optional[Rows] = autogen_context.metadata.info.get("rows")

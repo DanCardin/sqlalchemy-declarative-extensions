@@ -85,7 +85,10 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> List
 
     rows_by_table: Dict[Table, List[Row]] = {}
     for row in rows:
-        table = metadata.tables[row.qualified_name]
+        table = metadata.tables.get(row.qualified_name)
+        if table is None:
+            raise ValueError(f"Unknown table: {row.qualified_name}")
+
         rows_by_table.setdefault(table, []).append(row)
 
         primary_key_columns = [c.name for c in table.primary_key.columns]

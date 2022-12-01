@@ -29,9 +29,6 @@ class Rows:
     def are(self, *rows: Row):
         return replace(self, rows=rows)
 
-    def include_tables(self, *tables: str):
-        return replace(self, included_tables=list(tables))
-
 
 class Row:
     def __init__(self, tablename, **column_values):
