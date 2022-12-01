@@ -13,6 +13,7 @@ from sqlalchemy_declarative_extensions.grant.compare import (
 )
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.role.compare import RoleOp
+from sqlalchemy_declarative_extensions.schema.compare import CreateSchemaOp
 
 
 @comparators.dispatch_for("schema")
@@ -33,7 +34,7 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     # Find the index of the last element of a role ops, which this needs to be after.
     last_role_index = -1
     for index, op in enumerate(upgrade_ops.ops):
-        if isinstance(op, RoleOp):
+        if isinstance(op, (CreateSchemaOp, RoleOp)):
             last_role_index = index
 
     # Insert after that point
