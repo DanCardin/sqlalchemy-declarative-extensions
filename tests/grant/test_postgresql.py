@@ -1,5 +1,4 @@
 import pytest
-from tests.utilities import render_sql
 
 from sqlalchemy_declarative_extensions import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql import (
@@ -7,6 +6,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import (
     Grant,
     TableGrants,
 )
+from tests.utilities import render_sql
 
 
 class TestGrant:

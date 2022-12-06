@@ -126,43 +126,56 @@ include database specific objects.
 
 ## Alembic-utils
 
-Currently, the set of supported declarative objects is essentially non-overlapping with
+Currently, the set of supported declarative objects is largely non-overlapping with
 [Alembic-utils](https://github.com/olirice/alembic_utils). However in principle, there's
-no reason that objects supported by this library couldn't begin to overlap (views, functions,
+no reason that objects supported by this library couldn't begin to overlap (functions,
 triggers); and one might begin to question when to use which library.
 
-First, it's likely that this library can/should grow handlers for objects already supported by
-alembic-utils. In particular, it's likely that any future support in this library for something
-like a view could easily accept an `alembic_utils.pg_view.PGView` definition and handle it directly.
-The two libraries are likely fairly complementary in that way, although it's important to note
-some of the differences.
+Note that where possible this library tries to support alembic-utils native objects
+as stand-ins for the objects defined in this library. For example, `alembic_utils.pg_view.PGView`
+can be declared instead of a `sqlalchemy_declarative_extensions.View`, and we will internally
+coerce it into the appropriate type. Hopefully this eases any transitional costs, or
+issues using one or the other library.
 
 Alembic utils:
 
-- Is more directly tied to Alembic and specifically provides functionality for autogenerating
-  DDL for alembic, as the name might imply. It does **not** register into sqlalchemy's event
-  system.
-- Requires one to explicitly find/include the objects one wants to track with alembic.
-- It provides direct translation of individual entities (like a single, specific `PGGrantTable`).
-- In most cases, it appears to define a very "literal" interface (for example, `PGView` accepts
-  the whole view definition as a raw literal string), rather than an abstracted one.
+1. Is more directly tied to Alembic and specifically provides functionality for autogenerating
+   DDL for alembic, as the name might imply. It does **not** register into sqlalchemy's event
+   system.
+
+2. Requires one to explicitly find/include the objects one wants to track with alembic.
+
+3. Declares single, specific object instances (like a single, specific `PGGrantTable`). This
+   has the side-effect that it can only track included objects. It cannot, for example,
+   remove objects which should not exist due to their omission.
+
+4. In most cases, it appears to define a very "literal" interface (for example, `PGView` accepts
+   the whole view definition as a raw literal string), rather than attempting to either abstract
+   the objects or accept abstracted (like a `select` object) definition.
+
+5. Appears to only be interested in supporting PostgreSQL.
 
 By contrast, this library:
 
-- SqlAlchemy is the main dependency and registration point. The primary function of the library
-  is to register into sqlalchemy's event system to ensure that a `metadata.create_all` performs
-  the requisite statements to ensure the state of the database matches the declaration.
+1. SqlAlchemy is the main dependency and registration point (Alembic is, in fact, an optional dependency).
+   The primary function of the library is to declare the underlying objects. And then registration into
+   sqlalchemy's event system, or registration into alembic's detection system are both optional features.
 
-  This library does **not** require alembic, but it does (optionally) perform a similar function
-  by way of enabling autogeneration support for non-native objects.
+2. Perhaps a technical detail, but this library registers the declaratively stated objects directly
+   on the metadata/declarative-base. This allows the library to automatically know the intended
+   state of the world, rather than needing to discover objects.
 
-- Perhaps a technical detail, but this library registers the declaratively stated objects directly
-  on the metadata/declarative-base. This allows the library to automatically know the intended
-  state of the world, rather than needing to discover objects.
-- The intended purpose of the supported objects is to declare what the state of the world **should**
-  look like. Therefore the function of this library includes the (optional) **removal** of objects
-  detected to exist which are not declared (much like alembic does for tables). Whereas alembic-utils
-  only operates on objects you create entities for.
-- As much as possible, this library provides more abstracted interfaces for defining objects.
-  This is particularly important for objects like roles/grants where not every operation is a create
-  or delete (in contrast to something like a view).
+3. The intended purpose of the supported objects is to declare what the state of the world **should**
+   look like. Therefore the function of this library includes the (optional) **removal** of objects
+   detected to exist which are not declared (much like alembic does for tables).
+
+4. As much as possible, this library provides more abstracted interfaces for defining objects.
+   This is particularly important for objects like roles/grants where not every operation is a create
+   or delete (in contrast to something like a view), where a raw SQL string makes it impossible to
+   diff two different a-like objects.
+
+5. Tries to define functionality in cross-dialect terms and only where required farm details out to
+   dialect-specific handlers. Not to claim that all dialects are treated equally (currently only
+   PostgreSQL has first-class support), but technically, there should be no reason we wouldn't support
+   any supportable dialect. Today SQLite (for whatever that's worth), and MySQL have **some** level
+   of support.
