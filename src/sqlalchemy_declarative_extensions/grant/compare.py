@@ -100,7 +100,12 @@ def compare_object_grants(
 ):
     result: list[Operation] = []
 
-    expected_grants = [g for g in grants if isinstance(g, GrantStatement)]
+    expected_grants = [
+        sub_g
+        for grant in grants
+        for sub_g in grant.explode()
+        if isinstance(sub_g, GrantStatement)
+    ]
 
     existing_tables = get_objects(connection)
     existing_tables_by_schema = {
