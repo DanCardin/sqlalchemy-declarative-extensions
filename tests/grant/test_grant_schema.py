@@ -21,18 +21,26 @@ Base_ = declarative_base()
 class Base(Base_):
     __abstract__ = True
 
-    schemas = Schemas().are("bar")
+    schemas = Schemas().are("bar", "baz")
     roles = Roles(ignore_unspecified=True).are("access", "noaccess")
     grants = Grants().are(
         DefaultGrant.on_tables_in_schema("bar").grant("select", to="access"),
+        DefaultGrant.on_tables_in_schema("baz").grant("select", to="access"),
         DefaultGrant.on_tables_in_schema("bar").grant("select", to="noaccess"),
-        Grant.new("usage", to="access").on_schemas("bar"),
+        Grant.new("usage", to="access").on_schemas("bar", "baz"),
     )
 
 
 class Bar(Base):
     __tablename__ = "bar"
     __table_args__ = {"schema": "bar"}
+
+    id = Column(types.Integer(), autoincrement=True, primary_key=True)
+
+
+class Baz(Base):
+    __tablename__ = "baz"
+    __table_args__ = {"schema": "baz"}
 
     id = Column(types.Integer(), autoincrement=True, primary_key=True)
 
@@ -61,3 +69,6 @@ def test_createall_grant(pg):
     # There should be no diffs detected after running `create_all`
     diff = compare_grants(pg, grants, roles)
     assert len(diff) == 0
+
+    # Ensure we're exploding common grants.
+    pg.execute(text("SET ROLE access; SELECT * from baz.baz"))
