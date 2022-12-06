@@ -1,5 +1,5 @@
 import pytest
-from pytest_mock_resources import create_postgres_fixture, PostgresConfig
+from pytest_mock_resources import PostgresConfig, create_postgres_fixture
 
 _alembic_engine = create_postgres_fixture(scope="function")
 

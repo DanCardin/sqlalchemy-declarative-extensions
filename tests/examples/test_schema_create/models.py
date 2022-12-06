@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, Schemas
+from sqlalchemy_declarative_extensions import declarative_database
 
 _Base = declarative_base()
 

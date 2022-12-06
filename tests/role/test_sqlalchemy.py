@@ -4,9 +4,9 @@ from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
+    Roles,
     declarative_database,
     register_sqlalchemy_events,
-    Roles,
 )
 from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role

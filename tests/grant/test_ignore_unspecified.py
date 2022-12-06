@@ -5,10 +5,10 @@ from sqlalchemy import Column, text, types
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
-    declarative_database,
     Grants,
-    register_sqlalchemy_events,
     Roles,
+    declarative_database,
+    register_sqlalchemy_events,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants

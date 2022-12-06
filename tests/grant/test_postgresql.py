@@ -1,4 +1,5 @@
 import pytest
+from tests.utilities import render_sql
 
 from sqlalchemy_declarative_extensions import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql import (
@@ -6,10 +7,9 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import (
     Grant,
     TableGrants,
 )
-from tests.utilities import render_sql
 
 
-class Test_Grant:
+class TestGrant:
     @pytest.mark.parametrize("role", ("foo", Role("foo")))
     def test_basic_grant(self, role):
         grant = Grant.new("select", to=role).on_tables("bar")
@@ -47,7 +47,7 @@ class Test_Grant:
         assert expected_result == sql
 
 
-class Test_Grant_default:
+class TestGrantDefault:
     def test_on_tables(self):
         grant = DefaultGrant.on_tables_in_schema("bar", "baz").grant("select", to="foo")
         sql = render_sql(grant.to_sql())

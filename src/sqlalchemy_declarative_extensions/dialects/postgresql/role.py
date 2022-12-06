@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import List, Optional, Union
 
 from sqlalchemy_declarative_extensions.role import generic
 
@@ -18,17 +17,17 @@ class Role(generic.Role):
     password field will not produce any (alembic) changes!
     """
 
-    superuser: Optional[bool] = False
-    createdb: Optional[bool] = False
-    createrole: Optional[bool] = False
-    inherit: Optional[bool] = True
-    login: Optional[bool] = False
-    replication: Optional[bool] = False
-    bypass_rls: Optional[bool] = False
-    connection_limit: Optional[int] = None
-    valid_until: Optional[datetime] = None
+    superuser: bool | None = False
+    createdb: bool | None = False
+    createrole: bool | None = False
+    inherit: bool | None = True
+    login: bool | None = False
+    replication: bool | None = False
+    bypass_rls: bool | None = False
+    connection_limit: int | None = None
+    valid_until: datetime | None = None
 
-    password: Optional[str] = field(default=None, compare=False)
+    password: str | None = field(default=None, compare=False)
 
     @classmethod
     def from_pg_role(cls, r) -> Role:
@@ -46,7 +45,7 @@ class Role(generic.Role):
         )
 
     @classmethod
-    def from_unknown_role(cls, r: Union[generic.Role, Role]) -> Role:
+    def from_unknown_role(cls, r: generic.Role | Role) -> Role:
         if not isinstance(r, Role):
             return Role(r.name, in_roles=r.in_roles)
 
@@ -85,7 +84,7 @@ class Role(generic.Role):
         command = " ".join(segments)
         return command + ";"
 
-    def to_sql_update(self, to_role: Role) -> List[str]:
+    def to_sql_update(self, to_role: Role) -> list[str]:
         role_name = to_role.name
         diff = RoleDiff.diff(self, to_role)
         segments = ["ALTER ROLE", role_name, "WITH"]
@@ -105,18 +104,18 @@ class Role(generic.Role):
 @dataclass
 class RoleDiff:
     name: str
-    superuser: Optional[bool] = None
-    createdb: Optional[bool] = None
-    createrole: Optional[bool] = None
-    inherit: Optional[bool] = None
-    login: Optional[bool] = None
-    replication: Optional[bool] = None
-    bypass_rls: Optional[bool] = None
-    connection_limit: Optional[int] = None
-    valid_until: Optional[datetime] = None
+    superuser: bool | None = None
+    createdb: bool | None = None
+    createrole: bool | None = None
+    inherit: bool | None = None
+    login: bool | None = None
+    replication: bool | None = None
+    bypass_rls: bool | None = None
+    connection_limit: int | None = None
+    valid_until: datetime | None = None
 
-    add_roles: List[str] = field(default_factory=list)
-    remove_roles: List[str] = field(default_factory=list)
+    add_roles: list[str] = field(default_factory=list)
+    remove_roles: list[str] = field(default_factory=list)
 
     @classmethod
     def diff(cls, from_role: Role, to_role: Role) -> RoleDiff:
@@ -183,11 +182,11 @@ class RoleDiff:
 
 def conditional_option(option, condition):
     if not condition:
-        option = f"NO{option}"
+        return f"NO{option}"
     return option
 
 
-def postgres_render_role_options(role: Union[Role, RoleDiff]) -> List[str]:
+def postgres_render_role_options(role: Role | RoleDiff) -> list[str]:
     segments = []
 
     if role.superuser is not None:

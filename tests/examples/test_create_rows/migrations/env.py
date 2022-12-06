@@ -1,10 +1,10 @@
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
-from sqlalchemy_declarative_extensions import register_alembic_events
 
 # isort: split
 from models import Base
+from sqlalchemy import engine_from_config, pool
+
+from sqlalchemy_declarative_extensions import register_alembic_events
 
 target_metadata = Base.metadata
 

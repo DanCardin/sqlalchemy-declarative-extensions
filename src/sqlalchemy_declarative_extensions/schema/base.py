@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Iterable, Optional, Sequence, Union
+from typing import Iterable, Sequence
 
 
 @dataclass(frozen=True)
@@ -33,8 +33,8 @@ class Schemas:
 
     @classmethod
     def coerce_from_unknown(
-        cls, unknown: Union[None, Iterable[Union[Schema, str]], Schemas]
-    ) -> Optional[Schemas]:
+        cls, unknown: None | Iterable[Schema | str] | Schemas
+    ) -> Schemas | None:
         if isinstance(unknown, Schemas):
             return unknown
 
@@ -47,13 +47,12 @@ class Schemas:
         for schema in self.schemas:
             yield schema
 
-    def are(self, *schemas: Union[Schema, str]):
+    def are(self, *schemas: Schema | str):
         """Declare the set of schemas which should exist."""
-        result = replace(
+        return replace(
             self,
             schemas=tuple([Schema.coerce_from_unknown(schema) for schema in schemas]),
         )
-        return result
 
 
 @dataclass(frozen=True, order=True)
@@ -63,7 +62,7 @@ class Schema:
     name: str
 
     @classmethod
-    def coerce_from_unknown(cls, unknown: Union[Schema, str]) -> Schema:
+    def coerce_from_unknown(cls, unknown: Schema | str) -> Schema:
         if isinstance(unknown, Schema):
             return unknown
 

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Union
 
-from alembic.operations import Operations
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_role_cls, get_roles
@@ -21,12 +20,12 @@ class CreateRoleOp(RoleOp):
     role: Role
 
     @classmethod
-    def create_role(cls, operations: Operations, role_name: str, **options):
+    def create_role(cls, operations, role_name: str, **options):
         assert operations.migration_context.connection
         role_cls = get_role_cls(operations.migration_context.connection)
         role = role_cls(role_name, **options)
         op = cls(role)
-        return operations.invoke(op)  # type: ignore
+        return operations.invoke(op)
 
     def reverse(self):
         return DropRoleOp(self.role)
@@ -78,8 +77,8 @@ class DropRoleOp(RoleOp):
 Operation = Union[CreateRoleOp, UpdateRoleOp, DropRoleOp]
 
 
-def compare_roles(connection: Connection, roles: Roles) -> List[Operation]:
-    result: List[Operation] = []
+def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
+    result: list[Operation] = []
     if not roles:
         return result
 

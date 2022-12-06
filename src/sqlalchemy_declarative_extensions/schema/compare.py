@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Union
 
 from sqlalchemy.engine.base import Connection
 
@@ -38,19 +38,19 @@ class DropSchemaOp:
 SchemaOp = Union[CreateSchemaOp, DropSchemaOp]
 
 
-def compare_schemas(connection: Connection, schemas: Schemas) -> List[SchemaOp]:
+def compare_schemas(connection: Connection, schemas: Schemas) -> list[SchemaOp]:
     existing_schemas = get_schemas(connection)
 
     expected_schemas = set(schemas.schemas)
     new_schemas = expected_schemas - existing_schemas
     removed_schemas = existing_schemas - expected_schemas
 
-    result: List[SchemaOp] = []
+    result: list[SchemaOp] = []
     for schema in sorted(new_schemas):
         result.insert(0, CreateSchemaOp(schema))
 
     if not schemas.ignore_unspecified:
-        for schema in reversed(sorted(removed_schemas)):
+        for schema in sorted(removed_schemas, reverse=True):
             result.append(DropSchemaOp(schema))
 
     return result

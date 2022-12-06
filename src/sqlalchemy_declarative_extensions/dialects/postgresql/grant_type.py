@@ -14,7 +14,6 @@ class GrantOptions(FromStrings):
         No privileges are granted to PUBLIC by default on tables, columns,
         schemas or tablespaces.
         """
-
         return []
 
 

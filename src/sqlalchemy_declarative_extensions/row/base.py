@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, List, Optional, Union
+from typing import Iterable
 
 
 @dataclass
 class Rows:
-    rows: List[Row] = field(default_factory=list)
-    included_tables: List[str] = field(default_factory=list)
+    rows: list[Row] = field(default_factory=list)
+    included_tables: list[str] = field(default_factory=list)
     ignore_unspecified: bool = False
 
     @classmethod
-    def coerce_from_unknown(
-        cls, unknown: Union[None, Iterable[Row], Rows]
-    ) -> Optional[Rows]:
+    def coerce_from_unknown(cls, unknown: None | Iterable[Row] | Rows) -> Rows | None:
         if isinstance(unknown, Rows):
             return unknown
 

@@ -3,9 +3,9 @@ from pytest_mock_resources import create_postgres_fixture, create_sqlite_fixture
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
+    Schemas,
     declarative_database,
     register_sqlalchemy_events,
-    Schemas,
 )
 
 Base_ = declarative_base()

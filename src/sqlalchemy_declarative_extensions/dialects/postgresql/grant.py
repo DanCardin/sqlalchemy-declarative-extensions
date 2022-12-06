@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass, replace
-from typing import Generic, List, Optional, Tuple, Union
+from typing import Generic
 
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
@@ -52,7 +52,7 @@ class HasName(Protocol):
 
 @dataclass(frozen=True)
 class Grant(Generic[G]):
-    grants: Tuple[Union[str, G], ...]
+    grants: tuple[str | G, ...]
     target_role: str
     grant_option: bool = False
     revoke_: bool = False
@@ -60,9 +60,9 @@ class Grant(Generic[G]):
     @classmethod
     def new(
         cls,
-        grant: Union[str, G],
-        *grants: Union[str, G],
-        to: Union[str, HasName],
+        grant: str | G,
+        *grants: str | G,
+        to: str | HasName,
         grant_option=False,
     ) -> Grant:
         return cls(
@@ -77,35 +77,35 @@ class Grant(Generic[G]):
     def with_grant_option(self):
         return replace(self, grant_option=True)
 
-    def on_objects(self, *objects: Union[str, HasName], object_type: GrantTypes):
+    def on_objects(self, *objects: str | HasName, object_type: GrantTypes):
         variants = object_type.to_variants()
         grant = replace(self, grants=tuple(_map_grant_names(variants, *self.grants)))
 
         names = [_coerce_name(obj) for obj in objects]
         return GrantStatement(grant, grant_type=object_type, targets=tuple(names))
 
-    def on_tables(self, *tables: Union[str, HasName]):
+    def on_tables(self, *tables: str | HasName):
         return self.on_objects(*tables, object_type=GrantTypes.table)
 
     def on_sequences(
         self,
-        *sequences: Union[str, HasName],
+        *sequences: str | HasName,
     ):
         return self.on_objects(*sequences, object_type=GrantTypes.sequence)
 
-    def on_schemas(self, *schemas: Union[str, HasName]):
+    def on_schemas(self, *schemas: str | HasName):
         return self.on_objects(*schemas, object_type=GrantTypes.schema)
 
 
 @dataclass(frozen=True)
 class DefaultGrant:
     grant_type: DefaultGrantTypes
-    in_schemas: Tuple[str, ...]
-    target_role: Optional[str] = None
+    in_schemas: tuple[str, ...]
+    target_role: str | None = None
 
     @classmethod
     def on_tables_in_schema(
-        cls, *in_schemas: Union[str, HasName], for_role: Optional[HasName] = None
+        cls, *in_schemas: str | HasName, for_role: HasName | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -116,7 +116,7 @@ class DefaultGrant:
 
     @classmethod
     def on_sequences_in_schema(
-        cls, *in_schemas: Union[str, HasName], for_role: Optional[HasName] = None
+        cls, *in_schemas: str | HasName, for_role: HasName | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -127,7 +127,7 @@ class DefaultGrant:
 
     @classmethod
     def on_types_in_schema(
-        cls, *in_schemas: Union[str, HasName], for_role: Optional[HasName] = None
+        cls, *in_schemas: str | HasName, for_role: HasName | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -138,7 +138,7 @@ class DefaultGrant:
 
     @classmethod
     def on_functions_in_schema(
-        cls, *in_schemas: Union[str, HasName], for_role: Optional[HasName] = None
+        cls, *in_schemas: str | HasName, for_role: HasName | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -152,8 +152,8 @@ class DefaultGrant:
 
     def grant(
         self,
-        grant: Union[str, G, Grant],
-        *grants: Union[str, G],
+        grant: str | G | Grant,
+        *grants: str | G,
         to,
         grant_option=False,
     ):
@@ -173,7 +173,7 @@ class DefaultGrantStatement(Generic[G]):
     default_grant: DefaultGrant
     grant: Grant[G]
 
-    def for_role(self, role: Union[str, HasName]) -> DefaultGrantStatement:
+    def for_role(self, role: str | HasName) -> DefaultGrantStatement:
         return replace(
             self, default_grant=replace(self.default_grant, target_role=role)
         )
@@ -221,7 +221,7 @@ class DefaultGrantStatement(Generic[G]):
         ]
 
     @classmethod
-    def combine(cls, grants: List[DefaultGrantStatement]):
+    def combine(cls, grants: list[DefaultGrantStatement]):
         def by_statement(g: DefaultGrantStatement):
             return (
                 g.default_grant.grant_type,
@@ -263,12 +263,12 @@ class DefaultGrantStatement(Generic[G]):
 class GrantStatement(Generic[G]):
     grant: Grant[G]
     grant_type: GrantTypes
-    targets: Tuple[str, ...]
+    targets: tuple[str, ...]
 
     def invert(self) -> GrantStatement:
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
-    def for_role(self, role: Union[str, HasName]) -> GrantStatement:
+    def for_role(self, role: str | HasName) -> GrantStatement:
         return replace(self, grant=replace(self.grant, target_role=_coerce_name(role)))
 
     def to_sql(self) -> TextClause:
@@ -305,7 +305,7 @@ class GrantStatement(Generic[G]):
         ]
 
     @classmethod
-    def combine(cls, grants: List[GrantStatement]):
+    def combine(cls, grants: list[GrantStatement]):
         def by_statement(g: GrantStatement):
             return (
                 g.grant_type,
@@ -355,30 +355,28 @@ def _quote_table_name(name: str):
     return f'"{name}"'
 
 
-def _render_privilege(
-    grant: Grant, grant_type: Union[DefaultGrantTypes, GrantTypes]
-) -> str:
+def _render_privilege(grant: Grant, grant_type: DefaultGrantTypes | GrantTypes) -> str:
     grant_variant_cls = grant_type.to_variants()
     return ", ".join(v.value for v in grant_variant_cls.from_strings(grant.grants))
 
 
-def _render_grant_option(grant: Grant) -> Optional[str]:
+def _render_grant_option(grant: Grant) -> str | None:
     if grant.grant_option:
         return "WITH GRANT OPTION"
     return None
 
 
-def _map_schema_names(*schemas: Union[str, HasName]):
+def _map_schema_names(*schemas: str | HasName):
     return sorted([_coerce_name(s) for s in schemas])
 
 
-def _map_grant_names(variant: G, *grants: Union[str, G]):
+def _map_grant_names(variant: G, *grants: str | G):
     return sorted(
         [g if isinstance(g, GrantOptions) else variant.from_string(g) for g in grants]
     )
 
 
-def _coerce_name(name: Union[str, HasName]):
+def _coerce_name(name: str | HasName):
     if isinstance(name, HasName):
         return name.name
     return name

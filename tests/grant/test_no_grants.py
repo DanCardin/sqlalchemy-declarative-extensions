@@ -5,9 +5,9 @@ from sqlalchemy import Column, text, types
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
+    Roles,
     declarative_database,
     register_sqlalchemy_events,
-    Roles,
 )
 
 Base_ = declarative_base()

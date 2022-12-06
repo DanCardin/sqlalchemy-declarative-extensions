@@ -41,7 +41,10 @@ myst_enable_extensions = [
     "tasklist",
 ]
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "sqlalchemy": ("https://docs.sqlalchemy.org/en/14/", None),
+}
 
 autoapi_type = "python"
 autoapi_dirs = ["../../src/sqlalchemy_declarative_extensions"]

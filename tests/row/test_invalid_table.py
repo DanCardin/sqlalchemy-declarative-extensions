@@ -4,10 +4,10 @@ from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
-    declarative_database,
-    register_sqlalchemy_events,
     Row,
     Rows,
+    declarative_database,
+    register_sqlalchemy_events,
 )
 
 Base_ = declarative_base()
