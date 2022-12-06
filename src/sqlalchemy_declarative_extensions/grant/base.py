@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, Union
 
 from sqlalchemy_declarative_extensions.dialects import postgresql
 
@@ -43,7 +43,7 @@ class Grants:
         >>> grants = Grants().are(DefaultGrant(..., ...), ...)
     """
 
-    grants: List[G] = field(default_factory=list)
+    grants: list[G] = field(default_factory=list)
 
     ignore_unspecified: bool = False
     ignore_self_grants: bool = True
@@ -51,9 +51,7 @@ class Grants:
     default_grants_imply_grants: bool = True
 
     @classmethod
-    def coerce_from_unknown(
-        cls, unknown: Union[None, Iterable[G], Grants]
-    ) -> Optional[Grants]:
+    def coerce_from_unknown(cls, unknown: None | Iterable[G] | Grants) -> Grants | None:
         if isinstance(unknown, Grants):
             return unknown
 

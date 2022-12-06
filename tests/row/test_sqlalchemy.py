@@ -3,15 +3,15 @@ from sqlalchemy import Column, text, types
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
-    declarative_database,
-    register_sqlalchemy_events,
     Row,
     Rows,
+    declarative_database,
+    register_sqlalchemy_events,
 )
 from sqlalchemy_declarative_extensions.row.compare import (
-    compare_rows,
     DeleteRowOp,
     UpdateRowOp,
+    compare_rows,
 )
 
 Base_ = declarative_base()

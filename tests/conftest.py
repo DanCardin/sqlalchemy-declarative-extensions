@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from pytest_mock_resources import create_postgres_fixture, PostgresConfig
+from pytest_mock_resources import MysqlConfig, PostgresConfig, create_postgres_fixture
 from pytest_mock_resources.container.base import get_container
 
 pytest_plugins = "pytester"
@@ -28,6 +28,16 @@ def pmr_postgres_container(pytestconfig, pmr_postgres_config: PostgresConfig):
 @pytest.fixture
 def pmr_postgres_config():
     return PostgresConfig(port=None, ci_port=None)
+
+
+@pytest.fixture
+def pmr_mysql_container(pytestconfig, pmr_mysql_config: MysqlConfig):
+    yield from get_container(pytestconfig, pmr_mysql_config)
+
+
+@pytest.fixture
+def pmr_mysql_config():
+    return MysqlConfig(image="mysql:8", port=None, ci_port=None)
 
 
 @pytest.fixture(autouse=True)
@@ -79,3 +89,4 @@ def clear_registry():
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.role", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.grant", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.row", None)
+    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.view", None)

@@ -16,6 +16,7 @@ API <api>
 :hidden:
 
 Schemas <schemas>
+Views <views>
 Roles <roles>
 Grants <grants>
 Rows <rows>

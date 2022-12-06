@@ -1,7 +1,7 @@
 from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, Row, Rows
+from sqlalchemy_declarative_extensions import Row, Rows, declarative_database
 
 _Base = declarative_base()
 

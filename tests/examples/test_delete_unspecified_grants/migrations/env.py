@@ -1,8 +1,8 @@
 from alembic import context
-from sqlalchemy import engine_from_config, pool
 
 # isort: split
 from models import Base
+from sqlalchemy import engine_from_config, pool
 
 from sqlalchemy_declarative_extensions.alembic import register_alembic_events
 

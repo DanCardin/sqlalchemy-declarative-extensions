@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import declarative_database, Roles, Schemas
+from sqlalchemy_declarative_extensions import Roles, Schemas, declarative_database
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 
 _Base = declarative_base()

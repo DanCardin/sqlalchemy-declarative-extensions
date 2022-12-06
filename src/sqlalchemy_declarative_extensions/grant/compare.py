@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Container, List, Optional, Set, Union
+from typing import Container, Union
 
 from sqlalchemy.engine import Connection
 
@@ -22,7 +22,7 @@ from sqlalchemy_declarative_extensions.role.base import Roles
 
 @dataclass
 class GrantPrivilegesOp:
-    grant: Union[DefaultGrantStatement, GrantStatement]
+    grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):
         return RevokePrivilegesOp(self.grant.invert())
@@ -30,7 +30,7 @@ class GrantPrivilegesOp:
 
 @dataclass
 class RevokePrivilegesOp:
-    grant: Union[DefaultGrantStatement, GrantStatement]
+    grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):
         return GrantPrivilegesOp(self.grant.invert())
@@ -40,13 +40,13 @@ Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp]
 
 
 def compare_grants(
-    connection: Connection, grants: Grants, roles: Optional[Roles] = None
-) -> List[Operation]:
-    result: List[Operation] = []
+    connection: Connection, grants: Grants, roles: Roles | None = None
+) -> list[Operation]:
+    result: list[Operation] = []
 
     current_role: str = connection.engine.url.username  # type: ignore
 
-    filtered_roles: Optional[Set[str]] = None
+    filtered_roles: set[str] | None = None
     if grants.only_defined_roles:
         filtered_roles = {r.name for r in (roles or [])}
 
@@ -65,9 +65,9 @@ def compare_grants(
 def compare_default_grants(
     connection: Connection,
     grants: Grants,
-    roles: Optional[Container[str]] = None,
+    roles: Container[str] | None = None,
 ):
-    result: List[Operation] = []
+    result: list[Operation] = []
 
     existing_default_grants = get_default_grants(connection, roles=roles, expanded=True)
 
@@ -96,9 +96,9 @@ def compare_object_grants(
     connection: Connection,
     grants: Grants,
     username: str,
-    roles: Optional[Container[str]] = None,
+    roles: Container[str] | None = None,
 ):
-    result: List[Operation] = []
+    result: list[Operation] = []
 
     expected_grants = [g for g in grants if isinstance(g, GrantStatement)]
 

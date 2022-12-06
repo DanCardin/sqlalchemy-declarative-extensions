@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Container, Optional
+from typing import Container
 
 from sqlalchemy.engine import Connection
 
@@ -16,7 +16,11 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     roles_query,
     schema_exists_query,
     schemas_query,
+    table_exists_query,
+    views_query,
 )
+from sqlalchemy_declarative_extensions.sql import qualify_name
+from sqlalchemy_declarative_extensions.view.base import View
 
 
 def get_schemas_postgresql(connection: Connection):
@@ -32,6 +36,13 @@ def check_schema_exists_postgresql(connection: Connection, name: str) -> bool:
     return not bool(row)
 
 
+def check_table_exists_postgresql(
+    connection: Connection, name: str, *, schema: str
+) -> bool:
+    row = connection.execute(table_exists_query, name=name, schema=schema).scalar()
+    return bool(row)
+
+
 def get_objects_postgresql(connection: Connection):
     return sorted(
         [
@@ -43,7 +54,7 @@ def get_objects_postgresql(connection: Connection):
 
 def get_default_grants_postgresql(
     connection: Connection,
-    roles: Optional[Container[str]] = None,
+    roles: Container[str] | None = None,
     expanded: bool = False,
 ):
     default_permissions = connection.execute(default_acl_query).fetchall()
@@ -68,7 +79,7 @@ def get_default_grants_postgresql(
 
 def get_grants_postgresql(
     connection: Connection,
-    roles: Optional[Container[str]] = None,
+    roles: Container[str] | None = None,
     expanded=False,
 ):
     existing_permissions = connection.execute(object_acl_query).fetchall()
@@ -95,17 +106,19 @@ def get_grants_postgresql(
 
 
 def get_roles_postgresql(connection: Connection, exclude=None):
-    result = [
-        Role.from_pg_role(r)
-        for r in connection.execute(roles_query).fetchall()
-        if not r.rolname.startswith("pg_")
-    ]
+    result = [Role.from_pg_role(r) for r in connection.execute(roles_query).fetchall()]
     if exclude:
-        result = [role for role in result if role.name not in exclude]
+        return [role for role in result if role.name not in exclude]
     return result
 
 
-def qualify_name(schema, name):
-    if not schema or schema == "public":
-        return name
-    return f"{schema}.{name}"
+def get_views_postgresql(connection: Connection):
+    return [
+        View(
+            v.name,
+            v.definition,
+            schema=v.schema if v.schema != "public" else None,
+            materialized=v.materialized,
+        )
+        for v in connection.execute(views_query).fetchall()
+    ]

@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Union
 
 
 @dataclass(frozen=True)
 class Role:
     name: str
 
-    in_roles: Optional[List[str]] = None
+    in_roles: list[str] | None = None
 
     @classmethod
-    def coerce_from_unknown(cls, unknown: Union[str, Role]) -> Role:
+    def coerce_from_unknown(cls, unknown: str | Role) -> Role:
         if isinstance(unknown, Role):
             return unknown
 
@@ -32,7 +31,7 @@ class Role:
             statement += f"IN ROLE {in_roles}"
         return statement + ";"
 
-    def to_sql_update(self, to_role) -> List[str]:
+    def to_sql_update(self, to_role) -> list[str]:
         raise NotImplementedError(
             "When using the generic role, there should never exist any cause to update a role."
         )

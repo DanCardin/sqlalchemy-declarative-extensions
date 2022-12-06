@@ -1,14 +1,14 @@
 # API
 
-## Schemas
-
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.schema
-   :members:
-   :noindex:
+   :members: Schema, Schemas
 ```
 
-## Roles
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.view
+   :members: Views, View, view, register_view
+```
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.role.base
@@ -20,16 +20,19 @@
    :members: Role
 ```
 
-## Grants
-
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.grant
    :members: Grants
 ```
 
-## Rows
-
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.row
+   :members: Row, Rows
+```
+
+## Alembic
+
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.alembic
    :members:
 ```

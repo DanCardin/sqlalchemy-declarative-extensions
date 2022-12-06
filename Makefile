@@ -13,12 +13,10 @@ test:
 	coverage xml
 
 lint:
-	flake8 --ignore=E203,W503 src tests
-	isort --check-only src tests
-	pydocstyle src tests
+	ruff src tests
 	mypy src tests
 	black --check src tests
 
 format:
-	isort src tests
+	ruff src tests --fix
 	black src tests

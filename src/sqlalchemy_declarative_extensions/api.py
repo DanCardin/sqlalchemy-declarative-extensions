@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, Optional, Type, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 from sqlalchemy import event
 from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.schema import MetaData
-from typing_extensions import Protocol
 
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.schema.base import Schemas
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
+from sqlalchemy_declarative_extensions.view.base import View, Views
 
 if TYPE_CHECKING:
     from sqlalchemy_declarative_extensions.dialects import postgresql
@@ -20,10 +21,8 @@ if TYPE_CHECKING:
 
 
 def declarative_database(
-    base: Optional[Any] = None,
-) -> Union[
-    Type[DeclarativeMeta], Callable[[Type[DeclarativeMeta]], Type[DeclarativeMeta]]
-]:
+    base: Any | None = None,
+) -> type[DeclarativeMeta] | Callable[[type[DeclarativeMeta]], type[DeclarativeMeta]]:
     """Decorate a SQLAlchemy declarative base object to register database objects.
 
     See also :func:`sqlalchemy_declarative_extensions.declare_database`, of which this decorator is syntactic sugar.
@@ -54,10 +53,11 @@ def declarative_database(
 
     """
 
-    def _declare_database(cls: Type[DeclarativeMeta]) -> Type[DeclarativeMeta]:
+    def _declare_database(cls: type[DeclarativeMeta]) -> type[DeclarativeMeta]:
         raw_roles = getattr(cls, "roles", None)
         raw_schemas = getattr(cls, "schemas", None)
         raw_grants = getattr(cls, "grants", None)
+        raw_views = getattr(cls, "views", None)
         raw_rows = getattr(cls, "rows", None)
 
         declare_database(
@@ -65,6 +65,7 @@ def declarative_database(
             schemas=raw_schemas,
             roles=raw_roles,
             grants=raw_grants,
+            views=raw_views,
             rows=raw_rows,
         )
         return cls
@@ -77,12 +78,11 @@ def declarative_database(
 def declare_database(
     metadata: MetaData,
     *,
-    schemas: Union[None, Iterable[Union[Schema, str]], Schemas] = None,
-    roles: Union[
-        None, Iterable[Union[generic.Role, postgresql.Role, str]], Roles
-    ] = None,
-    grants: Union[None, Iterable[G], Grants] = None,
-    rows: Union[None, Iterable[Row], Rows] = None,
+    schemas: None | Iterable[Schema | str] | Schemas = None,
+    roles: None | Iterable[generic.Role | postgresql.Role | str] | Roles = None,
+    grants: None | Iterable[G] | Grants = None,
+    views: None | Iterable[View] | Views = None,
+    rows: None | Iterable[Row] | Rows = None,
 ):
     """Register declaratively specified database extension handlers.
 
@@ -108,24 +108,23 @@ def declare_database(
         schemas: The set of schemas to ensure exist.
         roles: The set of roles to ensure exist.
         grants: The set of grants to ensure are applied to the roles/schemas/tables.
+        views: The set of views to ensure exist.
         rows: The set of rows to ensure are applied to the roles/schemas/tables.
     """
     metadata.info["schemas"] = Schemas.coerce_from_unknown(schemas)
     metadata.info["roles"] = Roles.coerce_from_unknown(roles)
     metadata.info["grants"] = Grants.coerce_from_unknown(grants)
+    metadata.info["views"] = Views.coerce_from_unknown(views)
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
 
 
-class HasMetaData(Protocol):
-    metadata: MetaData
-
-
 def register_sqlalchemy_events(
-    maybe_metadata: Union[MetaData, HasMetaData],
+    maybe_metadata: MetaData | HasMetaData,
     schemas=False,
     roles=False,
     grants=False,
     rows=False,
+    views=False,
 ):
     """Register handlers for supported object types into SQLAlchemy's event system.
 
@@ -141,6 +140,7 @@ def register_sqlalchemy_events(
     from sqlalchemy_declarative_extensions.role.ddl import role_ddl
     from sqlalchemy_declarative_extensions.row.query import rows_query
     from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
+    from sqlalchemy_declarative_extensions.view.ddl import view_ddl
 
     if isinstance(maybe_metadata, MetaData):
         metadata = maybe_metadata
@@ -151,6 +151,7 @@ def register_sqlalchemy_events(
     concrete_roles = metadata.info["roles"]
     concrete_grants = metadata.info["grants"]
     concrete_rows = metadata.info["rows"]
+    concrete_views = metadata.info["views"]
 
     if concrete_schemas and schemas:
         for schema in concrete_schemas:
@@ -178,6 +179,13 @@ def register_sqlalchemy_events(
             metadata,
             "after_create",
             grant_ddl(concrete_grants, after=True),
+        )
+
+    if concrete_views and views:
+        event.listen(
+            metadata,
+            "after_create",
+            view_ddl(concrete_views),
         )
 
     if concrete_rows and rows:

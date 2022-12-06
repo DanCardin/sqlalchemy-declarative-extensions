@@ -1,5 +1,22 @@
-from sqlalchemy import and_, column, literal, select, String, table, text, union
+from sqlalchemy import (
+    String,
+    and_,
+    bindparam,
+    column,
+    literal,
+    select,
+    table,
+    text,
+    union,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
+
+tables = table(
+    "tables",
+    column("table_schema"),
+    column("table_name"),
+    schema="information_schema",
+)
 
 pg_class = table(
     "pg_class",
@@ -39,6 +56,20 @@ pg_authid = table(
     column("rolname"),
 )
 
+pg_views = table(
+    "pg_views",
+    column("schemaname"),
+    column("viewname"),
+    column("definition"),
+)
+
+pg_matviews = table(
+    "pg_matviews",
+    column("schemaname"),
+    column("matviewname"),
+    column("definition"),
+)
+
 
 roles_query = text(
     """
@@ -57,20 +88,31 @@ roles_query = text(
         """
 )
 
-_schema_not_pg = and_(
-    pg_namespace.c.nspname != "information_schema",
-    pg_namespace.c.nspname.not_like("pg_%"),
-)
+
+def _schema_not_pg(column=pg_namespace.c.nspname):
+    return and_(
+        column != "information_schema",
+        column.not_like("pg_%"),
+    )
+
+
 _schema_not_public = pg_namespace.c.nspname != "public"
 _table_not_pg = pg_class.c.relname.not_like("pg_%")
 
 schemas_query = (
-    select(pg_namespace.c.nspname).where(_schema_not_pg).where(_schema_not_public)
+    select(pg_namespace.c.nspname).where(_schema_not_pg()).where(_schema_not_public)
 )
 
 
 schema_exists_query = text(
     "SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema"
+)
+
+
+table_exists_query = (
+    select(tables)
+    .where(tables.c.table_schema == bindparam("schema"))
+    .where(tables.c.table_name == bindparam("name"))
 )
 
 
@@ -100,7 +142,7 @@ object_acl_query = union(
     )
     .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
     .where(_table_not_pg)
-    .where(_schema_not_pg),
+    .where(_schema_not_pg()),
     select(
         literal(None).label("schema"),
         pg_namespace.c.nspname.label("name"),
@@ -111,7 +153,7 @@ object_acl_query = union(
     .select_from(
         pg_namespace.join(pg_authid, pg_namespace.c.nspowner == pg_authid.c.oid)
     )
-    .where(_schema_not_pg)
+    .where(_schema_not_pg())
     .where(_schema_not_public),
 )
 
@@ -126,5 +168,20 @@ objects_query = (
     )
     .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
     .where(_table_not_pg)
-    .where(_schema_not_pg)
+    .where(_schema_not_pg())
+)
+
+views_query = union(
+    select(
+        pg_views.c.schemaname.label("schema"),
+        pg_views.c.viewname.label("name"),
+        pg_views.c.definition.label("definition"),
+        literal(False).label("materialized"),
+    ).where(_schema_not_pg(pg_views.c.schemaname)),
+    select(
+        pg_matviews.c.schemaname.label("schema"),
+        pg_matviews.c.matviewname.label("name"),
+        pg_matviews.c.definition.label("definition"),
+        literal(True).label("materialized"),
+    ).where(_schema_not_pg(pg_matviews.c.schemaname)),
 )

@@ -4,10 +4,10 @@ from alembic.autogenerate.render import renderers
 from alembic.operations import Operations
 
 from sqlalchemy_declarative_extensions.role.compare import (
-    compare_roles,
     CreateRoleOp,
     DropRoleOp,
     UpdateRoleOp,
+    compare_roles,
 )
 
 Operations.register_operation("create_role")(CreateRoleOp)

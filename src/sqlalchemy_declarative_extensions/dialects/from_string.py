@@ -20,8 +20,7 @@ class FromStrings(enum.Enum):
         if isinstance(string, str):
             normalized_str = string.upper()
             return cls(normalized_str)
-        else:
-            return string
+        return string
 
     def __lt__(self, other):
         return self.value < other.value
