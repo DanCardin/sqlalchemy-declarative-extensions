@@ -17,7 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.9"]
+        # Test our minimum version bound, the highest version available,
+        # and something in the middle (i.e. what gets run locally).
+        python-version: ["3.7", "3.9", "3.11"]
         sqlalchemy-version: ["1.3", "1.4"]
 
     name: Python ${{ matrix.python-version }} Tests
