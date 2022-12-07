@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.3.1"
+version = "0.3.2"
 description = "Library to declare additional kinds of objects not natively supported by SqlAlchemy/Alembic."
 
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
@@ -43,6 +43,7 @@ alembic = { version = ">=1.0", optional = true }
 psycopg2-binary = "*"
 
 [tool.poetry.group.dev.dependencies]
+alembic-utils = "*"
 black = ">=22.3.0"
 coverage = ">=5"
 ruff = ">=0.0.165"

@@ -22,13 +22,13 @@ The primary function(s) of this library include:
 - (Optionally) Registers into Alembic such that `alembic revision --autogenerate`
   automatically creates/updates/deletes declared objects.
 
-## Example Usage
+## Kitchen Sink Example Usage
 
 ```python
-from sqlalchemy import Column, types
+from sqlalchemy import Column, types, select
 from sqlalchemy.orm import as_declarative
 from sqlalchemy_declarative_extensions import (
-    declarative_database, Schemas, Roles, Grants, Rows, Row
+    declarative_database, Schemas, Roles, Grants, Rows, Row, Views, View, view
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
 
@@ -52,12 +52,19 @@ class Base:
     rows = Rows().are(
         Row('foo', id=1),
     )
+    views = Views().are(View("low_foo", "select * from foo where i < 10"))
 
 
 class Foo(Base):
     __tablename__ = 'foo'
 
     id = Column(types.Integer(), primary_key=True)
+
+
+@view()
+class HighFoo:
+    __tablename__ = "high_foo"
+    __view__ = select(Foo.__table__).where(Foo.__table__.c.id >= 10)
 ```
 
 Note, there is also support for declaring objects directly through the `MetaData` for

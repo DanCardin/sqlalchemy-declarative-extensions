@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Callable, Container, Iterable, TypeVar, Union
+from typing import Any, Callable, Container, Iterable, TypeVar, Union
 
 from sqlalchemy import MetaData, column, select, table
 from sqlalchemy.engine import Dialect
@@ -12,7 +12,7 @@ from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 try:
     from sqlalchemy.orm import DeclarativeMeta
-except ImportError:
+except ImportError:  # pragma: no cover
     from sqlalchemy.ext.orm import DeclarativeMeta  # type: ignore
 
 T = TypeVar("T", bound=Union[HasMetaData, MetaData])
@@ -139,6 +139,32 @@ class View:
     schema: str | None = None
     materialized: bool = False
 
+    @classmethod
+    def coerce_from_unknown(cls, unknown: Any) -> View:
+        if isinstance(unknown, View):
+            return unknown
+
+        try:
+            import alembic_utils  # noqa
+        except ImportError:
+            pass
+        else:
+            from alembic_utils.pg_materialized_view import PGMaterializedView
+            from alembic_utils.pg_view import PGView
+
+            if isinstance(unknown, (PGView, PGMaterializedView)):
+                materialized = isinstance(unknown, PGMaterializedView)
+                return cls(
+                    name=unknown.signature,
+                    definition=unknown.definition,
+                    schema=unknown.schema,
+                    materialized=materialized,
+                )
+
+        raise NotImplementedError(  # pragma: no cover
+            f"Unsupported view source object {unknown}"
+        )
+
     @property
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
@@ -197,7 +223,13 @@ class View:
 
 @dataclass
 class Views:
-    """The collection of views and associated options comparisons."""
+    """The collection of views and associated options comparisons.
+
+    Note, `Views` supports views being specified from certain alternative sources, such
+    as `alembic_utils`'s `PGView` and `PGMaterializedView`. In order for that to work,
+    one needs to either call `View.coerce_from_unknown(alembic_utils_view)` directly, or
+    use `Views().are(...)` (which internally calls `coerce_from_unknown`).
+    """
 
     views: list[View] = field(default_factory=list)
 
@@ -212,7 +244,7 @@ class Views:
             return unknown
 
         if isinstance(unknown, Iterable):
-            return cls(list(unknown))
+            return cls().are(*unknown)
 
         return None
 
@@ -224,7 +256,7 @@ class Views:
             yield grant
 
     def are(self, *views: View):
-        return replace(self, views=list(views))
+        return replace(self, views=[View.coerce_from_unknown(v) for v in views])
 
 
 def find_schema(table_args=None):

@@ -87,16 +87,20 @@ class Role(generic.Role):
     def to_sql_update(self, to_role: Role) -> list[str]:
         role_name = to_role.name
         diff = RoleDiff.diff(self, to_role)
-        segments = ["ALTER ROLE", role_name, "WITH"]
-        segments.extend(postgres_render_role_options(diff))
 
-        alter = " ".join(segments) + ";"
-        result = [alter]
+        result = []
+
+        diff_options = postgres_render_role_options(diff)
+        if diff_options:
+            segments = ["ALTER ROLE", role_name, "WITH", *diff_options]
+            alter_role = " ".join(segments) + ";"
+            result.append(alter_role)
+
         for add_name in diff.add_roles:
-            result.append(f"GRANT {add_name} to {role_name};")
+            result.append(f"GRANT {add_name} TO {role_name};")
 
         for remove_name in diff.remove_roles:
-            result.append(f"GRANT {remove_name} to {role_name};")
+            result.append(f"REVOKE {remove_name} FROM {role_name};")
 
         return result
 
