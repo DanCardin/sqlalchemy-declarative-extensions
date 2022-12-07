@@ -35,7 +35,7 @@ class Foo(Base):
 foo_table = Foo.__table__
 
 
-@view()
+@view(Base.metadata)
 class Bar(Base):
     __tablename__ = "bar"
     __view__ = select(foo_table.c.id).where(foo_table.c.id > 10)
