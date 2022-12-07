@@ -13,6 +13,6 @@ def grant_ddl(grants: Grants, after: bool):
         roles: Optional[Roles] = metadata.info.get("roles")
         result = compare_grants(connection, grants, roles=roles)
         for op in result:
-            connection.execute(op.grant.to_sql())
+            connection.execute(op.to_sql())
 
     return receive_event

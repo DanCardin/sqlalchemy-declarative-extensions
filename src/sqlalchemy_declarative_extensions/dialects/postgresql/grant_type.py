@@ -211,6 +211,7 @@ class GrantTypes(FromStrings):
             "S": cls.sequence,
             "r": cls.table,
             "T": cls.type,
+            "v": cls.table,
         }
 
     @classmethod

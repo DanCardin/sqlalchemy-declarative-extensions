@@ -140,7 +140,7 @@ object_acl_query = union(
             pg_authid, pg_class.c.relowner == pg_authid.c.oid
         )
     )
-    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
+    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T", "v"]))
     .where(_table_not_pg)
     .where(_schema_not_pg()),
     select(
@@ -166,7 +166,7 @@ objects_query = (
     .select_from(
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
     )
-    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T"]))
+    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T", "v"]))
     .where(_table_not_pg)
     .where(_schema_not_pg())
 )

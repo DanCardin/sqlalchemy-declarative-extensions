@@ -19,7 +19,19 @@ class Base(Base_):
     __abstract__ = True
 
     grants = Grants(only_defined_roles=False, ignore_self_grants=False).are(
-        DefaultGrant.on_tables_in_schema("public").grant("select", to="user")
+        DefaultGrant.on_tables_in_schema("public").grant(
+            "select",
+            "insert",
+            "references",
+            "trigger",
+            "update",
+            "delete",
+            "truncate",
+            to="user",
+        ),
+        DefaultGrant.on_sequences_in_schema("public").grant(
+            "select", "usage", "update", to="user"
+        ),
     )
 
 

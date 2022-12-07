@@ -25,7 +25,10 @@ class GrantPrivilegesOp:
     grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):
-        return RevokePrivilegesOp(self.grant.invert())
+        return RevokePrivilegesOp(self.grant)
+
+    def to_sql(self):
+        return self.grant.to_sql()
 
 
 @dataclass
@@ -33,7 +36,10 @@ class RevokePrivilegesOp:
     grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):
-        return GrantPrivilegesOp(self.grant.invert())
+        return GrantPrivilegesOp(self.grant)
+
+    def to_sql(self):
+        return self.grant.invert().to_sql()
 
 
 Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp]
@@ -82,12 +88,11 @@ def compare_default_grants(
     extra_grants = set(existing_default_grants) - set(expected_grants)
 
     if not grants.ignore_unspecified:
-        revoke_statements = [extra_grant.invert() for extra_grant in extra_grants]
-        for revoke in DefaultGrantStatement.combine(revoke_statements):
-            result.append(RevokePrivilegesOp(revoke))
+        for grant in DefaultGrantStatement.combine(list(extra_grants)):
+            result.append(RevokePrivilegesOp(grant))
 
     for grant in DefaultGrantStatement.combine(list(missing_grants)):
-        result.append(RevokePrivilegesOp(grant))
+        result.append(GrantPrivilegesOp(grant))
 
     return result
 
@@ -141,11 +146,10 @@ def compare_object_grants(
     extra_grants = set(existing_grants) - set(expected_grants)
 
     if not grants.ignore_unspecified:
-        revoke_statements = [extra_grant.invert() for extra_grant in extra_grants]
-        for revoke in GrantStatement.combine(revoke_statements):
-            result.append(RevokePrivilegesOp(revoke))
+        for grant in GrantStatement.combine(list(extra_grants)):
+            result.append(RevokePrivilegesOp(grant))
 
     for grant in GrantStatement.combine(list(missing_grants)):
-        result.append(RevokePrivilegesOp(grant))
+        result.append(GrantPrivilegesOp(grant))
 
     return result

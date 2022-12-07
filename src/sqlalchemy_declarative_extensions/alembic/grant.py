@@ -43,10 +43,10 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
 
 
 @renderers.dispatch_for(GrantPrivilegesOp)
-def render_grant(_, op: RevokePrivilegesOp):
-    return f'op.execute(sa.text("""{op.grant.to_sql()}"""))'
+def render_grant(_, op: GrantPrivilegesOp):
+    return f'op.execute(sa.text("""{op.to_sql()}"""))'
 
 
 @renderers.dispatch_for(RevokePrivilegesOp)
 def render_revoke(_, op: RevokePrivilegesOp):
-    return f'op.execute(sa.text("""{op.grant.to_sql()}"""))'
+    return f'op.execute(sa.text("""{op.to_sql()}"""))'
