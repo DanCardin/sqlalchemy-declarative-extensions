@@ -1,27 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, TypeVar, Union
+from typing import Any, Callable, Container, Iterable, TypeVar, overload
 
-from sqlalchemy import MetaData, column, select, table
+import sqlalchemy.exc
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import Select
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
-try:
-    from sqlalchemy.orm import DeclarativeMeta
-except ImportError:  # pragma: no cover
-    from sqlalchemy.ext.orm import DeclarativeMeta  # type: ignore
-
-T = TypeVar("T", bound=Union[HasMetaData, MetaData])
+T = TypeVar("T", HasMetaData, MetaData)
 
 
-_view_normal_translation = str.maketrans({" ": "", "\n": "", "\t": ""})
-
-
-def view(base_or_metadata: T | None = None) -> Callable[[type], T]:
+def view(base_or_metadata: T, materialized=False) -> Callable[[type], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -41,31 +34,12 @@ def view(base_or_metadata: T | None = None) -> Callable[[type], T]:
     >>>
     >>> Base = declarative_base()
     >>>
-    >>> @view()
-    ... class Foo(Base):
-    ...     __tablename__ = "foo"
-    ...     __view__ = "SELECT * from bar"
-    ...     id = Column(types.Integer, primary_key=True)
-
-    Note that when doing this, alembic will still, by default, interpret the model
-    definition as a Table and attempt to create it. As such, we expose an additional
-    helper function :func:`~sqlalchemy_declarative_extensions.alembic.ignore_view_tables`,
-    to simplify ignoring them.
-
-    Alternatively, if you aren't intending to programmatically make use of the view,
-    you can simply make a class object which resembles a table definition, but does
-    not subclass `Base`. In this case, the `Base` or `MetaData` needs to be passed
-    to the decorator.
-
-    >>> from sqlalchemy.orm import declarative_base
-    >>> from sqlalchemy_declarative_extensions import view
-    >>>
-    >>> Base = declarative_base()
-    >>>
-    >>> @view(Base)  # or Base.metadata
+    >>> @view(Base)
     ... class Foo:
     ...     __tablename__ = "foo"
     ...     __view__ = "SELECT * from bar"
+    ...
+    ...     id = Column(types.Integer, primary_key=True)
     """
 
     def decorator(cls):
@@ -76,34 +50,24 @@ def view(base_or_metadata: T | None = None) -> Callable[[type], T]:
         view_def = cls.__view__
 
         schema = find_schema(table_args)
-        instance = View(name, view_def, schema=schema)
+        instance = View(name, view_def, schema=schema, materialized=materialized)
 
-        # When the object itself is a subclass of the declarative base,
-        # the base can be omitted from the `view` input argument
-        if isinstance(cls, DeclarativeMeta):
-            base_or_metadata = cls
-
-            cls.__table__.info["is_view"] = True
-        else:
-            # Otherwise, it's not, and we can apply some magic to allow
-            # sqlalchemy to enable `pg.query(cls)`.
-            def clause_element():
-                return (
-                    select(*[column(c.name) for c in view_def.selected_columns])
-                    .select_from(table(instance.qualified_name))
-                    .subquery()
-                )
-
-            cls.__clause_element__ = clause_element
-
-        register_view(base_or_metadata, instance)
-
-        return cls
+        return register_view(base_or_metadata, instance, cls=cls)
 
     return decorator
 
 
-def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
+@overload
+def register_view(base_or_metadata: HasMetaData | MetaData, view: View) -> None:
+    ...
+
+
+@overload
+def register_view(base_or_metadata: HasMetaData | MetaData, view: View, cls: T) -> T:
+    ...
+
+
+def register_view(base_or_metadata, view, cls=None):
     """Register a view onto the given declarative base or `Metadata`.
 
     This can be used instead of the [view](view) decorator, if you are constructing
@@ -111,6 +75,21 @@ def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
     to their corresponding table definitions, rather than at the root declarative
     base, like many of the other object types are documented to do.
     """
+    mapper = None
+    if cls:
+        try:
+            try:
+                from sqlalchemy import orm
+            except ImportError:
+                from sqlalchemy.ext.declarative import instrument_declarative
+
+                mapper = instrument_declarative(cls, {}, MetaData())
+            else:
+                registry = orm.registry()
+                mapper = registry.mapped(cls)
+        except sqlalchemy.exc.ArgumentError:
+            mapper = cls
+
     if isinstance(base_or_metadata, MetaData):
         metadata = base_or_metadata
     else:
@@ -119,6 +98,7 @@ def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
     if not metadata.info.get("views"):
         metadata.info["views"] = Views()
     metadata.info["views"].append(view)
+    return mapper
 
 
 @dataclass(eq=False)
@@ -169,7 +149,12 @@ class View:
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
 
-    def render_definition(self, dialect: Dialect, *, normalize=False):
+    def render_definition(self, dialect: Dialect):
+        try:
+            import sqlparse
+        except ImportError:
+            raise ImportError("View autogeneration requires the 'parse' extra.")
+
         if isinstance(self.definition, str):
             definition = self.definition
         else:
@@ -180,10 +165,13 @@ class View:
                 )
             )
 
-        if normalize:
-            return definition.lower().translate(_view_normal_translation)
-
-        return definition
+        return sqlparse.format(
+            definition,
+            use_space_around_operators=True,
+            keyword_case="upper",
+            indent_width=1,
+            remove_comments=True,
+        ).replace("\n", " ")
 
     def equals(self, other: View, dialect: Dialect):
         same_view = (
@@ -194,8 +182,8 @@ class View:
         if not same_view:
             return False
 
-        self_def = self.render_definition(dialect, normalize=True)
-        other_def = other.render_definition(dialect, normalize=True)
+        self_def = self.render_definition(dialect)
+        other_def = other.render_definition(dialect)
         return self_def == other_def
 
     def to_sql_create(self, dialect: Dialect):

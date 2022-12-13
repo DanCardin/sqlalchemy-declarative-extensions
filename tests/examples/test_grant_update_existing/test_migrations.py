@@ -2,7 +2,6 @@ import pytest
 import sqlalchemy.exc
 from pytest_alembic import MigrationContext, tests
 from sqlalchemy import text
-from sqlalchemy.sql.expression import text
 
 from sqlalchemy_declarative_extensions.dialects import get_roles
 

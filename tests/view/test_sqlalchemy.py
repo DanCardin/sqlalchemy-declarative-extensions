@@ -41,8 +41,8 @@ class Foo(Base):
 foo_table = Foo.__table__
 
 
-@view()
-class Bar(Base):
+@view(Base)
+class Bar:
     __tablename__ = "bar"
     __table_args__ = (
         Index("id_ix", "id"),
@@ -58,6 +58,8 @@ class Baz:
     __tablename__ = "baz"
     __table_args__ = {"schema": "fooschema"}
     __view__ = select(foo_table.c.id).where(foo_table.c.id < 10)
+
+    id = Column(types.Integer(), primary_key=True)
 
 
 register_sqlalchemy_events(Base.metadata, schemas=True, views=True, rows=True)

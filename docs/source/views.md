@@ -51,8 +51,6 @@ This strategy allows one to organize their views alongside the models/tables tho
 views happen to be referencing, without requiring the view be importable at MetaData/model base
 definition time.
 
-### Option 1
-
 ```python
 from sqlalchemy import Column, types, select
 from sqlalchemy.ext.declarative import declarative_base
@@ -67,95 +65,21 @@ class Foo(Base):
     id = Column(types.Integer, primary_key=True)
 
 
-@view()
-class Bar1(Base):
+@view(Base)
+class Bar:
     __tablename__ = 'bar'
     __view__ = select(Foo.__table__).where(Foo.__table__.id > 10)
 
     id = Column(types.Integer, primary_key=True)
 ```
 
-The primary difference between Options 1 and 2 in the above example is of how the
-resulting classes are seen by SQLAlchemy/Alembic natively.
+The protocol this class is following provides an interface that is intentionally similar to the one
+given by a normal sqlalchemy model. From the perspective of code, your `Bar` class will be usable
+by SQLAlchemy in the same way as a normal table, i.e. `session.query(Bar1).all()`.
 
-In the case of `Bar1`, SQLAlchemy/Alembic actually think that class is a normal table.
-Therefore querying the view looks identical to a real table: `session.query(Bar1).all()`
+Alternatively, if you dont **care** about being able to programmatically make use of the model-like
+ORM interface, you can omit the model-style declaration of columns. That at least allows you to
+avoid duplicating the list of columns unnecessarily.
 
-For alembic, this means that alembic thinks you defined a table and will attempt to
-autogenerate it (while this library will also notice it and attempt to autogenerate
-a conflicting view.
-
-In order to use this option, we suggest you use one or both of some utility functions provided
-under the `sqlalchemy_declarative_extensions.alembic`: [ignore_view_tables](sqlalchemy_declarative_extensions.alembic.ignore_view_tables)
-and [compose_include_object_callbacks](sqlalchemy_declarative_extensions.alembic.compose_include_object_callbacks).
-
-Somewhere in your Alembic `env.py`, you will have a block which looks like this:
-
-```python
-with connectable.connect() as connection:
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        ...
-    )
-```
-
-The above call to `configure` accepts an `include_object`, which tells alembic to include or ignore
-all detected objects.
-
-```python
-from sqlalchemy_declarative_extensions.alembic import ignore_view_tables
-...
-context.configure(..., include_object=ignore_view_tables)
-```
-
-If you happen to already be using `include_object` to perform filtering, we provide an additional
-utility to more easily compose our version with your own. Although you can certainly manually call
-`ignore_view_tables` directly, yourself.
-
-```python
-from sqlalchemy_declarative_extensions.alembic import ignore_view_tables, compose_include_object_callbacks
-...
-def my_include_object(object, *_):
-    if object.name != 'foo':
-        return True
-    return False
-
-context.configure(..., include_object=compose_include_object_callbacks(my_include_object, ignore_view_tables))
-```
-
-## Option 2
-
-```python
-from sqlalchemy import Column, types, select
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy_declarative_extensions import view
-
-Base = declarative_base()
-
-
-class Foo(Base):
-    __tablename__ = 'foo'
-
-    id = Column(types.Integer, primary_key=True)
-
-
-@view(Base)  # or `@view(Base.metadata)`
-class Bar2:
-    __tablename__ = 'bar'
-    __view__ = select(Foo.__table__).where(Foo.__table__.id > 10)
-```
-
-By contrast, with Option 2, your class is not subclassing `Base`, therefore it's
-not registered as a real table by SQLAlchemy or Alembic. There's no additional
-work required to get them to ignore the table, because it's not one.
-
-Unfortunately, that means you cannot **invisibly** treat it as though it's a normal model,
-largely because it doesn't have the columns enumerated out in the same way.
-
-However we can provide some basic support for treating it as a table as far as the ORM is concerned.
-For example, you can still `session.query(Bar2).all()` directly.
-
-However, in most cases views primarily benefit non-code consumers of the database, because there's
-no practical difference between querying a literal view, versus executing the underlying query
-of that view, through something like `session.execute(Bar2.__view__)`.
+Finally, you can directly call `register_view` to imperitively register a normal [View](sqlalchemy_declarative_extensions.View)
+object, if the class interface doesn't float your boat.
