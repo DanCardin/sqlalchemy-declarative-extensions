@@ -50,12 +50,6 @@ pg_default_acl = table(
     column("defaclacl"),
 )
 
-pg_authid = table(
-    "pg_authid",
-    column("oid"),
-    column("rolname"),
-)
-
 pg_views = table(
     "pg_views",
     column("schemaname"),
@@ -117,12 +111,12 @@ table_exists_query = (
 
 
 default_acl_query = select(
-    pg_authid.c.rolname.label("role_name"),
+    pg_roles.c.rolname.label("role_name"),
     pg_namespace.c.nspname.label("schema_name"),
     pg_default_acl.c.defaclobjtype.label("object_type"),
     pg_default_acl.c.defaclacl.cast(ARRAY(String)).label("acl"),
 ).select_from(
-    pg_default_acl.join(pg_authid, pg_default_acl.c.defaclrole == pg_authid.c.oid).join(
+    pg_default_acl.join(pg_roles, pg_default_acl.c.defaclrole == pg_roles.c.oid).join(
         pg_namespace, pg_default_acl.c.defaclnamespace == pg_namespace.c.oid
     )
 )
@@ -132,12 +126,12 @@ object_acl_query = union(
         pg_namespace.c.nspname.label("schema"),
         pg_class.c.relname.label("name"),
         pg_class.c.relkind.label("relkind"),
-        pg_authid.c.rolname.label("owner"),
+        pg_roles.c.rolname.label("owner"),
         pg_class.c.relacl.cast(ARRAY(String)).label("acl"),
     )
     .select_from(
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid).join(
-            pg_authid, pg_class.c.relowner == pg_authid.c.oid
+            pg_roles, pg_class.c.relowner == pg_roles.c.oid
         )
     )
     .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T", "v"]))
@@ -147,12 +141,10 @@ object_acl_query = union(
         literal(None).label("schema"),
         pg_namespace.c.nspname.label("name"),
         literal("n").label("relkind"),
-        pg_authid.c.rolname.label("owner"),
+        pg_roles.c.rolname.label("owner"),
         pg_namespace.c.nspacl.cast(ARRAY(String)),
     )
-    .select_from(
-        pg_namespace.join(pg_authid, pg_namespace.c.nspowner == pg_authid.c.oid)
-    )
+    .select_from(pg_namespace.join(pg_roles, pg_namespace.c.nspowner == pg_roles.c.oid))
     .where(_schema_not_pg())
     .where(_schema_not_public),
 )
