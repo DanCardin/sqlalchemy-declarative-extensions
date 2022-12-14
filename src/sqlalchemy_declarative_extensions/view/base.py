@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, TypeVar, overload
+from typing import Any, Callable, Container, Iterable, TypeVar
 
 import sqlalchemy.exc
-from sqlalchemy import MetaData
+from sqlalchemy import Index, MetaData
 from sqlalchemy.engine import Dialect
+from sqlalchemy.schema import CreateIndex, DropIndex
 from sqlalchemy.sql import Select
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
@@ -14,7 +15,7 @@ from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 T = TypeVar("T", HasMetaData, MetaData)
 
 
-def view(base_or_metadata: T, materialized=False) -> Callable[[type], T]:
+def view(base_or_metadata: T, materialized: bool = False) -> Callable[[type], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -43,31 +44,50 @@ def view(base_or_metadata: T, materialized=False) -> Callable[[type], T]:
     """
 
     def decorator(cls):
-        nonlocal base_or_metadata
-
         name = cls.__tablename__
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
 
-        schema = find_schema(table_args)
-        instance = View(name, view_def, schema=schema, materialized=materialized)
+        mapper = instrument_sqlalchemy(base_or_metadata, cls)
 
-        return register_view(base_or_metadata, instance, cls=cls)
+        schema = find_schema(table_args)
+        constraints = find_constraints(table_args)
+        instance = View(
+            name,
+            view_def,
+            schema=schema,
+            materialized=materialized,
+            constraints=constraints,
+        )
+
+        register_view(base_or_metadata, instance)
+
+        return mapper  # noqa
 
     return decorator
 
 
-@overload
-def register_view(base_or_metadata: HasMetaData | MetaData, view: View) -> None:
-    ...
+def instrument_sqlalchemy(base_or_metadata: T, cls) -> T:
+    metadata = get_metadata(base_or_metadata)
+
+    temp_metadata = MetaData(naming_convention=metadata.naming_convention)
+    try:
+        try:
+            from sqlalchemy import orm
+        except ImportError:
+            from sqlalchemy.ext.declarative import instrument_declarative
+
+            mapper = instrument_declarative(cls, {}, temp_metadata)
+        else:
+            registry = orm.registry(temp_metadata)
+            mapper = registry.mapped(cls)
+    except sqlalchemy.exc.ArgumentError:
+        mapper = cls
+
+    return mapper
 
 
-@overload
-def register_view(base_or_metadata: HasMetaData | MetaData, view: View, cls: T) -> T:
-    ...
-
-
-def register_view(base_or_metadata, view, cls=None):
+def register_view(base_or_metadata: HasMetaData, view: View):
     """Register a view onto the given declarative base or `Metadata`.
 
     This can be used instead of the [view](view) decorator, if you are constructing
@@ -75,30 +95,11 @@ def register_view(base_or_metadata, view, cls=None):
     to their corresponding table definitions, rather than at the root declarative
     base, like many of the other object types are documented to do.
     """
-    mapper = None
-    if cls:
-        try:
-            try:
-                from sqlalchemy import orm
-            except ImportError:
-                from sqlalchemy.ext.declarative import instrument_declarative
-
-                mapper = instrument_declarative(cls, {}, MetaData())
-            else:
-                registry = orm.registry()
-                mapper = registry.mapped(cls)
-        except sqlalchemy.exc.ArgumentError:
-            mapper = cls
-
-    if isinstance(base_or_metadata, MetaData):
-        metadata = base_or_metadata
-    else:
-        metadata = base_or_metadata.metadata
+    metadata = get_metadata(base_or_metadata)
 
     if not metadata.info.get("views"):
         metadata.info["views"] = Views()
     metadata.info["views"].append(view)
-    return mapper
 
 
 @dataclass(eq=False)
@@ -118,6 +119,7 @@ class View:
     definition: str | Select
     schema: str | None = None
     materialized: bool = False
+    constraints: list[Index] | None = None
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Any) -> View:
@@ -151,7 +153,8 @@ class View:
 
     def render_definition(self, dialect: Dialect):
         try:
-            import sqlparse
+            import sqlglot
+            from sqlglot.optimizer.normalize import normalize
         except ImportError:
             raise ImportError("View autogeneration requires the 'parse' extra.")
 
@@ -165,13 +168,23 @@ class View:
                 )
             )
 
-        return sqlparse.format(
-            definition,
-            use_space_around_operators=True,
-            keyword_case="upper",
-            indent_width=1,
-            remove_comments=True,
-        ).replace("\n", " ")
+        dialect_name_map = {"postgresql": "postgres"}
+        dialect_name = dialect_name_map.get(dialect.name, dialect.name)
+        return normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
+
+    def render_constraints(self, dialect, *, create):
+        if not self.constraints:
+            return []
+
+        if create:
+            action = CreateIndex
+        else:
+            action = DropIndex
+
+        return [
+            str(action(constraint).compile(dialect=dialect)).replace("\n", "")
+            for constraint in self.constraints
+        ]
 
     def equals(self, other: View, dialect: Dialect):
         same_view = (
@@ -184,9 +197,10 @@ class View:
 
         self_def = self.render_definition(dialect)
         other_def = other.render_definition(dialect)
+
         return self_def == other_def
 
-    def to_sql_create(self, dialect: Dialect):
+    def to_sql_create(self, dialect: Dialect) -> list[str]:
         definition = self.render_definition(dialect)
 
         components = ["CREATE"]
@@ -197,16 +211,27 @@ class View:
         components.append(self.qualified_name)
         components.append("AS")
         components.append(definition)
-        return " ".join(components)
+        statement = " ".join(components)
 
-    def to_sql_drop(self):
+        result = [statement]
+        result.extend(self.render_constraints(dialect, create=True))
+
+        return result
+
+    def to_sql_drop(self, dialect: Dialect) -> list[str]:
         components = ["DROP"]
         if self.materialized:
             components.append("MATERIALIZED")
 
         components.append("VIEW")
         components.append(self.qualified_name)
-        return " ".join(components)
+
+        statement = " ".join(components)
+
+        result = [statement]
+        result.extend(self.render_constraints(dialect, create=False))
+
+        return result
 
 
 @dataclass
@@ -259,3 +284,19 @@ def find_schema(table_args=None):
             if isinstance(table_arg, dict):
                 return table_arg.get("schema")
     return None
+
+
+def find_constraints(table_args=None):
+    if isinstance(table_args, dict):
+        return None
+
+    if isinstance(table_args, Iterable):
+        return [table_arg for table_arg in table_args if isinstance(table_arg, Index)]
+
+    return None
+
+
+def get_metadata(base_or_metadata: T) -> MetaData:
+    if isinstance(base_or_metadata, MetaData):
+        return base_or_metadata
+    return base_or_metadata.metadata

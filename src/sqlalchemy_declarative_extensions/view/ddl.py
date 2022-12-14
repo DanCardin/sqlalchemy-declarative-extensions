@@ -9,6 +9,7 @@ def view_ddl(views: Views):
     def after_create(metadata: MetaData, connection: Connection, **_):
         result = compare_views(connection, views)
         for op in result:
-            connection.execute(op.to_sql(connection.dialect))
+            for command in op.to_sql(connection.dialect):
+                connection.execute(command)
 
     return after_create

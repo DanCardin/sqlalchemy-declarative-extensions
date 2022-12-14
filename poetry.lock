@@ -593,12 +593,12 @@ python-versions = ">=3.6"
 typing-extensions = ">=3.7.4"
 
 [[package]]
-name = "sqlparse"
-version = "0.4.3"
-description = "A non-validating SQL parser."
+name = "sqlglot"
+version = "10.2.7"
+description = "An easily customizable SQL parser and transpiler"
 category = "main"
 optional = true
-python-versions = ">=3.5"
+python-versions = "*"
 
 [[package]]
 name = "toml"
@@ -701,12 +701,12 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 
 [extras]
 alembic = ["alembic"]
-parse = ["sqlparse"]
+parse = ["sqlglot"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<4"
-content-hash = "e0156e5331080ec0ec7a6ded8e65f67159a763f38536072153b27b6c3393bbfe"
+content-hash = "5c387af374d190a15195708b98a05eb55638ff75adf43cb09297391d7a3aa9f9"
 
 [metadata.files]
 alembic = [
@@ -1302,9 +1302,9 @@ sqlalchemy2-stubs = [
     {file = "sqlalchemy2-stubs-0.0.2a29.tar.gz", hash = "sha256:1bbc6aebd76db7c0351a9f45cc1c4e8ac335ba150094c2af091e8b87b9118419"},
     {file = "sqlalchemy2_stubs-0.0.2a29-py3-none-any.whl", hash = "sha256:ece266cdabf3797b13ddddba27561b67ae7dedc038942bf66e045e978a5e3a66"},
 ]
-sqlparse = [
-    {file = "sqlparse-0.4.3-py3-none-any.whl", hash = "sha256:0323c0ec29cd52bceabc1b4d9d579e311f3e4961b98d174201d5622a23b85e34"},
-    {file = "sqlparse-0.4.3.tar.gz", hash = "sha256:69ca804846bb114d2ec380e4360a8a340db83f0ccf3afceeb1404df028f57268"},
+sqlglot = [
+    {file = "sqlglot-10.2.7-py3-none-any.whl", hash = "sha256:a8ee97a29cba53f1ef5817112555396d30af1b76ae6103b2c2a6e215257d9c2f"},
+    {file = "sqlglot-10.2.7.tar.gz", hash = "sha256:c59e44a9523c41915d961f28196bc5aeab3e3b69b6328ab0027f017a416fbae3"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},

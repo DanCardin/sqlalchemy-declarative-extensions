@@ -29,7 +29,7 @@ class CreateViewOp:
     def reverse(self):
         return DropViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect):
+    def to_sql(self, dialect: Dialect) -> list[str]:
         return self.view.to_sql_create(dialect)
 
 
@@ -45,8 +45,8 @@ class DropViewOp:
     def reverse(self):
         return CreateViewOp(self.view)
 
-    def to_sql(self, _=None):
-        return self.view.to_sql_drop()
+    def to_sql(self, dialect: Dialect) -> list[str]:
+        return self.view.to_sql_drop(dialect)
 
 
 Operation = Union[CreateViewOp, DropViewOp]

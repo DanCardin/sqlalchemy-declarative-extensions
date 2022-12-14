@@ -31,3 +31,8 @@ def test_view_update_pg(pytester):
 @pytest.mark.alembic
 def test_view_update_mysql(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_view_materialized_constraint(pytester):
+    successful_test_run(pytester, count=1)

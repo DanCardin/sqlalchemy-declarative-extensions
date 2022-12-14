@@ -83,3 +83,25 @@ avoid duplicating the list of columns unnecessarily.
 
 Finally, you can directly call `register_view` to imperitively register a normal [View](sqlalchemy_declarative_extensions.View)
 object, if the class interface doesn't float your boat.
+
+## Materialized views
+
+Materialized views can be created by adding the `materialized=True` kwarg to the `@view` decorator,
+or else by supplying the same kwarg directly to the `View` constructor.
+
+Note that in order to refresh materialized views concurrently, the Postgres requires the view to
+have a unique constraint. The constraint can be applied in the same way that it would be on a
+normal table (i.e. `__table_args__`):
+
+```python
+@view(Base, materialized=True)
+class Bar:
+    __tablename__ = 'bar'
+    __view__ = select(Foo.__table__).where(Foo.__table__.id > 10)
+    __table_args__ = (Index('uq_bar', 'id', unique=True))
+```
+
+There is a caveat (at least currently), that the `UniqueConstraint` convenience class provided by
+SQLAlchemy does not appear to function in the same way as `Index` in a way that makes it incompatible
+with the mechanisms used by this library at the time of writing. As such, we ignore `__table_args__`
+constraints which are not `Index`.

@@ -37,7 +37,7 @@ python = ">=3.7,<4"
 typing_extensions = {version = ">=4.0", python = "<3.11"}
 sqlalchemy = ">=1.3"
 
-sqlparse = {version = "*", optional = true}
+sqlglot = {version = "*", optional = true}
 alembic = { version = ">=1.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
@@ -58,7 +58,7 @@ pymysql = {version = "*", extras = ["rsa"]}
 
 [tool.poetry.extras]
 alembic = ["alembic"]
-parse = ["sqlparse"]
+parse = ["sqlglot"]
 
 [tool.mypy]
 strict_optional = true
