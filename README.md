@@ -61,7 +61,7 @@ class Foo(Base):
     id = Column(types.Integer(), primary_key=True)
 
 
-@view()
+@view(Base)
 class HighFoo:
     __tablename__ = "high_foo"
     __view__ = select(Foo.__table__).where(Foo.__table__.c.id >= 10)

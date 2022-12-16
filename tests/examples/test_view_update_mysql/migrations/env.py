@@ -5,10 +5,6 @@ from models import Base
 from sqlalchemy import engine_from_config, pool
 
 from sqlalchemy_declarative_extensions import register_alembic_events
-from sqlalchemy_declarative_extensions.alembic import (
-    compose_include_object_callbacks,
-    ignore_view_tables,
-)
 
 target_metadata = Base.metadata
 
@@ -24,11 +20,7 @@ if connectable is None:
     )
 
 with connectable.connect() as connection:
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        include_object=compose_include_object_callbacks(ignore_view_tables),
-    )
+    context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()

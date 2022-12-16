@@ -2,7 +2,7 @@ import sqlalchemy
 from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import Row, Views, declarative_database
+from sqlalchemy_declarative_extensions import Row, declarative_database
 
 _Base = declarative_base()
 
@@ -17,7 +17,7 @@ class Base(_Base):
         Row("foo", id=11),
         Row("foo", id=12),
     ]
-    views = Views()
+    views = []
 
 
 class Foo(Base):

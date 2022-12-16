@@ -13,23 +13,10 @@ from sqlalchemy_declarative_extensions.view.base import View, Views
 class CreateViewOp:
     view: View
 
-    @classmethod
-    def create_view(
-        cls,
-        operations,
-        view_name: str,
-        definition: str,
-        *,
-        schema: str | None = None,
-        materialized: bool = False,
-    ):
-        op = cls(View(view_name, definition, schema=schema, materialized=materialized))
-        return operations.invoke(op)
-
     def reverse(self):
         return DropViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect):
+    def to_sql(self, dialect: Dialect) -> list[str]:
         return self.view.to_sql_create(dialect)
 
 
@@ -37,16 +24,11 @@ class CreateViewOp:
 class DropViewOp:
     view: View
 
-    @classmethod
-    def drop_view(cls, operations, view_name: str, schema: str | None = None):
-        op = cls(View(view_name, definition="", schema=schema))
-        return operations.invoke(op)
-
     def reverse(self):
         return CreateViewOp(self.view)
 
-    def to_sql(self, _=None):
-        return self.view.to_sql_drop()
+    def to_sql(self, dialect: Dialect) -> list[str]:
+        return self.view.to_sql_drop(dialect)
 
 
 Operation = Union[CreateViewOp, DropViewOp]
@@ -54,8 +36,6 @@ Operation = Union[CreateViewOp, DropViewOp]
 
 def compare_views(connection: Connection, views: Views) -> list[Operation]:
     result: list[Operation] = []
-    if not views:
-        return result
 
     views_by_name = {r.qualified_name: r for r in views.views}
     expected_view_names = set(views_by_name)
@@ -67,7 +47,7 @@ def compare_views(connection: Connection, views: Views) -> list[Operation]:
     new_view_names = expected_view_names - existing_view_names
     removed_view_names = existing_view_names - expected_view_names
 
-    for view in views.views:
+    for view in views:
         view_name = view.qualified_name
 
         if view_name in views.ignore_views:
@@ -83,7 +63,7 @@ def compare_views(connection: Connection, views: Views) -> list[Operation]:
             view_updated = not existing_view.equals(view, connection.dialect)
             if view_updated:
                 existing_view = existing_views_by_name[view_name]
-                result.append(DropViewOp(view))
+                result.append(DropViewOp(existing_view))
                 result.append(CreateViewOp(view))
 
     if not views.ignore_unspecified:

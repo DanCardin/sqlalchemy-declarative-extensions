@@ -10,7 +10,7 @@ from sqlalchemy_declarative_extensions.role import Role
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row import Row, Rows
 from sqlalchemy_declarative_extensions.schema import Schema, Schemas
-from sqlalchemy_declarative_extensions.view.base import View, Views, view
+from sqlalchemy_declarative_extensions.view import View, Views, register_view, view
 
 __all__ = [
     "declarative_database",
@@ -22,6 +22,7 @@ __all__ = [
     "dialects",
     "register_alembic_events",
     "register_sqlalchemy_events",
+    "register_view",
     "Role",
     "Roles",
     "Schema",

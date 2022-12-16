@@ -1,27 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, TypeVar, Union
+from typing import Any, Callable, Container, Iterable, TypeVar
 
-from sqlalchemy import MetaData, column, select, table
+import sqlalchemy.exc
+from sqlalchemy import Index, MetaData
 from sqlalchemy.engine import Dialect
+from sqlalchemy.schema import CreateIndex, DropIndex
 from sqlalchemy.sql import Select
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
-try:
-    from sqlalchemy.orm import DeclarativeMeta
-except ImportError:  # pragma: no cover
-    from sqlalchemy.ext.orm import DeclarativeMeta  # type: ignore
-
-T = TypeVar("T", bound=Union[HasMetaData, MetaData])
+T = TypeVar("T", bound=HasMetaData)
 
 
-_view_normal_translation = str.maketrans({" ": "", "\n": "", "\t": ""})
-
-
-def view(base_or_metadata: T | None = None) -> Callable[[type], T]:
+def view(base: T, materialized: bool = False) -> Callable[[type], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -41,66 +35,54 @@ def view(base_or_metadata: T | None = None) -> Callable[[type], T]:
     >>>
     >>> Base = declarative_base()
     >>>
-    >>> @view()
-    ... class Foo(Base):
-    ...     __tablename__ = "foo"
-    ...     __view__ = "SELECT * from bar"
-    ...     id = Column(types.Integer, primary_key=True)
-
-    Note that when doing this, alembic will still, by default, interpret the model
-    definition as a Table and attempt to create it. As such, we expose an additional
-    helper function :func:`~sqlalchemy_declarative_extensions.alembic.ignore_view_tables`,
-    to simplify ignoring them.
-
-    Alternatively, if you aren't intending to programmatically make use of the view,
-    you can simply make a class object which resembles a table definition, but does
-    not subclass `Base`. In this case, the `Base` or `MetaData` needs to be passed
-    to the decorator.
-
-    >>> from sqlalchemy.orm import declarative_base
-    >>> from sqlalchemy_declarative_extensions import view
-    >>>
-    >>> Base = declarative_base()
-    >>>
-    >>> @view(Base)  # or Base.metadata
+    >>> @view(Base)
     ... class Foo:
     ...     __tablename__ = "foo"
     ...     __view__ = "SELECT * from bar"
+    ...
+    ...     id = Column(types.Integer, primary_key=True)
     """
 
     def decorator(cls):
-        nonlocal base_or_metadata
-
         name = cls.__tablename__
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
 
+        mapper = instrument_sqlalchemy(base, cls)
+
         schema = find_schema(table_args)
-        instance = View(name, view_def, schema=schema)
+        constraints = find_constraints(table_args)
+        instance = View(
+            name,
+            view_def,
+            schema=schema,
+            materialized=materialized,
+            constraints=constraints,
+        )
 
-        # When the object itself is a subclass of the declarative base,
-        # the base can be omitted from the `view` input argument
-        if isinstance(cls, DeclarativeMeta):
-            base_or_metadata = cls
+        register_view(base, instance)
 
-            cls.__table__.info["is_view"] = True
-        else:
-            # Otherwise, it's not, and we can apply some magic to allow
-            # sqlalchemy to enable `pg.query(cls)`.
-            def clause_element():
-                return (
-                    select(*[column(c.name) for c in view_def.selected_columns])
-                    .select_from(table(instance.qualified_name))
-                    .subquery()
-                )
-
-            cls.__clause_element__ = clause_element
-
-        register_view(base_or_metadata, instance)
-
-        return cls
+        return mapper  # noqa
 
     return decorator
+
+
+def instrument_sqlalchemy(base: T, cls) -> T:
+    temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)
+    try:
+        try:
+            from sqlalchemy import orm
+        except ImportError:
+            from sqlalchemy.ext.declarative import instrument_declarative
+
+            mapper = instrument_declarative(cls, {}, temp_metadata)
+        else:
+            registry = orm.registry(temp_metadata)
+            mapper = registry.mapped(cls)
+    except sqlalchemy.exc.ArgumentError:
+        mapper = cls
+
+    return mapper
 
 
 def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
@@ -138,6 +120,7 @@ class View:
     definition: str | Select
     schema: str | None = None
     materialized: bool = False
+    constraints: list[Index] | None = None
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Any) -> View:
@@ -146,7 +129,7 @@ class View:
 
         try:
             import alembic_utils  # noqa
-        except ImportError:
+        except ImportError:  # pragma: no cover
             pass
         else:
             from alembic_utils.pg_materialized_view import PGMaterializedView
@@ -169,7 +152,13 @@ class View:
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
 
-    def render_definition(self, dialect: Dialect, *, normalize=False):
+    def render_definition(self, dialect: Dialect):
+        try:
+            import sqlglot
+            from sqlglot.optimizer.normalize import normalize
+        except ImportError:  # pragma: no cover
+            raise ImportError("View autogeneration requires the 'parse' extra.")
+
         if isinstance(self.definition, str):
             definition = self.definition
         else:
@@ -180,10 +169,23 @@ class View:
                 )
             )
 
-        if normalize:
-            return definition.lower().translate(_view_normal_translation)
+        dialect_name_map = {"postgresql": "postgres"}
+        dialect_name = dialect_name_map.get(dialect.name, dialect.name)
+        return normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
 
-        return definition
+    def render_constraints(self, dialect, *, create):
+        if not self.constraints:
+            return []
+
+        if create:
+            action = CreateIndex
+        else:
+            action = DropIndex
+
+        return [
+            str(action(constraint).compile(dialect=dialect)).replace("\n", "")
+            for constraint in self.constraints
+        ]
 
     def equals(self, other: View, dialect: Dialect):
         same_view = (
@@ -194,11 +196,12 @@ class View:
         if not same_view:
             return False
 
-        self_def = self.render_definition(dialect, normalize=True)
-        other_def = other.render_definition(dialect, normalize=True)
+        self_def = self.render_definition(dialect)
+        other_def = other.render_definition(dialect)
+
         return self_def == other_def
 
-    def to_sql_create(self, dialect: Dialect):
+    def to_sql_create(self, dialect: Dialect) -> list[str]:
         definition = self.render_definition(dialect)
 
         components = ["CREATE"]
@@ -209,16 +212,27 @@ class View:
         components.append(self.qualified_name)
         components.append("AS")
         components.append(definition)
-        return " ".join(components)
+        statement = " ".join(components)
 
-    def to_sql_drop(self):
+        result = [statement]
+        result.extend(self.render_constraints(dialect, create=True))
+
+        return result
+
+    def to_sql_drop(self, dialect: Dialect) -> list[str]:
         components = ["DROP"]
         if self.materialized:
             components.append("MATERIALIZED")
 
         components.append("VIEW")
         components.append(self.qualified_name)
-        return " ".join(components)
+
+        statement = " ".join(components)
+
+        result = [statement]
+        result.extend(self.render_constraints(dialect, create=False))
+
+        return result
 
 
 @dataclass
@@ -252,17 +266,14 @@ class Views:
         self.views.append(view)
 
     def __iter__(self):
-        for grant in self.grants:
-            yield grant
+        for view in self.views:
+            yield view
 
     def are(self, *views: View):
         return replace(self, views=[View.coerce_from_unknown(v) for v in views])
 
 
 def find_schema(table_args=None):
-    if table_args is None:
-        return None
-
     if isinstance(table_args, dict):
         return table_args.get("schema")
 
@@ -270,4 +281,15 @@ def find_schema(table_args=None):
         for table_arg in table_args:
             if isinstance(table_arg, dict):
                 return table_arg.get("schema")
+
+    return None
+
+
+def find_constraints(table_args=None):
+    if isinstance(table_args, dict):
+        return None
+
+    if isinstance(table_args, Iterable):
+        return [table_arg for table_arg in table_args if isinstance(table_arg, Index)]
+
     return None

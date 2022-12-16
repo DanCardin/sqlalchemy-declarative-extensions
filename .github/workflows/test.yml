@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-poetry-
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install -E parse
 
       - name: Install specific sqlalchemy version
         run: |
