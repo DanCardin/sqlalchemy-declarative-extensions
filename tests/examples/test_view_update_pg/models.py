@@ -1,8 +1,8 @@
 import sqlalchemy
-from sqlalchemy import Column, select, types
+from sqlalchemy import Column, types
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy_declarative_extensions import Row, Views, declarative_database, view
+from sqlalchemy_declarative_extensions import Row, View, Views, declarative_database
 
 _Base = declarative_base()
 
@@ -17,7 +17,7 @@ class Base(_Base):
         Row("foo", id=11),
         Row("foo", id=12),
     ]
-    views = Views()
+    views = Views().are(View("bar", "select id from foo where id > 10"))
 
 
 class Foo(Base):
@@ -30,14 +30,3 @@ class Foo(Base):
         server_default=sqlalchemy.text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
-
-
-foo_table = Foo.__table__
-
-
-@view(Base.metadata)
-class Bar:
-    __tablename__ = "bar"
-    __view__ = select(foo_table.c.id).where(foo_table.c.id > 10)
-
-    id = Column(types.Integer(), autoincrement=True, primary_key=True)

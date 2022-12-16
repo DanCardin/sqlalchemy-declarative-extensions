@@ -6,9 +6,10 @@ from sqlalchemy_declarative_extensions import (
     Row,
     Rows,
     Schemas,
+    View,
     declarative_database,
     register_sqlalchemy_events,
-    view,
+    register_view,
 )
 
 Base_ = declarative_base()
@@ -34,13 +35,15 @@ class Foo(Base):
     id = Column(types.Integer(), primary_key=True)
 
 
-@view(Base, materialized=True)
-class Bar:
-    __tablename__ = "bar"
-    __table_args__ = ({"schema": "fooschema"},)
-    __view__ = "select id from fooschema.foo where id < 10"
+# Register imperitively
+view = View(
+    "bar",
+    "select id from fooschema.foo where id < 10",
+    schema="fooschema",
+    materialized=True,
+)
 
-    id = Column(types.Integer(), primary_key=True)
+register_view(Base.metadata, view)
 
 
 register_sqlalchemy_events(Base.metadata, schemas=True, views=True, rows=True)
@@ -51,14 +54,20 @@ pg = create_postgres_fixture(
 
 
 def test_create_view_postgresql(pg):
+    pg.execute(text("CREATE SCHEMA fooschema"))
+    pg.execute(text("CREATE TABLE fooschema.foo (id integer)"))
+
+    pg.execute(
+        text(
+            "CREATE VIEW fooschema.bar AS (SELECT id FROM fooschema.foo WHERE id < 10)"
+        )
+    )
+
     Base.metadata.create_all(bind=pg.connection())
 
     result = [f.id for f in pg.query(Foo).all()]
     assert result == [1, 2, 12, 13]
 
-    result = [f.id for f in pg.query(Bar).all()]
-    assert result == []
-
     pg.execute(text("refresh materialized view fooschema.bar"))
-    result = [f.id for f in pg.query(Bar).all()]
+    result = [f.id for f in pg.execute(text("select * from fooschema.bar")).all()]
     assert result == [1, 2]

@@ -12,10 +12,10 @@ from sqlalchemy.sql import Select
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
-T = TypeVar("T", HasMetaData, MetaData)
+T = TypeVar("T", bound=HasMetaData)
 
 
-def view(base_or_metadata: T, materialized: bool = False) -> Callable[[type], T]:
+def view(base: T, materialized: bool = False) -> Callable[[type], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -48,7 +48,7 @@ def view(base_or_metadata: T, materialized: bool = False) -> Callable[[type], T]
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
 
-        mapper = instrument_sqlalchemy(base_or_metadata, cls)
+        mapper = instrument_sqlalchemy(base, cls)
 
         schema = find_schema(table_args)
         constraints = find_constraints(table_args)
@@ -60,17 +60,15 @@ def view(base_or_metadata: T, materialized: bool = False) -> Callable[[type], T]
             constraints=constraints,
         )
 
-        register_view(base_or_metadata, instance)
+        register_view(base, instance)
 
         return mapper  # noqa
 
     return decorator
 
 
-def instrument_sqlalchemy(base_or_metadata: T, cls) -> T:
-    metadata = get_metadata(base_or_metadata)
-
-    temp_metadata = MetaData(naming_convention=metadata.naming_convention)
+def instrument_sqlalchemy(base: T, cls) -> T:
+    temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)
     try:
         try:
             from sqlalchemy import orm
@@ -87,7 +85,7 @@ def instrument_sqlalchemy(base_or_metadata: T, cls) -> T:
     return mapper
 
 
-def register_view(base_or_metadata: HasMetaData, view: View):
+def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
     """Register a view onto the given declarative base or `Metadata`.
 
     This can be used instead of the [view](view) decorator, if you are constructing
@@ -95,7 +93,10 @@ def register_view(base_or_metadata: HasMetaData, view: View):
     to their corresponding table definitions, rather than at the root declarative
     base, like many of the other object types are documented to do.
     """
-    metadata = get_metadata(base_or_metadata)
+    if isinstance(base_or_metadata, MetaData):
+        metadata = base_or_metadata
+    else:
+        metadata = base_or_metadata.metadata
 
     if not metadata.info.get("views"):
         metadata.info["views"] = Views()
@@ -128,7 +129,7 @@ class View:
 
         try:
             import alembic_utils  # noqa
-        except ImportError:
+        except ImportError:  # pragma: no cover
             pass
         else:
             from alembic_utils.pg_materialized_view import PGMaterializedView
@@ -155,7 +156,7 @@ class View:
         try:
             import sqlglot
             from sqlglot.optimizer.normalize import normalize
-        except ImportError:
+        except ImportError:  # pragma: no cover
             raise ImportError("View autogeneration requires the 'parse' extra.")
 
         if isinstance(self.definition, str):
@@ -265,17 +266,14 @@ class Views:
         self.views.append(view)
 
     def __iter__(self):
-        for grant in self.grants:
-            yield grant
+        for view in self.views:
+            yield view
 
     def are(self, *views: View):
         return replace(self, views=[View.coerce_from_unknown(v) for v in views])
 
 
 def find_schema(table_args=None):
-    if table_args is None:
-        return None
-
     if isinstance(table_args, dict):
         return table_args.get("schema")
 
@@ -283,6 +281,7 @@ def find_schema(table_args=None):
         for table_arg in table_args:
             if isinstance(table_arg, dict):
                 return table_arg.get("schema")
+
     return None
 
 
@@ -294,9 +293,3 @@ def find_constraints(table_args=None):
         return [table_arg for table_arg in table_args if isinstance(table_arg, Index)]
 
     return None
-
-
-def get_metadata(base_or_metadata: T) -> MetaData:
-    if isinstance(base_or_metadata, MetaData):
-        return base_or_metadata
-    return base_or_metadata.metadata
