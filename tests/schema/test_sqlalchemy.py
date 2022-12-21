@@ -1,12 +1,12 @@
 import sqlalchemy
 from pytest_mock_resources import create_postgres_fixture, create_sqlite_fixture
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Schemas,
     declarative_database,
     register_sqlalchemy_events,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -33,11 +33,13 @@ sqlite = create_sqlite_fixture()
 
 def test_createall_schema_pg(pg):
     Base.metadata.create_all(bind=pg)
-    result = pg.execute(Foo.__table__.select()).fetchall()
+    with pg.connect() as conn:
+        result = conn.execute(Foo.__table__.select()).fetchall()
     assert result == []
 
 
 def test_createall_schema_sqlite(sqlite):
     Base.metadata.create_all(bind=sqlite, checkfirst=False)
-    result = sqlite.execute(Foo.__table__.select()).fetchall()
+    with sqlite.connect() as conn:
+        result = conn.execute(Foo.__table__.select()).fetchall()
     assert result == []

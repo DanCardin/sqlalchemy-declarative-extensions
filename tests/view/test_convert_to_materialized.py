@@ -1,6 +1,5 @@
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Row,
@@ -11,6 +10,7 @@ from sqlalchemy_declarative_extensions import (
     register_sqlalchemy_events,
     register_view,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -69,5 +69,5 @@ def test_create_view_postgresql(pg):
     assert result == [1, 2, 12, 13]
 
     pg.execute(text("refresh materialized view fooschema.bar"))
-    result = [f.id for f in pg.execute(text("select * from fooschema.bar")).all()]
+    result = [f.id for f in pg.execute(text("select * from fooschema.bar")).fetchall()]
     assert result == [1, 2]

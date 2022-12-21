@@ -1,15 +1,7 @@
-from sqlalchemy import (
-    String,
-    and_,
-    bindparam,
-    column,
-    literal,
-    select,
-    table,
-    text,
-    union,
-)
+from sqlalchemy import String, and_, bindparam, column, literal, table, text, union
 from sqlalchemy.dialects.postgresql import ARRAY
+
+from sqlalchemy_declarative_extensions.sqlalchemy import select
 
 tables = table(
     "tables",
@@ -86,12 +78,12 @@ roles_query = text(
 def _schema_not_pg(column=pg_namespace.c.nspname):
     return and_(
         column != "information_schema",
-        column.not_like("pg_%"),
+        column.notlike("pg_%"),
     )
 
 
 _schema_not_public = pg_namespace.c.nspname != "public"
-_table_not_pg = pg_class.c.relname.not_like("pg_%")
+_table_not_pg = pg_class.c.relname.notlike("pg_%")
 
 schemas_query = (
     select(pg_namespace.c.nspname).where(_schema_not_pg()).where(_schema_not_public)

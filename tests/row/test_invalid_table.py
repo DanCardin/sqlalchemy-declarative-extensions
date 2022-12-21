@@ -1,7 +1,6 @@
 import pytest
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Row,
@@ -9,6 +8,7 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 

@@ -1,4 +1,6 @@
-from sqlalchemy import bindparam, column, select, table
+from sqlalchemy import bindparam, column, table
+
+from sqlalchemy_declarative_extensions.sqlalchemy import select
 
 views = table(
     "views",
@@ -27,8 +29,8 @@ views_query = (
         views.c.table_name.label("name"),
         views.c.view_definition.label("definition"),
     )
-    .where(views.c.view_definition.is_not(None))
-    .where(views.c.table_schema.not_in(["sys"]))
+    .where(views.c.view_definition.isnot(None))
+    .where(views.c.table_schema.notin_(["sys"]))
 )
 
 table_exists_query = (

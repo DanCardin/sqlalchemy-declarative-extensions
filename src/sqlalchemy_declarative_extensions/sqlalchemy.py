@@ -1,6 +1,9 @@
+import sqlalchemy
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 from typing_extensions import Protocol
+
+version = getattr(sqlalchemy, "__version__", "1.3")
 
 
 class HasMetaData(Protocol):
@@ -28,3 +31,48 @@ def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
         return dispatcher(connection, *args, **kwargs)
 
     return dispatch
+
+
+if version.startswith("1.3"):
+    from sqlalchemy.ext.declarative import (
+        DeclarativeMeta,
+        declarative_base,
+        instrument_declarative,
+    )
+
+    def select(*args):
+        return sqlalchemy.select(list(args))
+
+    def create_mapper(cls, metadata):
+        return instrument_declarative(cls, {}, metadata)
+
+else:
+    from sqlalchemy.orm import DeclarativeMeta, declarative_base, registry
+
+    select = sqlalchemy.select
+
+    def create_mapper(cls, metadata):
+        reg = registry(metadata=metadata)
+        return reg.mapped(cls)
+
+
+if version.startswith("2"):
+
+    def row_to_dict(row):
+        return row._asdict()
+
+else:
+
+    def row_to_dict(row):
+        return dict(row)
+
+
+__all__ = [
+    "create_mapper",
+    "declarative_base",
+    "DeclarativeMeta",
+    "dialect_dispatch",
+    "HasMetaData",
+    "row_to_dict",
+    "select",
+]

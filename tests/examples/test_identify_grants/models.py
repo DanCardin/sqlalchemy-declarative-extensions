@@ -1,8 +1,8 @@
 from sqlalchemy import Column, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import Roles, declarative_database
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 _Base = declarative_base()
 

@@ -2,7 +2,6 @@ import pytest
 import sqlalchemy.exc
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Grants,
@@ -12,6 +11,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -38,24 +38,30 @@ register_sqlalchemy_events(Base.metadata, schemas=True, roles=True, grants=True)
 
 @pytest.mark.grant
 def test_createall_grant(pg):
-    pg.execute(text("create role read"))
-    pg.execute(text("create table meow (id serial)"))
-    pg.execute(text('GRANT INSERT ON TABLE meow to "read"'))
-    pg.execute(text('GRANT USAGE ON SEQUENCE meow_id_seq to "read"'))
+    with pg.connect() as conn:
+        conn.execute(text("create role read"))
+        conn.execute(text("create table meow (id serial)"))
+        conn.execute(text('GRANT INSERT ON TABLE meow to "read"'))
+        conn.execute(text('GRANT USAGE ON SEQUENCE meow_id_seq to "read"'))
+        conn.execute(text("commit"))
 
     Base.metadata.create_all(bind=pg)
-    pg.execute(text("commit"))
 
     # There should be no diffs detected after running `create_all`
     grants = Base.metadata.info["grants"]
     roles = Base.metadata.info["roles"]
-    diff = compare_grants(pg, grants, roles)
+    with pg.connect() as conn:
+        diff = compare_grants(conn, grants, roles)
     assert len(diff) == 0
 
     # Assert read can only read to foo
-    pg.execute(text("SET ROLE read; SELECT * FROM foo"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE read; SELECT * FROM foo"))
+
     with pytest.raises(sqlalchemy.exc.ProgrammingError):
-        pg.execute(text("SET ROLE read; INSERT INTO foo VALUES (DEFAULT)"))
+        with pg.connect() as conn:
+            conn.execute(text("SET ROLE read; INSERT INTO foo VALUES (DEFAULT)"))
 
     # Assert read can write to meow. Verifying it was ignored
-    pg.execute(text("SET ROLE read; INSERT INTO meow VALUES (DEFAULT)"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE read; INSERT INTO meow VALUES (DEFAULT)"))

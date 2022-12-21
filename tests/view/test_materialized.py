@@ -1,6 +1,5 @@
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Row,
@@ -10,6 +9,8 @@ from sqlalchemy_declarative_extensions import (
     register_sqlalchemy_events,
     view,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from tests import skip_sqlalchemy13
 
 Base_ = declarative_base()
 
@@ -50,6 +51,7 @@ pg = create_postgres_fixture(
 )
 
 
+@skip_sqlalchemy13
 def test_create_view_postgresql(pg):
     Base.metadata.create_all(bind=pg.connection())
 

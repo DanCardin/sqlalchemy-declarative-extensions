@@ -1,28 +1,29 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable
+from typing import TYPE_CHECKING, Iterable, TypeVar
 
 from sqlalchemy import event
-from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.schema import MetaData
 
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.schema.base import Schemas
-from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
+from sqlalchemy_declarative_extensions.sqlalchemy import DeclarativeMeta, HasMetaData
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 if TYPE_CHECKING:
+
     from sqlalchemy_declarative_extensions.dialects import postgresql
     from sqlalchemy_declarative_extensions.grant.base import G
     from sqlalchemy_declarative_extensions.role import generic
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
 
-def declarative_database(
-    base: Any | None = None,
-) -> type[DeclarativeMeta] | Callable[[type[DeclarativeMeta]], type[DeclarativeMeta]]:
+T = TypeVar("T", bound=DeclarativeMeta)
+
+
+def declarative_database(base: T) -> T:
     """Decorate a SQLAlchemy declarative base object to register database objects.
 
     See also :func:`sqlalchemy_declarative_extensions.declare_database`, of which this decorator is syntactic sugar.
@@ -33,7 +34,10 @@ def declarative_database(
     call or ``alembic --autogenerate``.
 
     Examples:
-        >>> from sqlalchemy.orm import declarative_base
+        >>> try:
+        ...     from sqlalchemy.orm import declarative_base
+        ... except ImportError:
+        ...     from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
         >>> Base_ = declarative_base()
         >>>
         >>> from sqlalchemy_declarative_extensions import declarative_database, Roles
@@ -52,27 +56,21 @@ def declarative_database(
         ...     )
 
     """
+    raw_roles = getattr(base, "roles", None)
+    raw_schemas = getattr(base, "schemas", None)
+    raw_grants = getattr(base, "grants", None)
+    raw_views = getattr(base, "views", None)
+    raw_rows = getattr(base, "rows", None)
 
-    def _declare_database(cls: type[DeclarativeMeta]) -> type[DeclarativeMeta]:
-        raw_roles = getattr(cls, "roles", None)
-        raw_schemas = getattr(cls, "schemas", None)
-        raw_grants = getattr(cls, "grants", None)
-        raw_views = getattr(cls, "views", None)
-        raw_rows = getattr(cls, "rows", None)
-
-        declare_database(
-            cls.metadata,
-            schemas=raw_schemas,
-            roles=raw_roles,
-            grants=raw_grants,
-            views=raw_views,
-            rows=raw_rows,
-        )
-        return cls
-
-    if base is None:
-        return _declare_database
-    return _declare_database(base)
+    declare_database(
+        base.metadata,
+        schemas=raw_schemas,
+        roles=raw_roles,
+        grants=raw_grants,
+        views=raw_views,
+        rows=raw_rows,
+    )
+    return base
 
 
 def declare_database(

@@ -1,6 +1,8 @@
 from typing import Optional
 
-from sqlalchemy import bindparam, column, literal, select, table
+from sqlalchemy import bindparam, column, literal, table
+
+from sqlalchemy_declarative_extensions.sqlalchemy import select
 
 
 def make_sqlite_schema(schema: Optional[str] = None):

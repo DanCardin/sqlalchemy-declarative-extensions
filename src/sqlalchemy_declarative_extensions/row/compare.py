@@ -8,6 +8,7 @@ from sqlalchemy.engine.base import Connection
 
 from sqlalchemy_declarative_extensions.dialects import check_table_exists
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
+from sqlalchemy_declarative_extensions.sqlalchemy import row_to_dict
 
 
 @dataclass
@@ -119,7 +120,9 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
 
         if record:
             row_keys = row.column_values.keys()
-            record_dict = {k: v for k, v in dict(record).items() if k in row_keys}
+            record_dict = {
+                k: v for k, v in row_to_dict(record).items() if k in row_keys
+            }
             if row.column_values == record_dict:
                 continue
 
@@ -156,10 +159,10 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
                 table.select().where(
                     tuple_(*table.primary_key.columns).notin_(primary_key_values)
                 )
-            ).all()
+            ).fetchall()
 
             for record in to_delete:
-                op = DeleteRowOp(table.fullname, dict(record))
+                op = DeleteRowOp(table.fullname, row_to_dict(record))
                 result.append(op)
 
     return result

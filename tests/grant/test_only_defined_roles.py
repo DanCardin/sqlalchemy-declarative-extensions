@@ -1,7 +1,6 @@
 import pytest
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Grants,
@@ -10,6 +9,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -48,13 +48,14 @@ register_sqlalchemy_events(Base.metadata, schemas=True, roles=True, grants=True)
 @pytest.mark.grant
 def test_createall_grant(pg):
     Base.metadata.create_all(bind=pg)
-    pg.execute(text("commit"))
 
     # There should be no diffs detected after running `create_all`
     grants = Base.metadata.info["grants"]
     roles = Base.metadata.info["roles"]
-    diff = compare_grants(pg, grants, roles)
+    with pg.connect() as conn:
+        diff = compare_grants(conn, grants, roles)
     assert len(diff) == 0
 
-    pg.execute(text("SELECT * FROM foo"))
-    pg.execute(text("INSERT INTO foo VALUES (DEFAULT)"))
+    with pg.connect() as conn:
+        conn.execute(text("SELECT * FROM foo"))
+        conn.execute(text("INSERT INTO foo VALUES (DEFAULT)"))

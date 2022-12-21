@@ -1,5 +1,4 @@
 from pytest_mock_resources import create_postgres_fixture
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     declarative_database,
@@ -7,6 +6,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -38,6 +38,7 @@ register_sqlalchemy_events(Base, roles=True)
 def test_createall_role(pg):
     Base.metadata.create_all(bind=pg)
 
-    result = get_roles(pg)
+    with pg.connect() as conn:
+        result = get_roles(conn)
     assert len(result) == 1
     assert result[0].name == "user"
