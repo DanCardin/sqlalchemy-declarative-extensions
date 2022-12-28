@@ -4,13 +4,13 @@ Views definition and registration can be performed exactly as it is done with ot
 types, by defining the set of views on the `MetaData` or declarative base, like so:
 
 ```python
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database, View, Views
 
 _Base = declarative_base()
 
 
-@declarative_database()
+@declarative_database
 class Base(_Base):
     __abstract__ = True
 
@@ -53,7 +53,7 @@ definition time.
 
 ```python
 from sqlalchemy import Column, types, select
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions import view
 
 Base = declarative_base()

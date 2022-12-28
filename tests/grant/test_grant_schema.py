@@ -2,7 +2,6 @@ import pytest
 import sqlalchemy.exc
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Grants,
@@ -13,6 +12,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Grant
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -56,19 +56,23 @@ def test_createall_grant(pg):
     Base.metadata.create_all(bind=pg)
 
     # `access` can access the table because it has usage on the schema
-    pg.execute(text("SET ROLE access; SELECT * from bar.bar"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE access; SELECT * from bar.bar"))
 
     # `noaccess` **cannnot** access the table because it does not
     # Assert write can write to foo
     with pytest.raises(sqlalchemy.exc.ProgrammingError):
-        pg.execute(text("SET ROLE noaccess; SELECT * FROM foo"))
+        with pg.connect() as conn:
+            conn.execute(text("SET ROLE noaccess; SELECT * FROM foo"))
 
     grants = Base.metadata.info["grants"]
     roles = Base.metadata.info["roles"]
 
     # There should be no diffs detected after running `create_all`
-    diff = compare_grants(pg, grants, roles)
+    with pg.connect() as conn:
+        diff = compare_grants(conn, grants, roles)
     assert len(diff) == 0
 
     # Ensure we're exploding common grants.
-    pg.execute(text("SET ROLE access; SELECT * from baz.baz"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE access; SELECT * from baz.baz"))

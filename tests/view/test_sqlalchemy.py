@@ -3,8 +3,7 @@ from pytest_mock_resources import (
     create_postgres_fixture,
     create_sqlite_fixture,
 )
-from sqlalchemy import Column, select, types
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, types
 
 from sqlalchemy_declarative_extensions import (
     Row,
@@ -14,6 +13,8 @@ from sqlalchemy_declarative_extensions import (
     register_sqlalchemy_events,
     view,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base, select
+from tests import skip_sqlalchemy13
 
 Base_ = declarative_base()
 
@@ -68,10 +69,12 @@ sqlite = create_sqlite_fixture(scope="function", session=True)
 mysql = create_mysql_fixture(scope="function", session=True)
 
 
+@skip_sqlalchemy13
 def test_create_view_postgresql(pg):
     run_test(pg)
 
 
+@skip_sqlalchemy13
 def test_create_view_mysql(mysql):
     run_test(mysql)
 

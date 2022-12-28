@@ -2,7 +2,6 @@ from alembic_utils.pg_materialized_view import PGMaterializedView
 from alembic_utils.pg_view import PGView
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Row,
@@ -12,6 +11,7 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -55,12 +55,12 @@ def test_create_view_postgresql(pg):
     result = [f.id for f in pg.query(Foo).all()]
     assert result == [1, 2, 12, 13]
 
-    result = [f.id for f in pg.execute(text("select id from fooschema.bar")).all()]
+    result = [f.id for f in pg.execute(text("select id from fooschema.bar")).fetchall()]
     assert result == [12, 13]
 
-    result = [f.id for f in pg.execute(text("select id from fooschema.baz")).all()]
+    result = [f.id for f in pg.execute(text("select id from fooschema.baz")).fetchall()]
     assert result == []
 
     pg.execute(text("refresh materialized view fooschema.baz"))
-    result = [f.id for f in pg.execute(text("select id from fooschema.baz")).all()]
+    result = [f.id for f in pg.execute(text("select id from fooschema.baz")).fetchall()]
     assert result == [1, 2]

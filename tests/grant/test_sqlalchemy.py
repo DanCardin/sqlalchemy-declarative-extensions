@@ -2,7 +2,6 @@ import pytest
 import sqlalchemy.exc
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Grants,
@@ -12,6 +11,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -50,7 +50,8 @@ register_sqlalchemy_events(Base.metadata, roles=True, grants=True)
 def test_createall_grant(pg):
     Base.metadata.create_all(bind=pg)
 
-    roles = get_roles(pg, exclude=[pg.pmr_credentials.username])
+    with pg.connect() as conn:
+        roles = get_roles(conn, exclude=[pg.pmr_credentials.username])
     result = [role.name for role in roles]
 
     expected_result = [
@@ -62,18 +63,22 @@ def test_createall_grant(pg):
 
     # only "write" can write
     with pytest.raises(sqlalchemy.exc.ProgrammingError) as e:
-        pg.execute(text("SET ROLE read; INSERT INTO foo VALUES (DEFAULT)"))
+        with pg.connect() as conn:
+            conn.execute(text("SET ROLE read; INSERT INTO foo VALUES (DEFAULT)"))
     assert "permission denied for relation foo" in str(e.value)
 
-    pg.execute(text("SET ROLE write; INSERT INTO foo VALUES (DEFAULT)"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE write; INSERT INTO foo VALUES (DEFAULT)"))
 
     # only "read" can read
     with pytest.raises(sqlalchemy.exc.ProgrammingError) as e:
-        pg.execute(text("SET ROLE write; SELECT * FROM foo"))
+        with pg.connect() as conn:
+            conn.execute(text("SET ROLE write; SELECT * FROM foo"))
     assert "permission denied for relation foo" in str(e.value)
 
-    pg.execute(text("SET ROLE read; SELECT * FROM foo"))
+    with pg.connect() as conn:
+        conn.execute(text("SET ROLE read; SELECT * FROM foo"))
 
-    # "app" can do both
-    pg.execute(text("SET ROLE app; INSERT INTO foo VALUES (DEFAULT)"))
-    pg.execute(text("SET ROLE app; SELECT * FROM foo"))
+        # "app" can do both
+        conn.execute(text("SET ROLE app; INSERT INTO foo VALUES (DEFAULT)"))
+        conn.execute(text("SET ROLE app; SELECT * FROM foo"))

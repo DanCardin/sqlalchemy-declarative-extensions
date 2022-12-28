@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from pytest_mock_resources import create_postgres_fixture
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions import (
     Roles,
@@ -10,6 +10,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 Base_ = declarative_base()
 
@@ -45,7 +46,8 @@ register_sqlalchemy_events(Base, roles=True)
 def test_createall_role(pg):
     Base.metadata.create_all(bind=pg)
 
-    result = get_roles(pg, exclude=[pg.pmr_credentials.username])
+    with pg.connect() as conn:
+        result = get_roles(conn, exclude=[pg.pmr_credentials.username])
 
     expected_result = [
         Role(
@@ -77,11 +79,12 @@ def test_createall_role(pg):
 
 def test_pg_role_default(pg):
     """Assert a default role with no options matches a default role in postgres."""
-    pg.execute("create role foo")
-    argumentless_role = get_roles(pg, exclude=[pg.pmr_credentials.username])[0]
-    pg.execute("drop role foo")
+    with pg.connect() as conn:
+        conn.execute(text("create role foo"))
+        argumentless_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[0]
+        conn.execute(text("drop role foo"))
 
-    pg.execute(Role("foo").to_sql_create())
-    default_role = get_roles(pg, exclude=[pg.pmr_credentials.username])[0]
+        conn.execute(text(Role("foo").to_sql_create()))
+        default_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[0]
 
-    assert argumentless_role == default_role
+        assert argumentless_role == default_role

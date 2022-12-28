@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions import Roles
@@ -14,4 +14,9 @@ def role_ddl(metadata: MetaData, connection: Connection, **_):
 
     result = compare_roles(connection, roles)
     for op in result:
-        connection.execute(op.to_sql())
+        statements = op.to_sql()
+        if isinstance(statements, list):
+            for statement in statements:
+                connection.execute(text(statement))
+        else:
+            connection.execute(text(statements))

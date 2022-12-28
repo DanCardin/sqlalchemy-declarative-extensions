@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions import Views
@@ -10,6 +10,6 @@ def view_ddl(views: Views):
         result = compare_views(connection, views)
         for op in result:
             for command in op.to_sql(connection.dialect):
-                connection.execute(command)
+                connection.execute(text(command))
 
     return after_create

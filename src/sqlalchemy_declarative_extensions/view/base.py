@@ -10,7 +10,7 @@ from sqlalchemy.schema import CreateIndex, DropIndex
 from sqlalchemy.sql import Select
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
-from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, create_mapper
 
 T = TypeVar("T", bound=HasMetaData)
 
@@ -29,8 +29,11 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
     This can be useful, to enable querying that view in native SQLAlchemy ORM-style,
     as though it were a table.
 
+    >>> try:
+    ...     from sqlalchemy.orm import declarative_base
+    ... except ImportError:
+    ...     from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
     >>> from sqlalchemy import Column, types
-    >>> from sqlalchemy.orm import declarative_base
     >>> from sqlalchemy_declarative_extensions import view
     >>>
     >>> Base = declarative_base()
@@ -48,8 +51,6 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
 
-        mapper = instrument_sqlalchemy(base, cls)
-
         schema = find_schema(table_args)
         constraints = find_constraints(table_args)
         instance = View(
@@ -62,7 +63,7 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
 
         register_view(base, instance)
 
-        return mapper  # noqa
+        return instrument_sqlalchemy(base, cls)
 
     return decorator
 
@@ -70,15 +71,7 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
 def instrument_sqlalchemy(base: T, cls) -> T:
     temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)
     try:
-        try:
-            from sqlalchemy import orm
-        except ImportError:
-            from sqlalchemy.ext.declarative import instrument_declarative
-
-            mapper = instrument_declarative(cls, {}, temp_metadata)
-        else:
-            registry = orm.registry(temp_metadata)
-            mapper = registry.mapped(cls)
+        mapper = create_mapper(cls, temp_metadata)
     except sqlalchemy.exc.ArgumentError:
         mapper = cls
 

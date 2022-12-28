@@ -2,7 +2,6 @@ import pytest
 import sqlalchemy.exc
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
-from sqlalchemy.ext.declarative import declarative_base
 
 from sqlalchemy_declarative_extensions import (
     Schemas,
@@ -11,6 +10,8 @@ from sqlalchemy_declarative_extensions import (
     register_sqlalchemy_events,
     view,
 )
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from tests import skip_sqlalchemy13
 
 Base_ = declarative_base()
 
@@ -55,6 +56,7 @@ pg = create_postgres_fixture(
 )
 
 
+@skip_sqlalchemy13
 def test_ignore_views(pg):
     pg.execute(text("CREATE VIEW moo AS (SELECT rolname from pg_roles)"))
 

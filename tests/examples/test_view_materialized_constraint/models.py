@@ -1,13 +1,13 @@
 import sqlalchemy
-from sqlalchemy import Column, Index, select, types
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Index, types
 
 from sqlalchemy_declarative_extensions import Row, declarative_database, view
+from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base, select
 
 _Base = declarative_base()
 
 
-@declarative_database()
+@declarative_database
 class Base(_Base):
     __abstract__ = True
 

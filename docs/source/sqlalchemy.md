@@ -7,7 +7,7 @@ One can either register declared objects directly on a declarative base:
 from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database
 
-_Base = declarative_database()
+_Base = declarative_base()
 
 @declarative_database
 class Base(_Base):
