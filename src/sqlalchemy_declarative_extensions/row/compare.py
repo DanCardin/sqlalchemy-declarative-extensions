@@ -21,8 +21,8 @@ class InsertRowOp:
         op = cls(table, values)
         return operations.invoke(op)
 
-    def render(self, metadata: MetaData):
-        table = metadata.tables[self.table]
+    def render(self, conn: Connection):
+        table = get_table(conn, self.table)
         return table.insert().values(self.values)
 
     def reverse(self):
@@ -40,8 +40,9 @@ class UpdateRowOp:
         op = cls(table, from_values, to_values)
         return operations.invoke(op)
 
-    def render(self, metadata: MetaData):
-        table = metadata.tables[self.table]
+    def render(self, conn: Connection):
+        table = get_table(conn, self.table)
+
         primary_key_columns = [c.name for c in table.primary_key.columns]
         where = [
             table.c[c] == v
@@ -67,8 +68,9 @@ class DeleteRowOp:
         op = cls(table, values)
         return operations.invoke(op)
 
-    def render(self, metadata: MetaData):
-        table = metadata.tables[self.table]
+    def render(self, conn: Connection):
+        table = get_table(conn, self.table)
+
         primary_key_columns = [c.name for c in table.primary_key.columns]
         where = [
             table.c[c] == v for c, v in self.values.items() if c in primary_key_columns
@@ -77,6 +79,19 @@ class DeleteRowOp:
 
     def reverse(self):
         return InsertRowOp(self.table, self.values)
+
+
+def get_table(conn: Connection, tablename: str):
+    m = MetaData()
+
+    try:
+        schema, table = tablename.split(".", 1)
+    except ValueError:
+        table = tablename
+        schema = None
+
+    m.reflect(conn, schema=schema, only=[table])
+    return m.tables[tablename]
 
 
 RowOp = Union[InsertRowOp, UpdateRowOp, DeleteRowOp]

@@ -26,3 +26,8 @@ def test_delete_rows_ignore_unspecified(pytester):
 @pytest.mark.alembic
 def test_rows_disabled(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_rows_drop_table(pytester):
+    successful_test_run(pytester, count=1)
