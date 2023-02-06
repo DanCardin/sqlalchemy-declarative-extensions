@@ -56,7 +56,7 @@ else:
         return reg.mapped(cls)
 
 
-if version.startswith("2"):
+if version.startswith(("1.4", "2")):
 
     def row_to_dict(row):
         return row._asdict()
