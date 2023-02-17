@@ -132,7 +132,7 @@ object_acl_query = union(
     select(
         literal(None).label("schema"),
         pg_namespace.c.nspname.label("name"),
-        literal("n").label("relkind"),
+        text("'n'"),
         pg_roles.c.rolname.label("owner"),
         pg_namespace.c.nspacl.cast(ARRAY(String)),
     )
