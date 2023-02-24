@@ -42,9 +42,10 @@ alembic = { version = ">=1.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
 psycopg2-binary = "*"
+psycopg = "*"
 
 [tool.poetry.group.dev.dependencies]
-alembic-utils = "*"
+alembic-utils = "0.8.1"
 black = ">=22.3.0"
 coverage = ">=5"
 ruff = ">=0.0.165"
@@ -52,7 +53,7 @@ mypy = ">=0.942"
 pytest = ">=7"
 pytest-xdist = "*"
 pytest-alembic = "*"
-pytest-mock-resources = { version = ">=2.6.5", extras = ["docker"] }
+pytest-mock-resources = { version = ">=2.6.10", extras = ["docker"] }
 sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
 pymysql = {version = "*", extras = ["rsa"]}
 

@@ -108,7 +108,8 @@ def get_grants_postgresql(
 
 
 def get_roles_postgresql(connection: Connection, exclude=None):
-    result = [Role.from_pg_role(r) for r in connection.execute(roles_query).fetchall()]
+    raw_roles = connection.execute(roles_query).fetchall()
+    result = [Role.from_pg_role(r) for r in raw_roles]
     if exclude:
         return [role for role in result if role.name not in exclude]
     return result

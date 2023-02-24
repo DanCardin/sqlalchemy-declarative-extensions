@@ -1,7 +1,11 @@
 from sqlalchemy import String, and_, bindparam, column, literal, table, text, union
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, CHAR
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
+
+
+char = CHAR(1)
+
 
 tables = table(
     "tables",
@@ -16,7 +20,7 @@ pg_class = table(
     column("relname"),
     column("relnamespace"),
     column("relacl"),
-    column("relkind"),
+    column("relkind", char),
     column("relowner"),
 )
 
@@ -117,7 +121,7 @@ object_acl_query = union(
     select(
         pg_namespace.c.nspname.label("schema"),
         pg_class.c.relname.label("name"),
-        pg_class.c.relkind.label("relkind"),
+        pg_class.c.relkind.cast(char).label("relkind"),
         pg_roles.c.rolname.label("owner"),
         pg_class.c.relacl.cast(ARRAY(String)).label("acl"),
     )
@@ -126,13 +130,24 @@ object_acl_query = union(
             pg_roles, pg_class.c.relowner == pg_roles.c.oid
         )
     )
-    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T", "v"]))
+    .where(
+        pg_class.c.relkind.cast(char).in_(
+            [
+                literal("r", char),
+                literal("S", char),
+                literal("f", char),
+                literal("n", char),
+                literal("T", char),
+                literal("v", char),
+            ]
+        )
+    )
     .where(_table_not_pg)
     .where(_schema_not_pg()),
     select(
         literal(None).label("schema"),
         pg_namespace.c.nspname.label("name"),
-        literal("n").label("relkind"),
+        literal("n").cast(char).label("relkind"),
         pg_roles.c.rolname.label("owner"),
         pg_namespace.c.nspacl.cast(ARRAY(String)),
     )
@@ -145,12 +160,23 @@ objects_query = (
     select(
         pg_namespace.c.nspname.label("schema"),
         pg_class.c.relname.label("object_name"),
-        pg_class.c.relkind.label("relkind"),
+        pg_class.c.relkind.cast(char).label("relkind"),
     )
     .select_from(
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
     )
-    .where(pg_class.c.relkind.in_(["r", "S", "f", "n", "T", "v"]))
+    .where(
+        pg_class.c.relkind.cast(char).in_(
+            [
+                literal("r", char),
+                literal("S", char),
+                literal("f", char),
+                literal("n", char),
+                literal("T", char),
+                literal("v", char),
+            ]
+        )
+    )
     .where(_table_not_pg)
     .where(_schema_not_pg())
 )
