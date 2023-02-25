@@ -61,8 +61,7 @@ class Grants:
         return None
 
     def __iter__(self):
-        for grant in self.grants:
-            yield grant
+        yield from self.grants
 
     def are(self, *grants: G):
         return replace(self, grants=list(grants))

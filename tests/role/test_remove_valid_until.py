@@ -14,9 +14,10 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 def test_valid_until_date_being_removed(pg):
     with pg.connect() as conn:
-        conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
-        conn.execute(text("ALTER ROLE forever_valid VALID UNTIL '2020-01-01'"))
-        conn.execute(text("commit"))
+        with conn.begin() as trans:
+            conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
+            conn.execute(text("ALTER ROLE forever_valid VALID UNTIL '2020-01-01'"))
+            trans.commit()
 
         result = compare_roles(conn, roles)
     assert len(result) == 1
@@ -26,9 +27,10 @@ def test_valid_until_date_being_removed(pg):
 
 def test_valid_until_infinity_ignored(pg):
     with pg.connect() as conn:
-        conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
-        conn.execute(text("ALTER ROLE forever_valid VALID UNTIL 'infinity'"))
-        conn.execute(text("commit"))
+        with conn.begin() as trans:
+            conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
+            conn.execute(text("ALTER ROLE forever_valid VALID UNTIL 'infinity'"))
+            trans.commit()
 
         result = compare_roles(conn, roles)
     assert len(result) == 0
@@ -36,8 +38,9 @@ def test_valid_until_infinity_ignored(pg):
 
 def test_valid_until_null_ignored(pg):
     with pg.connect() as conn:
-        conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
-        conn.execute(text("commit"))
+        with conn.begin() as trans:
+            conn.execute(text("CREATE ROLE forever_valid WITH PASSWORD 'p';"))
+            trans.commit()
 
         result = compare_roles(conn, roles)
     assert len(result) == 0

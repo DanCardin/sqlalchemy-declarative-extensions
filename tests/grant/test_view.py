@@ -15,22 +15,25 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 @pytest.mark.grant
 def test_createall_grant(pg):
     with pg.connect() as conn:
-        conn.execute(text("create role test"))
-        conn.execute(text("create schema s"))
-        conn.execute(text("create table s.foo (id integer)"))
-        conn.execute(text("insert into s.foo (id) values (1)"))
-        conn.execute(text("insert into s.foo (id) values (11)"))
+        with conn.begin() as trans:
+            conn.execute(text("create role test"))
+            conn.execute(text("create schema s"))
+            conn.execute(text("create table s.foo (id integer)"))
+            conn.execute(text("insert into s.foo (id) values (1)"))
+            conn.execute(text("insert into s.foo (id) values (11)"))
 
-        conn.execute(
-            text("create view s.vw_foo as (select id from s.foo where id > 10)")
-        )
+            conn.execute(
+                text("create view s.vw_foo as (select id from s.foo where id > 10)")
+            )
 
-        conn.execute(text("grant usage on schema s to test"))
-        conn.execute(text("grant select on table s.foo to test"))
-        conn.execute(
-            text("alter default privileges in schema s grant select on tables to test")
-        )
-        conn.execute(text("commit"))
+            conn.execute(text("grant usage on schema s to test"))
+            conn.execute(text("grant select on table s.foo to test"))
+            conn.execute(
+                text(
+                    "alter default privileges in schema s grant select on tables to test"
+                )
+            )
+            trans.commit()
 
     roles = Roles().are("test")
     grants = Grants().are(
@@ -47,7 +50,9 @@ def test_createall_grant(pg):
     assert view_grant == 'GRANT SELECT ON TABLE "s"."vw_foo" TO "test";'
 
     with pg.connect() as conn:
-        conn.execute(text(view_grant))
+        with conn.begin() as trans:
+            conn.execute(text(view_grant))
+            trans.commit()
 
         # Assert write can write to foo
         conn.execute(text("SET ROLE test; SELECT * FROM s.vw_foo"))

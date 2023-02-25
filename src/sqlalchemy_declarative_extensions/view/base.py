@@ -259,8 +259,7 @@ class Views:
         self.views.append(view)
 
     def __iter__(self):
-        for view in self.views:
-            yield view
+        yield from self.views
 
     def are(self, *views: View):
         return replace(self, views=[View.coerce_from_unknown(v) for v in views])

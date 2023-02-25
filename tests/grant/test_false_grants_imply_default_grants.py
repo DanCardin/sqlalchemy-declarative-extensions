@@ -39,8 +39,10 @@ register_sqlalchemy_events(Base.metadata, schemas=True, roles=True, grants=True)
 @pytest.mark.grant
 def test_createall_grant(pg):
     with pg.connect() as conn:
-        conn.execute(text("create role foo"))
-        conn.execute(text("create table bar (id integer)"))
+        with conn.begin() as trans:
+            conn.execute(text("create role foo"))
+            conn.execute(text("create table bar (id integer)"))
+            trans.commit()
 
     Base.metadata.create_all(bind=pg)
 

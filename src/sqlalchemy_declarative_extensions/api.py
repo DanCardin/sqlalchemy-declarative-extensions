@@ -13,7 +13,6 @@ from sqlalchemy_declarative_extensions.sqlalchemy import DeclarativeMeta, HasMet
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 if TYPE_CHECKING:
-
     from sqlalchemy_declarative_extensions.dialects import postgresql
     from sqlalchemy_declarative_extensions.grant.base import G
     from sqlalchemy_declarative_extensions.role import generic

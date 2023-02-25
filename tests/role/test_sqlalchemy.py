@@ -80,11 +80,16 @@ def test_createall_role(pg):
 def test_pg_role_default(pg):
     """Assert a default role with no options matches a default role in postgres."""
     with pg.connect() as conn:
-        conn.execute(text("create role foo"))
-        argumentless_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[0]
-        conn.execute(text("drop role foo"))
+        with conn.begin() as trans:
+            conn.execute(text("create role foo"))
+            argumentless_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[
+                0
+            ]
+            conn.execute(text("drop role foo"))
 
-        conn.execute(text(Role("foo").to_sql_create()))
+            conn.execute(text(Role("foo").to_sql_create()))
+            trans.commit()
+
         default_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[0]
 
         assert argumentless_role == default_role

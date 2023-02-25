@@ -57,5 +57,7 @@ def test_createall_grant(pg):
     assert len(diff) == 0
 
     with pg.connect() as conn:
-        conn.execute(text("SELECT * FROM foo"))
-        conn.execute(text("INSERT INTO foo VALUES (DEFAULT)"))
+        with conn.begin() as trans:
+            conn.execute(text("SELECT * FROM foo"))
+            conn.execute(text("INSERT INTO foo VALUES (DEFAULT)"))
+            trans.commit()

@@ -60,8 +60,9 @@ register_sqlalchemy_events(Base.metadata, schemas=True, roles=True, grants=True)
 @pytest.mark.grant
 def test_createall_grant(pg):
     with pg.connect() as conn:
-        conn.execute(text("create table meow (id serial)"))
-        conn.execute(text("commit"))
+        with conn.begin() as trans:
+            conn.execute(text("create table meow (id serial)"))
+            trans.commit()
 
     Base.metadata.create_all(bind=pg)
 
