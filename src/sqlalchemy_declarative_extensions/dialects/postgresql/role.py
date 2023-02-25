@@ -6,6 +6,14 @@ from datetime import datetime
 from sqlalchemy_declarative_extensions.role import generic
 
 
+class ValidUntilInifinty:
+    """Sentinal value to indicate that the role's `valid_until` field is infinite.
+
+    Using normal `ALTER ROLE` statements, setting `valid until` to `'infinity'` seems
+    to be the canonical method, rather than being able to unset the value entirely.
+    """
+
+
 @dataclass(frozen=True)
 class Role(generic.Role):
     """Define a role object.
@@ -15,6 +23,11 @@ class Role(generic.Role):
     Note, the password field can be supplied, but it will be ignored when
     performing comparisons against existing roles. That is, changing the
     password field will not produce any (alembic) changes!
+
+    Note, a `valid_until` value of `None` implies that it should never expire,
+    this translates into no net-change to the role if there is no expiration set
+    already, however it translates to 'infinity' if there is an expiration being
+    removed.
     """
 
     superuser: bool | None = False
@@ -116,7 +129,7 @@ class RoleDiff:
     replication: bool | None = None
     bypass_rls: bool | None = None
     connection_limit: int | None = None
-    valid_until: datetime | None = None
+    valid_until: datetime | ValidUntilInifinty | None = None
 
     add_roles: list[str] = field(default_factory=list)
     remove_roles: list[str] = field(default_factory=list)
@@ -155,9 +168,12 @@ class RoleDiff:
         if to_role.connection_limit != from_role.connection_limit:
             connection_limit = to_role.connection_limit
 
-        valid_until = None
+        valid_until: datetime | ValidUntilInifinty | None = None
         if to_role.valid_until != from_role.valid_until:
-            valid_until = to_role.valid_until
+            if to_role.valid_until is None:
+                valid_until = ValidUntilInifinty()
+            else:
+                valid_until = to_role.valid_until
 
         add_roles = []
         remove_roles = []
@@ -230,7 +246,10 @@ def postgres_render_role_options(role: Role | RoleDiff) -> list[str]:
         segments.append(segment)
 
     if role.valid_until is not None:
-        timestamp = role.valid_until.isoformat()
+        if isinstance(role.valid_until, ValidUntilInifinty):
+            timestamp = "infinity"
+        else:
+            timestamp = role.valid_until.isoformat()
         segment = f"VALID UNTIL '{timestamp}'"
         segments.append(segment)
 

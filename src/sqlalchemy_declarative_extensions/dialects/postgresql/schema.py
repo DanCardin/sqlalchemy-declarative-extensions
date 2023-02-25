@@ -3,7 +3,6 @@ from sqlalchemy.dialects.postgresql import ARRAY, CHAR
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
-
 char = CHAR(1)
 
 
@@ -63,19 +62,28 @@ pg_matviews = table(
 
 roles_query = text(
     """
-        SELECT r.rolname, r.rolsuper, r.rolinherit,
-          r.rolcreaterole, r.rolcreatedb, r.rolcanlogin,
-          r.rolconnlimit, r.rolvaliduntil,
-          ARRAY(SELECT b.rolname
-                FROM pg_catalog.pg_auth_members m
-                JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
-                WHERE m.member = r.oid) as memberof
-        , r.rolreplication
-        , r.rolbypassrls
-        FROM pg_catalog.pg_roles r
-        WHERE r.rolname !~ '^pg_'
-        ORDER BY 1;
-        """
+    SELECT
+      r.rolname,
+      r.rolsuper,
+      r.rolinherit,
+      r.rolcreaterole,
+      r.rolcreatedb,
+      r.rolcanlogin,
+      r.rolconnlimit,
+      CASE
+        WHEN r.rolvaliduntil = 'infinity' THEN NULL
+        ELSE r.rolvaliduntil
+      END,
+      ARRAY(SELECT b.rolname
+            FROM pg_catalog.pg_auth_members m
+            JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+            WHERE m.member = r.oid) as memberof,
+      r.rolreplication,
+      r.rolbypassrls
+    FROM pg_catalog.pg_roles r
+    WHERE r.rolname !~ '^pg_'
+    ORDER BY 1;
+    """
 )
 
 
