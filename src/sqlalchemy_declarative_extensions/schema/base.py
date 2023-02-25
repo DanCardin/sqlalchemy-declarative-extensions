@@ -44,8 +44,7 @@ class Schemas:
         return None
 
     def __iter__(self):
-        for schema in self.schemas:
-            yield schema
+        yield from self.schemas
 
     def are(self, *schemas: Schema | str):
         """Declare the set of schemas which should exist."""

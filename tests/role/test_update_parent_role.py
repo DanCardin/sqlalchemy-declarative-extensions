@@ -18,14 +18,16 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 def test_createall_role(pg):
     with pg.connect() as conn:
-        conn.execute(text("CREATE ROLE parent1"))
-        conn.execute(text("CREATE ROLE parent2"))
+        with conn.begin() as trans:
+            conn.execute(text("CREATE ROLE parent1"))
+            conn.execute(text("CREATE ROLE parent2"))
 
-        # Incorrectly has parents
-        conn.execute(text("CREATE ROLE child_no_parent IN ROLE parent1, parent2"))
+            # Incorrectly has parents
+            conn.execute(text("CREATE ROLE child_no_parent IN ROLE parent1, parent2"))
 
-        # Incorrectly has no parents
-        conn.execute(text("CREATE ROLE child_with_parent"))
+            # Incorrectly has no parents
+            conn.execute(text("CREATE ROLE child_with_parent"))
+            trans.commit()
 
         result = compare_roles(conn, roles)
     assert len(result) == 2

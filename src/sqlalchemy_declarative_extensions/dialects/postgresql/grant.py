@@ -66,7 +66,7 @@ class Grant(Generic[G]):
         grant_option=False,
     ) -> Grant:
         return cls(
-            grants=tuple(sorted([grant, *grants])),
+            grants=tuple(sorted([grant, *grants])),  # type: ignore
             target_role=_coerce_name(to),
             grant_option=grant_option,
         )

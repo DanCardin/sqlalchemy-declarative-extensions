@@ -21,8 +21,7 @@ class Rows:
         return None
 
     def __iter__(self):
-        for role in self.rows:
-            yield role
+        yield from self.rows
 
     def are(self, *rows: Row):
         return replace(self, rows=rows)

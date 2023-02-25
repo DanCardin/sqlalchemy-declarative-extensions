@@ -36,21 +36,22 @@ register_sqlalchemy_events(Base.metadata, schemas=True, roles=True, grants=True)
 @pytest.mark.grant
 def test_createall_grant(pg):
     with pg.connect() as conn:
-        conn.execute(text("create role read"))
-        conn.execute(
-            text(
-                "alter default privileges in schema public grant insert, update, delete on tables to read"
+        with conn.begin() as trans:
+            conn.execute(text("create role read"))
+            conn.execute(
+                text(
+                    "alter default privileges in schema public grant insert, update, delete on tables to read"
+                )
             )
-        )
-        conn.execute(
-            text(
-                "alter default privileges in schema public grant usage on sequences to read"
+            conn.execute(
+                text(
+                    "alter default privileges in schema public grant usage on sequences to read"
+                )
             )
-        )
-        conn.execute(text("create table meow (id serial)"))
-        conn.execute(text('GRANT INSERT ON TABLE meow to "read"'))
-        conn.execute(text('GRANT USAGE ON SEQUENCE meow_id_seq to "read"'))
-        conn.execute(text("commit"))
+            conn.execute(text("create table meow (id serial)"))
+            conn.execute(text('GRANT INSERT ON TABLE meow to "read"'))
+            conn.execute(text('GRANT USAGE ON SEQUENCE meow_id_seq to "read"'))
+            trans.commit()
 
     Base.metadata.create_all(bind=pg)
 

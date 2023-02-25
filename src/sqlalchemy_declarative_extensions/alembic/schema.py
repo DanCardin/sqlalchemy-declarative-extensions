@@ -26,12 +26,12 @@ def compare_schemas(autogen_context, upgrade_ops, schemas: Schemas):
 
 @renderers.dispatch_for(CreateSchemaOp)
 def render_create_schema(_, op: CreateSchemaOp):
-    return "op.create_schema('{}')".format(op.schema.name)
+    return f"op.create_schema('{op.schema.name}')"
 
 
 @renderers.dispatch_for(DropSchemaOp)
 def render_drop_schema(_, op: DropSchemaOp):
-    return "op.drop_schema('{}')".format(op.schema.name)
+    return f"op.drop_schema('{op.schema.name}')"
 
 
 @Operations.implementation_for(CreateSchemaOp)

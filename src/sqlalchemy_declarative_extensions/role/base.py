@@ -27,8 +27,7 @@ class Roles:
         return None
 
     def __iter__(self) -> Generator[postgresql.Role | generic.Role, None, None]:
-        for role in self.roles:
-            yield role
+        yield from self.roles
 
     def are(self, *roles: postgresql.Role | generic.Role | str):
         return replace(
