@@ -18,5 +18,5 @@ lint:
 	black --check src tests
 
 format:
-	ruff src tests --fix
 	black src tests
+	ruff src tests --fix

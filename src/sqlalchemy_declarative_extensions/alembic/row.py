@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
@@ -58,24 +58,12 @@ def render_delete_table_row(_, op: DeleteRowOp):
 
 
 @Operations.implementation_for(InsertRowOp)
-def insert_row(operations: Operations, operation: InsertRowOp):
-    metadata = operations.migration_context.opts["target_metadata"]
-    query = operation.render(metadata)
-    conn = operations.get_bind()
-    conn.execute(query)
-
-
 @Operations.implementation_for(UpdateRowOp)
-def update_row(operations: Operations, operation: UpdateRowOp):
-    metadata = operations.migration_context.opts["target_metadata"]
-    query = operation.render(metadata)
-    conn = operations.get_bind()
-    conn.execute(query)
-
-
 @Operations.implementation_for(DeleteRowOp)
-def delete_row(operations: Operations, operation: DeleteRowOp):
-    metadata = operations.migration_context.opts["target_metadata"]
-    query = operation.render(metadata)
+def execute_row(
+    operations: Operations,
+    operation: Union[InsertRowOp, UpdateRowOp, DeleteRowOp],
+):
     conn = operations.get_bind()
+    query = operation.render(conn)
     conn.execute(query)
