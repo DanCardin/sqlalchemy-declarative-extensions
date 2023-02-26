@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Container, Iterable, TypeVar
 
 import sqlalchemy.exc
-from sqlalchemy import Index, MetaData
-from sqlalchemy.engine import Dialect
+from sqlalchemy import Index, MetaData, text
+from sqlalchemy.engine import Connection, Dialect
 from sqlalchemy.schema import CreateIndex, DropIndex
 from sqlalchemy.sql import Select
 
@@ -145,26 +146,45 @@ class View:
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
 
-    def render_definition(self, dialect: Dialect):
-        try:
-            import sqlglot
-            from sqlglot.optimizer.normalize import normalize
-        except ImportError:  # pragma: no cover
-            raise ImportError("View autogeneration requires the 'parse' extra.")
-
+    def compile_definition(self, dialect: Dialect) -> str:
         if isinstance(self.definition, str):
-            definition = self.definition
-        else:
-            definition = str(
-                self.definition.compile(
-                    dialect=dialect,
-                    compile_kwargs={"literal_binds": True},
-                )
-            )
+            return self.definition
 
-        dialect_name_map = {"postgresql": "postgres"}
-        dialect_name = dialect_name_map.get(dialect.name, dialect.name)
-        return normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
+        return str(
+            self.definition.compile(
+                dialect=dialect,
+                compile_kwargs={"literal_binds": True},
+            )
+        )
+
+    def render_definition(self, conn: Connection):
+        dialect = conn.engine.dialect
+
+        definition = self.compile_definition(dialect)
+
+        if dialect.name == "postgresql":
+            from sqlalchemy_declarative_extensions.dialects import get_view
+
+            with conn.begin_nested() as trans:
+                random_name = "v" + uuid.uuid4().hex
+                conn.execute(text(f"CREATE VIEW {random_name} AS {definition}"))
+                view = get_view(conn, random_name)
+                trans.rollback()
+                return view.definition
+
+        else:
+            # Fall back to library-based normalization, which cannot be perfect.
+            try:
+                import sqlglot
+                from sqlglot.optimizer.normalize import normalize
+            except ImportError:  # pragma: no cover
+                raise ImportError("View autogeneration requires the 'parse' extra.")
+
+            dialect_name_map = {"postgresql": "postgres"}
+            dialect_name = dialect_name_map.get(dialect.name, dialect.name)
+            return (
+                normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
+            )
 
     def render_constraints(self, dialect, *, create):
         if not self.constraints:
@@ -180,7 +200,7 @@ class View:
             for constraint in self.constraints
         ]
 
-    def equals(self, other: View, dialect: Dialect):
+    def equals(self, other: View, conn: Connection):
         same_view = (
             self.name == other.name
             and self.schema == other.schema
@@ -189,13 +209,13 @@ class View:
         if not same_view:
             return False
 
-        self_def = self.render_definition(dialect)
-        other_def = other.render_definition(dialect)
+        self_def = self.render_definition(conn)
+        other_def = other.render_definition(conn)
 
         return self_def == other_def
 
     def to_sql_create(self, dialect: Dialect) -> list[str]:
-        definition = self.render_definition(dialect)
+        definition = self.compile_definition(dialect)
 
         components = ["CREATE"]
         if self.materialized:

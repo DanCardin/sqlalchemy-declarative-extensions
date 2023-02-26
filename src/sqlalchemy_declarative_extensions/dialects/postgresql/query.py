@@ -17,6 +17,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     schema_exists_query,
     schemas_query,
     table_exists_query,
+    view_query,
     views_query,
 )
 from sqlalchemy_declarative_extensions.sql import qualify_name
@@ -126,3 +127,13 @@ def get_views_postgresql(connection: Connection):
         )
         for v in connection.execute(views_query).fetchall()
     ]
+
+
+def get_view_postgresql(connection: Connection, name: str, schema: str = "public"):
+    result = connection.execute(view_query, {"schema": schema, "name": name}).fetchone()
+    assert result
+    return View(
+        result.name,
+        result.definition,
+        schema=result.schema if result.schema != "public" else None,
+    )

@@ -203,3 +203,11 @@ views_query = union(
         literal(True).label("materialized"),
     ).where(_schema_not_pg(pg_matviews.c.schemaname)),
 )
+
+
+views_subquery = views_query.cte()
+view_query = (
+    select(views_subquery)
+    .where(views_subquery.c.schema == bindparam("schema"))
+    .where(views_subquery.c.name == bindparam("name"))
+)

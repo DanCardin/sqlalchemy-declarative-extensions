@@ -12,6 +12,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
     get_objects_postgresql,
     get_roles_postgresql,
     get_schemas_postgresql,
+    get_view_postgresql,
     get_views_postgresql,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
@@ -65,4 +66,8 @@ get_views = dialect_dispatch(
     postgresql=get_views_postgresql,
     sqlite=get_views_sqlite,
     mysql=get_views_mysql,
+)
+
+get_view = dialect_dispatch(
+    postgresql=get_view_postgresql,
 )
