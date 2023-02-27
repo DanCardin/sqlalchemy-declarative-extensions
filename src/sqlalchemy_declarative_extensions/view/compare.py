@@ -60,7 +60,7 @@ def compare_views(connection: Connection, views: Views) -> list[Operation]:
         else:
             existing_view = existing_views_by_name[view_name]
 
-            view_updated = not existing_view.equals(view, connection.dialect)
+            view_updated = not existing_view.equals(view, connection)
             if view_updated:
                 existing_view = existing_views_by_name[view_name]
                 result.append(DropViewOp(existing_view))
