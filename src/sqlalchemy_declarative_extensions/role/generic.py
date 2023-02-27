@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -12,7 +12,9 @@ class Role:
     @classmethod
     def coerce_from_unknown(cls, unknown: str | Role) -> Role:
         if isinstance(unknown, Role):
-            return unknown
+            return replace(
+                unknown, in_roles=sorted(unknown.in_roles) if unknown.in_roles else None
+            )
 
         return cls(unknown)
 
