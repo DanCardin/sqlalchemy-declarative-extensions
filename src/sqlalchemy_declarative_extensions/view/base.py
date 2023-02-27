@@ -8,7 +8,7 @@ import sqlalchemy.exc
 from sqlalchemy import Index, MetaData, text
 from sqlalchemy.engine import Connection, Dialect
 from sqlalchemy.schema import CreateIndex, DropIndex
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Select, Selectable
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, create_mapper
@@ -51,6 +51,12 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
         name = cls.__tablename__
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
+
+        if isinstance(cls.__view__, Selectable):
+            cls.__table__ = cls.__view__
+
+        if isinstance(cls.__view__, str):
+            cls.__table__ = text(cls.__view__)
 
         schema = find_schema(table_args)
         constraints = find_constraints(table_args)
@@ -97,7 +103,7 @@ def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
     metadata.info["views"].append(view)
 
 
-@dataclass(eq=False)
+@dataclass
 class View:
     """Definition of a view.
 
@@ -114,7 +120,7 @@ class View:
     definition: str | Select
     schema: str | None = None
     materialized: bool = False
-    constraints: list[Index] | None = None
+    constraints: list[Index] | None = field(default=None, compare=False)
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Any) -> View:
@@ -160,18 +166,33 @@ class View:
     def render_definition(self, conn: Connection):
         dialect = conn.engine.dialect
 
-        definition = self.compile_definition(dialect)
+        compiled_definition = self.compile_definition(dialect)
 
         if dialect.name == "postgresql":
             from sqlalchemy_declarative_extensions.dialects import get_view
 
             with conn.begin_nested() as trans:
-                random_name = "v" + uuid.uuid4().hex
-                conn.execute(text(f"CREATE VIEW {random_name} AS {definition}"))
-                view = get_view(conn, random_name)
-                trans.rollback()
-                return view.definition
+                try:
+                    random_name = "v" + uuid.uuid4().hex
+                    conn.execute(
+                        text(f"CREATE VIEW {random_name} AS {compiled_definition}")
+                    )
+                    view = get_view(conn, random_name)
+                    definition1 = view.definition
 
+                    # Optimization, the view query **can** change if we re-run it,
+                    # but if it's not changed from the first iteration, we assume it wont.
+                    if definition1 == compiled_definition:
+                        return compiled_definition
+
+                    # Re-generate the view, it **can** not produce the same text twice.
+                    random_name = "v" + uuid.uuid4().hex
+                    conn.execute(text(f"CREATE VIEW {random_name} AS {definition1}"))
+                    view = get_view(conn, random_name)
+                    definition2 = view.definition
+                    return definition2
+                finally:
+                    trans.rollback()
         else:
             # Fall back to library-based normalization, which cannot be perfect.
             try:
@@ -183,7 +204,10 @@ class View:
             dialect_name_map = {"postgresql": "postgres"}
             dialect_name = dialect_name_map.get(dialect.name, dialect.name)
             return (
-                normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
+                normalize(
+                    sqlglot.parse_one(compiled_definition, read=dialect_name)
+                ).sql(dialect_name)
+                + ";"
             )
 
     def render_constraints(self, dialect, *, create):
@@ -200,19 +224,8 @@ class View:
             for constraint in self.constraints
         ]
 
-    def equals(self, other: View, conn: Connection):
-        same_view = (
-            self.name == other.name
-            and self.schema == other.schema
-            and self.materialized == other.materialized
-        )
-        if not same_view:
-            return False
-
-        self_def = self.render_definition(conn)
-        other_def = other.render_definition(conn)
-
-        return self_def == other_def
+    def normalize(self, conn: Connection) -> View:
+        return replace(self, definition=self.render_definition(conn))
 
     def to_sql_create(self, dialect: Dialect) -> list[str]:
         definition = self.compile_definition(dialect)

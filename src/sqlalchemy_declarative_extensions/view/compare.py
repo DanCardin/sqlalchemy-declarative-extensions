@@ -55,16 +55,17 @@ def compare_views(connection: Connection, views: Views) -> list[Operation]:
 
         view_created = view_name in new_view_names
 
+        normalized_view = view.normalize(connection)
+
         if view_created:
-            result.append(CreateViewOp(view))
+            result.append(CreateViewOp(normalized_view))
         else:
             existing_view = existing_views_by_name[view_name]
+            normalized_existing_view = existing_view.normalize(connection)
 
-            view_updated = not existing_view.equals(view, connection)
-            if view_updated:
-                existing_view = existing_views_by_name[view_name]
-                result.append(DropViewOp(existing_view))
-                result.append(CreateViewOp(view))
+            if normalized_existing_view != normalized_view:
+                result.append(DropViewOp(normalized_existing_view))
+                result.append(CreateViewOp(normalized_view))
 
     if not views.ignore_unspecified:
         for removed_view in removed_view_names:
