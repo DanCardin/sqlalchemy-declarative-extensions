@@ -36,7 +36,7 @@ class Foo(Base):
 foo_table = Foo.__table__
 
 
-@view(Base, materialized=True)
+# @view(Base, materialized=True)
 class Bar:
     __tablename__ = "bar"
     __view__ = select(foo_table.c.num, foo_table.c.num2).where(foo_table.c.id > 10)
@@ -46,7 +46,7 @@ class Bar:
     num2 = Column(types.Integer(), nullable=False)
 
 
-@view(Base, materialized=True)
+# @view(Base, materialized=True)
 class Baz:
     __tablename__ = "baz"
     __view__ = select(foo_table.c.num, foo_table.c.num2).where(foo_table.c.id <= 10)
