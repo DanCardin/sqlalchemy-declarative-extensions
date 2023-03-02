@@ -9,6 +9,7 @@ def test_view_create_pg(pytester):
 
 
 @pytest.mark.alembic
+@pytest.mark.mysql
 def test_view_create_mysql(pytester):
     successful_test_run(pytester, count=1)
 
@@ -19,6 +20,7 @@ def test_view_drop_pg(pytester):
 
 
 @pytest.mark.alembic
+@pytest.mark.mysql
 def test_view_drop_mysql(pytester):
     successful_test_run(pytester, count=1)
 
@@ -29,6 +31,7 @@ def test_view_update_pg(pytester):
 
 
 @pytest.mark.alembic
+@pytest.mark.mysql
 def test_view_update_mysql(pytester):
     successful_test_run(pytester, count=1)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Union
 
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection, Dialect
 
 from sqlalchemy_declarative_extensions.dialects import get_views
@@ -21,6 +22,18 @@ class CreateViewOp:
 
 
 @dataclass
+class UpdateViewOp:
+    from_view: View
+    to_view: View
+
+    def reverse(self):
+        return UpdateViewOp(from_view=self.to_view, to_view=self.from_view)
+
+    def to_sql(self, dialect: Dialect) -> list[str]:
+        return self.to_view.to_sql_update(self.from_view, dialect)
+
+
+@dataclass
 class DropViewOp:
     view: View
 
@@ -31,10 +44,12 @@ class DropViewOp:
         return self.view.to_sql_drop(dialect)
 
 
-Operation = Union[CreateViewOp, DropViewOp]
+Operation = Union[CreateViewOp, UpdateViewOp, DropViewOp]
 
 
-def compare_views(connection: Connection, views: Views) -> list[Operation]:
+def compare_views(
+    connection: Connection, views: Views, metadata: MetaData
+) -> list[Operation]:
     result: list[Operation] = []
 
     views_by_name = {r.qualified_name: r for r in views.views}
@@ -55,17 +70,16 @@ def compare_views(connection: Connection, views: Views) -> list[Operation]:
 
         view_created = view_name in new_view_names
 
-        normalized_view = view.normalize(connection)
+        normalized_view = view.normalize(connection, metadata)
 
         if view_created:
             result.append(CreateViewOp(normalized_view))
         else:
             existing_view = existing_views_by_name[view_name]
-            normalized_existing_view = existing_view.normalize(connection)
+            normalized_existing_view = existing_view.normalize(connection, metadata)
 
             if normalized_existing_view != normalized_view:
-                result.append(DropViewOp(normalized_existing_view))
-                result.append(CreateViewOp(normalized_view))
+                result.append(UpdateViewOp(normalized_existing_view, normalized_view))
 
     if not views.ignore_unspecified:
         for removed_view in removed_view_names:

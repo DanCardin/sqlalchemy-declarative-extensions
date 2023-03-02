@@ -10,7 +10,13 @@ from sqlalchemy_declarative_extensions.role import Role
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row import Row, Rows
 from sqlalchemy_declarative_extensions.schema import Schema, Schemas
-from sqlalchemy_declarative_extensions.view import View, Views, register_view, view
+from sqlalchemy_declarative_extensions.view import (
+    View,
+    ViewIndex,
+    Views,
+    register_view,
+    view,
+)
 
 __all__ = [
     "declarative_database",
@@ -29,5 +35,6 @@ __all__ = [
     "Schemas",
     "view",
     "View",
+    "ViewIndex",
     "Views",
 ]

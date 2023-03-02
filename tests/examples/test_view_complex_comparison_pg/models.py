@@ -16,26 +16,26 @@ _Base = declarative_base()
 class Base(_Base):
     __abstract__ = True
 
-    schemas = Schemas().are("namespace")
-    rows = [Row("namespace.foo", id=3)]
+    schemas = Schemas().are("wat")
+    rows = [Row("wat.foo", id=3)]
     views = Views().are(
         View(
             "baz",
-            "select id, foo_id from namespace.foo join namespace.bar on namespace.foo.id = namespace.bar.foo_id",
-            schema="namespace",
+            "select id, foo_id from wat.foo join wat.bar on wat.foo.id = wat.bar.foo_id",
+            schema="wat",
         )
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
-    __table_args__ = {"schema": "namespace"}
+    __table_args__ = {"schema": "wat"}
 
     id = Column(types.Integer(), autoincrement=True, primary_key=True)
 
 
 class Bar(Base):
     __tablename__ = "bar"
-    __table_args__ = {"schema": "namespace"}
+    __table_args__ = {"schema": "wat"}
 
-    foo_id = Column(types.Integer(), ForeignKey("namespace.foo.id"), primary_key=True)
+    foo_id = Column(types.Integer(), ForeignKey("wat.foo.id"), primary_key=True)

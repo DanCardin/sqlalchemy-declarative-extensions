@@ -65,7 +65,9 @@ def test_createall_grant(pg):
     with pytest.raises(sqlalchemy.exc.ProgrammingError) as e:
         with pg.connect() as conn:
             conn.execute(text("SET ROLE read; INSERT INTO foo VALUES (DEFAULT)"))
-    assert "permission denied for relation foo" in str(e.value)
+    assert "permission denied for relation foo" in str(e.value).replace(
+        "table", "relation"
+    )
 
     with pg.connect() as conn:
         conn.execute(text("SET ROLE write; INSERT INTO foo VALUES (DEFAULT)"))
@@ -74,7 +76,9 @@ def test_createall_grant(pg):
     with pytest.raises(sqlalchemy.exc.ProgrammingError) as e:
         with pg.connect() as conn:
             conn.execute(text("SET ROLE write; SELECT * FROM foo"))
-    assert "permission denied for relation foo" in str(e.value)
+    assert "permission denied for relation foo" in str(e.value).replace(
+        "table", "relation"
+    )
 
     with pg.connect() as conn:
         conn.execute(text("SET ROLE read; SELECT * FROM foo"))
