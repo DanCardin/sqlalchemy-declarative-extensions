@@ -27,11 +27,12 @@ class Foo(Base):
     __table_args__ = {"schema": "fooschema"}
 
     id = Column(types.Integer(), primary_key=True)
+    value = Column(types.Integer())
 
 
 view = View(
     "bar",
-    "select id from fooschema.foo where id < 10",
+    "select id, value from fooschema.foo where id < 10",
     schema="fooschema",
     materialized=True,
     constraints=[ViewIndex(["id"], unique=True)],
@@ -54,13 +55,13 @@ def test_constraint_changes(pg):
         - Fixing the issue to consider constraint changes caused the view itself to be dropped/replaced
     """
     pg.execute(text("CREATE SCHEMA fooschema"))
-    pg.execute(text("CREATE TABLE fooschema.foo (id integer)"))
-
+    pg.execute(text("CREATE TABLE fooschema.foo (id integer, value integer)"))
     pg.execute(
         text(
-            "CREATE MATERIALIZED VIEW fooschema.bar AS (SELECT id FROM fooschema.foo WHERE id < 10)"
+            "CREATE MATERIALIZED VIEW fooschema.bar AS (SELECT id, value FROM fooschema.foo WHERE id < 10)"
         )
     )
+    pg.execute(text('CREATE UNIQUE INDEX "ix_id" ON "fooschema"."bar" (value)'))
     pg.commit()
 
     views = Base.metadata.info["views"]
@@ -69,9 +70,13 @@ def test_constraint_changes(pg):
     assert len(result) == 1
 
     sql_statements = result[0].to_sql(connection.dialect)
+    assert len(sql_statements) == 2
 
-    assert sql_statements == [
-        """CREATE UNIQUE INDEX "ix_id" ON "fooschema"."bar" (id);"""
-    ]
+    assert sql_statements[0] == """DROP INDEX "fooschema"."ix_id";"""
+    assert (
+        sql_statements[1]
+        == """CREATE UNIQUE INDEX "ix_id" ON "fooschema"."bar" (id);"""
+    )
 
-    pg.execute(text(sql_statements[0]))
+    for statement in sql_statements:
+        pg.execute(text(statement))
