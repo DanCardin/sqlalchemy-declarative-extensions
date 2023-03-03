@@ -226,7 +226,7 @@ class View:
             if create:
                 query = constraint.create(self)
             else:
-                query = constraint.drop()
+                query = constraint.drop(self)
 
             result.append(query)
         return result
@@ -417,12 +417,10 @@ class ViewIndex:
         columns = ", ".join(self.columns)
         return f'CREATE{unique} INDEX "{self.name}" ON {on_name} ({columns});'
 
-    def drop(self):
-        unique = ""
-        if self.unique:
-            unique = " UNIQUE"
-
-        return f'DROP{unique} INDEX "{self.name}";'
+    def drop(self, on: View):
+        assert self.name
+        name = qualify_name(on.schema, self.name, quote=True)
+        return f"DROP INDEX {name};"
 
 
 @dataclass
