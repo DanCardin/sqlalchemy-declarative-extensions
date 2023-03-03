@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, TypeVar
+from typing import Any, Callable, Container, Iterable, TypeVar, cast, List
 
-import sqlalchemy.exc
-from sqlalchemy import Index, MetaData, text
+from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
-from sqlalchemy.schema import CreateIndex, DropIndex
 from sqlalchemy.sql import Select
+from sqlalchemy.sql.compiler import IdentifierPreparer
+from sqlalchemy.sql.elements import conv
+from sqlalchemy.sql.naming import ConventionDict
+from sqlalchemy.sql.schema import DEFAULT_NAMING_CONVENTION
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, create_mapper
@@ -16,7 +18,9 @@ from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, create_map
 T = TypeVar("T", bound=HasMetaData)
 
 
-def view(base: T, materialized: bool = False) -> Callable[[type], T]:
+def view(
+    base: T, materialized: bool = False, register_as_model=False
+) -> Callable[[type], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -29,6 +33,13 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
     and have it register in the same way you might otherwise manually define it.
     This can be useful, to enable querying that view in native SQLAlchemy ORM-style,
     as though it were a table.
+
+    Arguments:
+        base: A declarative base object.
+        materialized: Whether the view should be a materialized view
+        register_as_model: Whether the view should be registered as a SQLAlchemy mapped object.
+            Note this only works if the view defines mappable models columns (minimally a primary
+            key), like a proper modeled table.
 
     >>> try:
     ...     from sqlalchemy.orm import declarative_base
@@ -52,6 +63,9 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
 
+        # if isinstance(cls.__view__, Select):
+        #     cls.__table__ = cls.__view__
+
         schema = find_schema(table_args)
         constraints = find_constraints(table_args)
         instance = View(
@@ -64,19 +78,16 @@ def view(base: T, materialized: bool = False) -> Callable[[type], T]:
 
         register_view(base, instance)
 
-        return instrument_sqlalchemy(base, cls)
+        if register_as_model:
+            return instrument_sqlalchemy(base, cls)
+        return cls
 
     return decorator
 
 
 def instrument_sqlalchemy(base: T, cls) -> T:
     temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)
-    try:
-        mapper = create_mapper(cls, temp_metadata)
-    except sqlalchemy.exc.ArgumentError:
-        mapper = cls
-
-    return mapper
+    return create_mapper(cls, temp_metadata)
 
 
 def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
@@ -97,7 +108,7 @@ def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
     metadata.info["views"].append(view)
 
 
-@dataclass(eq=False)
+@dataclass
 class View:
     """Definition of a view.
 
@@ -114,7 +125,7 @@ class View:
     definition: str | Select
     schema: str | None = None
     materialized: bool = False
-    constraints: list[Index] | None = None
+    constraints: list[Index | UniqueConstraint | ViewIndex] | None = field(default=None)
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Any) -> View:
@@ -138,9 +149,9 @@ class View:
                     materialized=materialized,
                 )
 
-        raise NotImplementedError(  # pragma: no cover
+        raise NotImplementedError(
             f"Unsupported view source object {unknown}"
-        )
+        )  # pragma: no cover
 
     @property
     def qualified_name(self):
@@ -160,18 +171,33 @@ class View:
     def render_definition(self, conn: Connection):
         dialect = conn.engine.dialect
 
-        definition = self.compile_definition(dialect)
+        compiled_definition = self.compile_definition(dialect)
 
         if dialect.name == "postgresql":
             from sqlalchemy_declarative_extensions.dialects import get_view
 
             with conn.begin_nested() as trans:
-                random_name = "v" + uuid.uuid4().hex
-                conn.execute(text(f"CREATE VIEW {random_name} AS {definition}"))
-                view = get_view(conn, random_name)
-                trans.rollback()
-                return view.definition
+                try:
+                    random_name = "v" + uuid.uuid4().hex
+                    conn.execute(
+                        text(f"CREATE VIEW {random_name} AS {compiled_definition}")
+                    )
+                    view = get_view(conn, random_name)
+                    definition1 = view.definition
 
+                    # Optimization, the view query **can** change if we re-run it,
+                    # but if it's not changed from the first iteration, we assume it wont.
+                    if definition1 == compiled_definition:
+                        return compiled_definition
+
+                    # Re-generate the view, it **can** not produce the same text twice.
+                    random_name = "v" + uuid.uuid4().hex
+                    conn.execute(text(f"CREATE VIEW {random_name} AS {definition1}"))
+                    view = get_view(conn, random_name)
+                    definition2 = view.definition
+                    return definition2
+                finally:
+                    trans.rollback()
         else:
             # Fall back to library-based normalization, which cannot be perfect.
             try:
@@ -183,36 +209,39 @@ class View:
             dialect_name_map = {"postgresql": "postgres"}
             dialect_name = dialect_name_map.get(dialect.name, dialect.name)
             return (
-                normalize(sqlglot.parse_one(definition, read=dialect_name)).sql() + ";"
+                normalize(
+                    sqlglot.parse_one(compiled_definition, read=dialect_name)
+                ).sql(dialect_name)
+                + ";"
             )
 
-    def render_constraints(self, dialect, *, create):
+    def render_constraints(self, *, create):
         if not self.constraints:
             return []
 
-        if create:
-            action = CreateIndex
-        else:
-            action = DropIndex
+        result = []
+        for constraint in self.constraints:
+            assert isinstance(constraint, ViewIndex)
 
-        return [
-            str(action(constraint).compile(dialect=dialect)).replace("\n", "")
-            for constraint in self.constraints
-        ]
+            if create:
+                query = constraint.create(self)
+            else:
+                query = constraint.drop()
 
-    def equals(self, other: View, conn: Connection):
-        same_view = (
-            self.name == other.name
-            and self.schema == other.schema
-            and self.materialized == other.materialized
+            result.append(query)
+        return result
+
+    def normalize(self, conn: Connection, metadata: MetaData) -> View:
+        constraints = None
+        if self.constraints:
+            constraints = [
+                ViewIndex.from_unknown(c, self, conn.dialect, metadata)
+                for c in self.constraints
+            ]
+
+        return replace(
+            self, definition=self.render_definition(conn), constraints=constraints
         )
-        if not same_view:
-            return False
-
-        self_def = self.render_definition(conn)
-        other_def = other.render_definition(conn)
-
-        return self_def == other_def
 
     def to_sql_create(self, dialect: Dialect) -> list[str]:
         definition = self.compile_definition(dialect)
@@ -228,7 +257,21 @@ class View:
         statement = " ".join(components)
 
         result = [statement]
-        result.extend(self.render_constraints(dialect, create=True))
+        result.extend(self.render_constraints(create=True))
+
+        return result
+
+    def to_sql_update(self, from_view: View, dialect: Dialect) -> list[str]:
+        result = []
+        if (
+            from_view.definition != self.definition
+            or from_view.materialized != self.materialized
+        ):
+            result.extend(from_view.to_sql_drop(dialect))
+            result.extend(self.to_sql_create(dialect))
+        else:
+            result.extend(from_view.render_constraints(create=False))
+            result.extend(self.render_constraints(create=True))
 
         return result
 
@@ -243,7 +286,7 @@ class View:
         statement = " ".join(components)
 
         result = [statement]
-        result.extend(self.render_constraints(dialect, create=False))
+        result.extend(self.render_constraints(create=False))
 
         return result
 
@@ -302,6 +345,117 @@ def find_constraints(table_args=None):
         return None
 
     if isinstance(table_args, Iterable):
-        return [table_arg for table_arg in table_args if isinstance(table_arg, Index)]
+        return [
+            arg
+            for arg in table_args
+            if isinstance(arg, (UniqueConstraint, ViewIndex, Index))
+        ]
 
     return None
+
+
+@dataclass
+class ViewIndex:
+    columns: list[str]
+    name: str | None = None
+    unique: bool = False
+
+    @classmethod
+    def from_unknown(
+        cls,
+        index: ViewIndex | Index | UniqueConstraint,
+        source_view: View,
+        dialect: Dialect,
+        metadata: MetaData,
+    ):
+        if isinstance(index, ViewIndex):
+            convention = "uq" if index.unique else "ix"
+            instance = index
+        elif isinstance(index, Index):
+            convention = "ix"
+            instance = ViewIndex(
+                columns=cast(List[str], list(index.expressions)),
+                name=index.name,
+                unique=index.unique,
+            )
+        elif isinstance(index, UniqueConstraint):
+            convention = "uq"
+            instance = ViewIndex(
+                columns=cast(List[str], list(index._pending_colargs)),
+                name=index.name,  # type: ignore
+                unique=True,
+            )
+        else:  # pragma: no cover
+            raise NotImplementedError()
+
+        if instance.name:
+            return instance
+
+        naming_convention = metadata.naming_convention or DEFAULT_NAMING_CONVENTION
+        template = naming_convention.get(convention) or naming_convention["ix"]
+        cd = ConventionDict(
+            _ViewIndexAdapter(instance), source_view, metadata.naming_convention
+        )
+        conventionalized_name = conv(template % cd)
+
+        try:
+            name = IdentifierPreparer(dialect).truncate_and_render_index_name(
+                conventionalized_name
+            )
+        except AttributeError:
+            # SQLAlchemy < 1.4 does not have this function/behavior
+            name = conventionalized_name
+
+        return replace(instance, name=name)
+
+    def create(self, on: View):
+        on_name = qualify_name(on.schema, on.name, quote=True)
+        unique = ""
+        if self.unique:
+            unique = " UNIQUE"
+
+        columns = ", ".join(self.columns)
+        return f'CREATE{unique} INDEX "{self.name}" ON {on_name} ({columns});'
+
+    def drop(self):
+        unique = ""
+        if self.unique:
+            unique = " UNIQUE"
+
+        return f'DROP{unique} INDEX "{self.name}";'
+
+
+@dataclass
+class _ViewIndexAdapter:
+    """Internal adapter type which stands in for the **actual** view index options.
+
+    SQLAlchemy `Index` or `UniqueConstraint`, and local `ViewIndex` are the **actual**
+    public view type options. However in order to make use of SQLAlchemy's internal
+    naming convention logic, we need to pretend to be an object which acts like one
+    of those internal types.
+
+    This is also the purpose of `_ColumnNamingAdapter`
+    """
+
+    view_index: ViewIndex
+
+    @property
+    def name(self):
+        return self.view_index.name
+
+    @property
+    def columns(self):
+        return [_ColumnNamingAdapter(c) for c in self.view_index.columns]
+
+    @property
+    def expressions(self):
+        return self.view_index.columns
+
+
+@dataclass
+class _ColumnNamingAdapter:
+    name: str
+
+    @property
+    def _ddl_label(self):
+        return self.name

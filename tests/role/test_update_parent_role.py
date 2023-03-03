@@ -10,6 +10,7 @@ roles = Roles(ignore_unspecified=True).are(
     "parent2",
     Role("child_no_parent"),
     Role("child_with_parent", in_roles=["parent1", "parent2"]),
+    Role("child_parent_wrong_order", in_roles=["parent2", "parent1"]),
 )
 
 
@@ -27,6 +28,12 @@ def test_createall_role(pg):
 
             # Incorrectly has no parents
             conn.execute(text("CREATE ROLE child_with_parent"))
+
+            # Has correct parents in a different order than defined
+            conn.execute(
+                text("CREATE ROLE child_parent_wrong_order IN ROLE parent1, parent2")
+            )
+
             trans.commit()
 
         result = compare_roles(conn, roles)

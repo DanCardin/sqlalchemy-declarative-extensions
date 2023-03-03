@@ -29,6 +29,9 @@ jobs:
           - postgres-drivername: postgresql+psycopg
             sqlalchemy-version: 1.4.0
 
+    env:
+      PMR_POSTGRES_IMAGE: postgres:13
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Container
+from typing import Container, cast, List
 
 from sqlalchemy.engine import Connection
 
@@ -21,7 +21,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     views_query,
 )
 from sqlalchemy_declarative_extensions.sql import qualify_name
-from sqlalchemy_declarative_extensions.view.base import View
+from sqlalchemy_declarative_extensions.view.base import View, ViewIndex
 
 
 def get_schemas_postgresql(connection: Connection):
@@ -118,15 +118,27 @@ def get_roles_postgresql(connection: Connection, exclude=None):
 
 
 def get_views_postgresql(connection: Connection):
-    return [
-        View(
+    views = []
+    for v in connection.execute(views_query).fetchall():
+        schema = v.schema if v.schema != "public" else None
+
+        indexes = [
+            ViewIndex(
+                name=raw["name"],
+                unique=raw["unique"],
+                columns=cast(List[str], raw["column_names"]),
+            )
+            for raw in connection.dialect.get_indexes(connection, v.name, schema=schema)
+        ]
+        view = View(
             v.name,
             v.definition,
-            schema=v.schema if v.schema != "public" else None,
+            schema=schema,
             materialized=v.materialized,
+            constraints=indexes or None,  # type: ignore
         )
-        for v in connection.execute(views_query).fetchall()
-    ]
+        views.append(view)
+    return views
 
 
 def get_view_postgresql(connection: Connection, name: str, schema: str = "public"):

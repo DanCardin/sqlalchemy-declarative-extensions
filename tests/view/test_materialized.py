@@ -35,7 +35,7 @@ class Foo(Base):
     id = Column(types.Integer(), primary_key=True)
 
 
-@view(Base, materialized=True)
+@view(Base, materialized=True, register_as_model=True)
 class Bar:
     __tablename__ = "bar"
     __table_args__ = ({"schema": "fooschema"},)

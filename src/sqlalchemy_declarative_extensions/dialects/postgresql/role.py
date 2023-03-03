@@ -54,13 +54,13 @@ class Role(generic.Role):
             connection_limit=r.rolconnlimit if r.rolconnlimit != -1 else None,
             bypass_rls=r.rolbypassrls,
             valid_until=r.rolvaliduntil,
-            in_roles=r.memberof or None,
+            in_roles=sorted(r.memberof) if r.memberof else None,
         )
 
     @classmethod
     def from_unknown_role(cls, r: generic.Role | Role) -> Role:
         if not isinstance(r, Role):
-            return Role(r.name, in_roles=r.in_roles)
+            return Role(r.name, in_roles=sorted(r.in_roles) if r.in_roles else None)
 
         return r
 

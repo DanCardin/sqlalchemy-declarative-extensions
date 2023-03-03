@@ -65,12 +65,20 @@ class Foo(Base):
     id = Column(types.Integer, primary_key=True)
 
 
-@view(Base)
+# Gets support for `session.query(Bar)...`
+@view(Base, register_as_model=True)
 class Bar:
     __tablename__ = 'bar'
     __view__ = select(Foo.__table__).where(Foo.__table__.id > 10)
 
     id = Column(types.Integer, primary_key=True)
+
+
+# Can still `session.execute(Baz.__view__)`, but does **not** support `session.query(Baz)...`
+@view(Base)
+class Baz:
+    __tablename__ = 'bar'
+    __view__ = select(Foo.__table__).where(Foo.__table__.id > 10)
 ```
 
 The protocol this class is following provides an interface that is intentionally similar to the one
@@ -78,7 +86,8 @@ given by a normal sqlalchemy model. From the perspective of code, your `Bar` cla
 by SQLAlchemy in the same way as a normal table, i.e. `session.query(Bar1).all()`.
 
 Alternatively, if you dont **care** about being able to programmatically make use of the model-like
-ORM interface, you can omit the model-style declaration of columns. That at least allows you to
+ORM interface, you can omit the model-style declaration of columns (and the corresponding
+``register_as_model=True`` argument). That at least allows you to
 avoid duplicating the list of columns unnecessarily.
 
 Finally, you can directly call `register_view` to imperitively register a normal [View](sqlalchemy_declarative_extensions.View)
@@ -101,7 +110,7 @@ class Bar:
     __table_args__ = (Index('uq_bar', 'id', unique=True))
 ```
 
-There is a caveat (at least currently), that the `UniqueConstraint` convenience class provided by
-SQLAlchemy does not appear to function in the same way as `Index` in a way that makes it incompatible
-with the mechanisms used by this library at the time of writing. As such, we ignore `__table_args__`
-constraints which are not `Index`.
+Additionally the sqlalchemy ``UniqueConstraint`` index type is supported.
+
+Internally these options are converted to ``sqlalchemy_declarative_extensions.ViewIndex``, which you
+**can** instead use directly, if desired.

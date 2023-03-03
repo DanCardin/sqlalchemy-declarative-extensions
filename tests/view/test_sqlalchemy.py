@@ -42,7 +42,7 @@ class Foo(Base):
 foo_table = Foo.__table__
 
 
-@view(Base)
+@view(Base, register_as_model=True)
 class Bar:
     __tablename__ = "bar"
     __table_args__ = {"schema": "fooschema"}
@@ -51,7 +51,7 @@ class Bar:
     id = Column(types.Integer(), primary_key=True)
 
 
-@view(Base)
+@view(Base, register_as_model=True)
 class Baz:
     __tablename__ = "baz"
     __table_args__ = {"schema": "fooschema"}

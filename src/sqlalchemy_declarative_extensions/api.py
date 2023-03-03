@@ -144,11 +144,11 @@ def register_sqlalchemy_events(
     else:
         metadata = maybe_metadata.metadata
 
-    concrete_schemas = metadata.info["schemas"]
-    concrete_roles = metadata.info["roles"]
-    concrete_grants = metadata.info["grants"]
-    concrete_rows = metadata.info["rows"]
-    concrete_views = metadata.info["views"]
+    concrete_schemas = metadata.info.get("schemas")
+    concrete_roles = metadata.info.get("roles")
+    concrete_grants = metadata.info.get("grants")
+    concrete_rows = metadata.info.get("rows")
+    concrete_views = metadata.info.get("views")
 
     if concrete_schemas and schemas:
         for schema in concrete_schemas:

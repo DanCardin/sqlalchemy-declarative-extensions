@@ -21,7 +21,7 @@ def clear_roles(engine):
 
 def render_sql(text: TextClause) -> str:
     statement = text.compile(
-        dialect=postgresql.dialect(),  # type: ignore
+        dialect=postgresql.dialect(),
         compile_kwargs={"literal_binds": True},
     )
     return str(statement)

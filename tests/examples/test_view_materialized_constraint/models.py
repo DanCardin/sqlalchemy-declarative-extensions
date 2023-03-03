@@ -1,7 +1,7 @@
 import sqlalchemy
-from sqlalchemy import Column, Index, types
+from sqlalchemy import Column, Index, UniqueConstraint, types
 
-from sqlalchemy_declarative_extensions import Row, declarative_database, view
+from sqlalchemy_declarative_extensions import ViewIndex, declarative_database, view
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base, select
 
 _Base = declarative_base()
@@ -10,13 +10,6 @@ _Base = declarative_base()
 @declarative_database
 class Base(_Base):
     __abstract__ = True
-
-    rows = [
-        Row("foo", num=1, num2=1, id=3),
-        Row("foo", num=2, num2=1, id=10),
-        Row("foo", num=3, num2=1, id=11),
-        Row("foo", num=3, num2=1, id=12),
-    ]
 
 
 class Foo(Base):
@@ -50,7 +43,22 @@ class Bar:
 class Baz:
     __tablename__ = "baz"
     __view__ = select(foo_table.c.num, foo_table.c.num2).where(foo_table.c.id <= 10)
-    __table_args__ = (Index("uq_baz", "num", "num2", unique=True),)
+    __table_args__ = (UniqueConstraint("num", "num2"),)
+
+    num = Column(types.Integer(), nullable=False)
+    num2 = Column(types.Integer(), nullable=False)
+
+
+@view(Base, materialized=True)
+class Bax:
+    __tablename__ = "bax"
+    __view__ = select(foo_table.c.num, foo_table.c.num2).where(foo_table.c.id <= 10)
+    __table_args__ = (
+        ViewIndex(
+            ["num", "num2"],
+            name="uq_bax",
+        ),
+    )
 
     num = Column(types.Integer(), nullable=False)
     num2 = Column(types.Integer(), nullable=False)
