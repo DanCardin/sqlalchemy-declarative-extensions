@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Container, cast, List
+from typing import Container, List, cast
 
 from sqlalchemy.engine import Connection
 
