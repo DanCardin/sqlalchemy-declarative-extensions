@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, TypeVar, cast, List
+from typing import Any, Callable, Container, Iterable, List, TypeVar, cast
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
@@ -270,8 +270,9 @@ class View:
             result.extend(from_view.to_sql_drop(dialect))
             result.extend(self.to_sql_create(dialect))
         else:
-            result.extend(from_view.render_constraints(create=False))
-            result.extend(self.render_constraints(create=True))
+            removed, missing = ViewIndex.diff(from_view.constraints, self.constraints)  # type: ignore
+            result.extend([c.drop(from_view) for c in removed])
+            result.extend([c.create(self) for c in missing])
 
         return result
 
@@ -285,8 +286,9 @@ class View:
 
         statement = " ".join(components)
 
-        result = [statement]
+        result = []
         result.extend(self.render_constraints(create=False))
+        result.append(statement)
 
         return result
 
@@ -422,6 +424,33 @@ class ViewIndex:
         name = qualify_name(on.schema, self.name, quote=True)
         return f"DROP INDEX {name};"
 
+    @staticmethod
+    def diff(
+        existing_indices: list[ViewIndex], declared_indices: list[ViewIndex]
+    ) -> tuple[list[ViewIndex], list[ViewIndex]]:
+        removed = []
+        missing = []
+
+        existing_by_name = {x.name: x for x in existing_indices}
+        declared_by_name = {x.name: x for x in declared_indices}
+
+        for name, existing in existing_by_name.items():
+            declared = declared_by_name.pop(name, None)
+            if declared:
+                # We need to replace ones which are declared but different in some way
+                if existing != declared:
+                    removed.append(existing)
+                    missing.append(declared)
+            else:
+                # Whereas if they're not declared they should be removed.
+                removed.append(existing)
+
+        # The pop from above means anything left is automatically missing.
+        for declared in declared_by_name.values():
+            missing.append(declared)
+
+        return (removed, missing)
+
 
 @dataclass
 class _ViewIndexAdapter:
@@ -444,10 +473,6 @@ class _ViewIndexAdapter:
     @property
     def columns(self):
         return [_ColumnNamingAdapter(c) for c in self.view_index.columns]
-
-    @property
-    def expressions(self):
-        return self.view_index.columns
 
 
 @dataclass
