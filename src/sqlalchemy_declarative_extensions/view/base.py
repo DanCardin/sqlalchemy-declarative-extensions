@@ -168,12 +168,12 @@ class View:
             )
         )
 
-    def render_definition(self, conn: Connection):
+    def render_definition(self, conn: Connection, using_connection: bool = True):
         dialect = conn.engine.dialect
 
         compiled_definition = self.compile_definition(dialect)
 
-        if dialect.name == "postgresql":
+        if using_connection and dialect.name == "postgresql":
             from sqlalchemy_declarative_extensions.dialects import get_view
 
             with conn.begin_nested() as trans:
@@ -231,7 +231,9 @@ class View:
             result.append(query)
         return result
 
-    def normalize(self, conn: Connection, metadata: MetaData) -> View:
+    def normalize(
+        self, conn: Connection, metadata: MetaData, using_connection: bool = True
+    ) -> View:
         constraints = None
         if self.constraints:
             constraints = [
@@ -240,7 +242,9 @@ class View:
             ]
 
         return replace(
-            self, definition=self.render_definition(conn), constraints=constraints
+            self,
+            definition=self.render_definition(conn, using_connection=using_connection),
+            constraints=constraints,
         )
 
     def to_sql_create(self, dialect: Dialect) -> list[str]:

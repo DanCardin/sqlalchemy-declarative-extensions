@@ -48,7 +48,10 @@ Operation = Union[CreateViewOp, UpdateViewOp, DropViewOp]
 
 
 def compare_views(
-    connection: Connection, views: Views, metadata: MetaData
+    connection: Connection,
+    views: Views,
+    metadata: MetaData,
+    normalize_with_connection: bool = True,
 ) -> list[Operation]:
     result: list[Operation] = []
 
@@ -70,13 +73,21 @@ def compare_views(
 
         view_created = view_name in new_view_names
 
-        normalized_view = view.normalize(connection, metadata)
+        normalized_view = view.normalize(
+            connection, metadata, using_connection=normalize_with_connection
+        )
 
         if view_created:
             result.append(CreateViewOp(normalized_view))
         else:
             existing_view = existing_views_by_name[view_name]
-            normalized_existing_view = existing_view.normalize(connection, metadata)
+            normalized_existing_view = (
+                existing_view.normalize(
+                    connection, metadata, using_connection=normalize_with_connection
+                )
+                if normalize_with_connection
+                else existing_view
+            )
 
             if normalized_existing_view != normalized_view:
                 result.append(UpdateViewOp(normalized_existing_view, normalized_view))
