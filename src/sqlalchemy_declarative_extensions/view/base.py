@@ -430,13 +430,14 @@ class ViewIndex:
 
     @staticmethod
     def diff(
-        existing_indices: list[ViewIndex], declared_indices: list[ViewIndex]
+        existing_indices: list[ViewIndex] | None,
+        declared_indices: list[ViewIndex] | None,
     ) -> tuple[list[ViewIndex], list[ViewIndex]]:
         removed = []
         missing = []
 
-        existing_by_name = {x.name: x for x in existing_indices}
-        declared_by_name = {x.name: x for x in declared_indices}
+        existing_by_name = {x.name: x for x in existing_indices or []}
+        declared_by_name = {x.name: x for x in declared_indices or []}
 
         for name, existing in existing_by_name.items():
             declared = declared_by_name.pop(name, None)
