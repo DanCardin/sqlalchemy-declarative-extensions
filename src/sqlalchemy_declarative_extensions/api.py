@@ -11,6 +11,7 @@ from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.schema.base import Schemas
 from sqlalchemy_declarative_extensions.sqlalchemy import DeclarativeMeta, HasMetaData
+from sqlalchemy_declarative_extensions.trigger.base import Trigger, Triggers
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ def declarative_database(base: T) -> T:
     raw_grants = getattr(base, "grants", None)
     raw_views = getattr(base, "views", None)
     raw_functions = getattr(base, "functions", None)
+    raw_triggers = getattr(base, "triggers", None)
     raw_rows = getattr(base, "rows", None)
 
     declare_database(
@@ -70,6 +72,7 @@ def declarative_database(base: T) -> T:
         grants=raw_grants,
         views=raw_views,
         functions=raw_functions,
+        triggers=raw_triggers,
         rows=raw_rows,
     )
     return base
@@ -83,6 +86,7 @@ def declare_database(
     grants: None | Iterable[G] | Grants = None,
     views: None | Iterable[View] | Views = None,
     functions: None | Iterable[Function] | Functions = None,
+    triggers: None | Iterable[Trigger] | Triggers = None,
     rows: None | Iterable[Row] | Rows = None,
 ):
     """Register declaratively specified database extension handlers.
@@ -111,6 +115,7 @@ def declare_database(
         grants: The set of grants to ensure are applied to the roles/schemas/tables.
         views: The set of views to ensure exist.
         functions: The set of functions to ensure exist.
+        triggers: The set of triggers to ensure exist.
         rows: The set of rows to ensure are applied to the roles/schemas/tables.
     """
     metadata.info["schemas"] = Schemas.coerce_from_unknown(schemas)
@@ -118,6 +123,7 @@ def declare_database(
     metadata.info["grants"] = Grants.coerce_from_unknown(grants)
     metadata.info["views"] = Views.coerce_from_unknown(views)
     metadata.info["functions"] = Functions.coerce_from_unknown(functions)
+    metadata.info["triggers"] = Triggers.coerce_from_unknown(triggers)
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
 
 
@@ -128,6 +134,7 @@ def register_sqlalchemy_events(
     grants=False,
     views=False,
     functions=False,
+    triggers=False,
     rows=False,
 ):
     """Register handlers for supported object types into SQLAlchemy's event system.
@@ -145,6 +152,7 @@ def register_sqlalchemy_events(
     from sqlalchemy_declarative_extensions.role.ddl import role_ddl
     from sqlalchemy_declarative_extensions.row.query import rows_query
     from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
+    from sqlalchemy_declarative_extensions.trigger.ddl import trigger_ddl
     from sqlalchemy_declarative_extensions.view.ddl import view_ddl
 
     if isinstance(maybe_metadata, MetaData):
@@ -157,6 +165,7 @@ def register_sqlalchemy_events(
     concrete_grants = metadata.info.get("grants")
     concrete_views = metadata.info.get("views")
     concrete_functions = metadata.info.get("functions")
+    concrete_triggers = metadata.info.get("triggers")
     concrete_rows = metadata.info.get("rows")
 
     if concrete_schemas and schemas:
@@ -199,6 +208,13 @@ def register_sqlalchemy_events(
             metadata,
             "after_create",
             function_ddl(concrete_functions),
+        )
+
+    if concrete_triggers and triggers:
+        event.listen(
+            metadata,
+            "after_create",
+            trigger_ddl(concrete_triggers),
         )
 
     if concrete_rows and rows:

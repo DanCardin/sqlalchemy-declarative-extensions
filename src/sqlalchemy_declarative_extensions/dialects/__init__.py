@@ -10,6 +10,7 @@ from sqlalchemy_declarative_extensions.dialects.query import (
     get_role_cls,
     get_roles,
     get_schemas,
+    get_triggers,
     get_view,
     get_views,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "get_role_cls",
     "get_roles",
     "get_schemas",
+    "get_triggers",
     "get_view",
     "get_views",
     "get_functions",

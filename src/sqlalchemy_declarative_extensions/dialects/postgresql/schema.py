@@ -1,4 +1,14 @@
-from sqlalchemy import String, and_, bindparam, column, literal, table, text, union
+from sqlalchemy import (
+    String,
+    and_,
+    bindparam,
+    column,
+    func,
+    literal,
+    table,
+    text,
+    union,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, CHAR
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
@@ -73,6 +83,17 @@ pg_language = table(
     "pg_language",
     column("oid"),
     column("lanname"),
+)
+
+pg_trigger = table(
+    "pg_trigger",
+    column("oid"),
+    column("tgname"),
+    column("tgtype"),
+    column("tgrelid"),
+    column("tgfoid"),
+    column("tgqual"),
+    column("tgisinternal"),
 )
 
 pg_type = table(
@@ -248,5 +269,30 @@ functions_query = (
         .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
         .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
     )
-    .where(pg_namespace.c.nspname.not_in(["pg_catalog", "information_schema"]))
+    .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
+)
+
+
+rel_nsp = pg_namespace.alias("rel_nsp")
+proc_nsp = pg_namespace.alias("proc_nsp")
+triggers_query = (
+    select(
+        pg_trigger.c.tgname.label("name"),
+        pg_trigger.c.tgtype.label("type"),
+        func.pg_get_expr(
+            pg_trigger.c.tgqual,
+            pg_class.c.oid,
+        ).label("when"),
+        pg_class.c.relname.label("on_name"),
+        rel_nsp.c.nspname.label("on_schema"),
+        pg_proc.c.proname.label("execute_name"),
+        proc_nsp.c.nspname.label("execute_schema"),
+    )
+    .select_from(
+        pg_trigger.join(pg_class, pg_trigger.c.tgrelid == pg_class.c.oid)
+        .join(rel_nsp, pg_class.c.relnamespace == rel_nsp.c.oid)
+        .join(pg_proc, pg_trigger.c.tgfoid == pg_proc.c.oid)
+        .join(proc_nsp, pg_proc.c.pronamespace == proc_nsp.c.oid)
+    )
+    .where(pg_trigger.c.tgisinternal.is_(False))
 )

@@ -15,6 +15,12 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     TypeGrants,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
+from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
+    Trigger,
+    TriggerEvents,
+    TriggerForEach,
+    TriggerTimes,
+)
 
 __all__ = [
     "DefaultGrant",
@@ -33,5 +39,9 @@ __all__ = [
     "SchemaGrants",
     "SequenceGrants",
     "TableGrants",
+    "Trigger",
+    "TriggerEvents",
+    "TriggerForEach",
+    "TriggerTimes",
     "TypeGrants",
 ]

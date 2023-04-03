@@ -19,8 +19,15 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     schema_exists_query,
     schemas_query,
     table_exists_query,
+    triggers_query,
     view_query,
     views_query,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
+    Trigger,
+    TriggerEvents,
+    TriggerForEach,
+    TriggerTimes,
 )
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.view.base import View, ViewIndex
@@ -165,3 +172,26 @@ def get_functions_postgresql(connection: Connection):
         )
         functions.append(function)
     return functions
+
+
+def get_triggers_postgresql(connection: Connection):
+    triggers = []
+    for t in connection.execute(triggers_query).fetchall():
+        on = t.on_name if t.on_schema == "public" else f"{t.on_schema}.{t.on_name}"
+        execute = (
+            t.execute_name
+            if t.execute_schema == "public"
+            else f"{t.execute_schema}.{t.execute_name}"
+        )
+        trigger = Trigger(
+            name=t.name,
+            on=on,
+            execute=execute,
+            events=TriggerEvents.from_bit_string(t.type),
+            time=TriggerTimes.from_bit_string(t.type),
+            for_each=TriggerForEach.from_bit_string(t.type),
+            condition=t.when.removeprefix("(").removesuffix(")"),
+        )
+        triggers.append(trigger)
+
+    return triggers
