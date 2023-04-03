@@ -1,5 +1,5 @@
 import sqlalchemy
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
 from typing_extensions import Protocol
 
@@ -8,6 +8,10 @@ version = getattr(sqlalchemy, "__version__", "1.3")
 
 class HasMetaData(Protocol):
     metadata: MetaData
+
+
+class HasTable(Protocol):
+    __table__: Table
 
 
 def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
@@ -34,7 +38,7 @@ def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
 
 
 if version.startswith("1.3"):
-    from sqlalchemy.ext.declarative import (
+    from sqlalchemy.ext.declarative import (  # type: ignore
         DeclarativeMeta,
         declarative_base,
         instrument_declarative,

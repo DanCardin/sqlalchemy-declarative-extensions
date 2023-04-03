@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pytest
@@ -8,6 +9,8 @@ pytest_plugins = "pytester"
 
 
 def pytest_sessionstart(session):
+    logging.basicConfig()
+
     workerinput = getattr(session.config, "workerinput", None)
     if workerinput is not None:
         import coverage
@@ -90,3 +93,5 @@ def clear_registry():
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.grant", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.row", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.view", None)
+    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.function", None)
+    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.trigger", None)
