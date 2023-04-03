@@ -8,9 +8,11 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
     parse_acl,
     parse_default_acl,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import Function
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     default_acl_query,
+    functions_query,
     object_acl_query,
     objects_query,
     roles_query,
@@ -149,3 +151,17 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
         result.definition,
         schema=result.schema if result.schema != "public" else None,
     )
+
+
+def get_functions_postgresql(connection: Connection):
+    functions = []
+    for f in connection.execute(functions_query).fetchall():
+        function = Function(
+            name=f.name,
+            definition=f.source,
+            returns=f.return_type,
+            language=f.language,
+            schema=f.schema if f.schema != "public" else None,
+        )
+        functions.append(function)
+    return functions
