@@ -4,16 +4,20 @@
 
 See the full documentation [here](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/).
 
-Adds extensions to SqlAlchemy (and/or Alembic) which allows declaratively
+Adds extensions to SQLAlchemy (and/or Alembic) which allows declaratively
 stating the existence of additional kinds of objects about your database
 not natively supported by SqlAlchemy/Alembic.
 
 This includes:
 
 - Schemas
+- Views
 - Roles
-- Privileges
+- Privileges (Grants/Default Grants)
+- Functions
+- Triggers
 - Rows (i.e. data)
+- "audit tables" (i.e. triggers which record data changes to some source table)
 
 The primary function(s) of this library include:
 
@@ -22,20 +26,27 @@ The primary function(s) of this library include:
 - (Optionally) Registers into Alembic such that `alembic revision --autogenerate`
   automatically creates/updates/deletes declared objects.
 
-## Kitchen Sink Example Usage
+## Kitchen Sink Example (using all available features)
 
 ```python
 from sqlalchemy import Column, types, select
 from sqlalchemy.orm import as_declarative
 from sqlalchemy_declarative_extensions import (
-    declarative_database, Schemas, Roles, Grants, Rows, Row, Views, View, view
+    declarative_database, Schemas, Roles, Row, View, view,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, Role
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    DefaultGrant, Function, Trigger, Role
+)
+from sqlalchemy_declarative_extensions.audit import audit
 
 
 @declarative_database
 @as_declarative
 class Base:
+    # Note: each object type also has a plural version (i.e. Schemas/Roles/etc) where you can specify
+    # collection-level options like `ignore_unspecified`).
+    #
+    # If you dont set any collection-level options, you can instead use raw list/iterable as the collection.
     schemas = Schemas().are("example")
     roles = Roles(ignore_unspecified=True).are(
         Role("read", login=False),
@@ -44,21 +55,46 @@ class Base:
             in_roles=['read']
         ),
     )
-    grants = Grants().are(
+    grants = [
         DefaultGrant.on_tables_in_schema("public", 'example').grant("select", to="read"),
-        DefaultGrant.on_tables_in_schema("public").grant("insert", "update", "delete", to="write"),
-        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="write"),
-    )
-    rows = Rows().are(
+        DefaultGrant.on_sequences_in_schema("public").grant("usage", to="read"),
+        Grant.new("usage", to="read").on_schemas("example")
+    ]
+    rows = [
         Row('foo', id=1),
-    )
-    views = Views().are(View("low_foo", "select * from foo where i < 10"))
+    ]
+    views = [
+        View("low_foo", "select * from foo where i < 10"),
+    ]
+    functions = [
+        Function(
+            "fancy_function",
+            """
+            BEGIN
+            INSERT INTO foo (id) select NEW.id + 1;
+            RETURN NULL;
+            END
+            """,
+            language="plpgsql",
+            returns="trigger",
+        ),
+    ]
+    triggers = [
+        Trigger.after("insert", on="foo", execute="fancy_function")
+        .named("on_insert_foo")
+        .when("pg_trigger_depth() < 1")
+        .for_each_row(),
+    ]
 
 
+@audit()
 class Foo(Base):
     __tablename__ = 'foo'
 
     id = Column(types.Integer(), primary_key=True)
+
+
+audit_table = Foo.__audit_table__
 
 
 @view(Base)
@@ -121,68 +157,101 @@ object types in order to have alembic track them
 In principle, this library **can** absolutely support any database supported by SqlAlchemy,
 and capable of being introspected enough to support detection of different kinds of objects.
 
-In reality, the implementations are going to be purely driven by actual usage. The
-current maintainer(s) primarily use PostgreSQL and as such individual features for
+As you can see below, in reality the existence of implementations are going to be purely driven by actual
+usage. The current maintainer(s) primarily use PostgreSQL and as such individual features for
 other databases will either suffer or lack implementation.
 
-As much as possible, objects will be defined in a database-agnostic way, and the comparison
-infrastructure should be the sole difference. However databases engines are not the same, and
-certain kinds of objects, like GRANTs, are inherently database engine specific, and there's
-not much common ground between a PostgreSQL grant and a MySQL one. As such, they will
-include database specific objects.
+| | Postgres | MySQL | SQLite |
+| Schema | ✓ | | ✓ |
+| View | ✓ | ✓ | ✓ |
+| Role | ✓ | | |
+| Grant | ✓ | | |
+| Default Grant | ✓ | | |
+| Function | ✓ | _ | |
+| Trigger | ✓ | _ | |
+| Row (data) | ✓ | ✓ | ✓ |
+| "Audit Table" | ✓ | | |
+
+The astrisks above note pending or provisional support. The level of expertise in each dialects'
+particular behaviors is not uniform, and deciding on the correct behavior for those dialects
+will require users to submit issues/fixes!
+
+Supporting a new dialect **can** be as simple as providing the dialect-dispatched implementations
+for detecting existing objects of the given type. Very much the intent is that once a given object
+type is supported at all, the comparison infrastructure for that type should make it straightforward
+to support other dialects. At the end of the day, this library is primarily producing SQL statements,
+so in theory any dialect supporting a given object type should be able to be supported.
+
+In such cases (like Grants/Roles) that different dialects support wildly different
+options/syntax, there are also patterns for defining dialect-specific objects, to mediate
+any additional differences.
 
 ## Alembic-utils
 
-Currently, the set of supported declarative objects is largely non-overlapping with
-[Alembic-utils](https://github.com/olirice/alembic_utils). However in principle, there's
-no reason that objects supported by this library couldn't begin to overlap (functions,
-triggers); and one might begin to question when to use which library.
+[Alembic Utils](https://github.com/olirice/alembic_utils) is the primary library against which
+this library can be compared. At time of writing, **most** (but not all) object types supported
+by alembic-utils are supported by this library. One might begin to question when to use which library.
 
-Note that where possible this library tries to support alembic-utils native objects
-as stand-ins for the objects defined in this library. For example, `alembic_utils.pg_view.PGView`
+Below is a list of points on which the two libraries diverge. But note that you **can** certainly
+use both in tandem! It doesn't need to be one or the other, and certainly for any object types
+which do not overlap, you might **need** to use both.
+
+- Database Support
+
+  - Alembic Utils seems to explicitly only support PostgreSQL.
+
+  - This library is designed to support any dialect (in theory). Certainly PostgreSQL
+    is **best** supported, but there does exist support for specific kinds of objects
+    to varying levels of support for SQLite and MySQL, so far.
+
+- Architecture
+
+  - Alembic Utils is directly tied to Alembic and does not support SQLAlchemy's `MetaData.create_all`.
+    It's also the responsibility of the user to discover/register objects in alembic.
+
+  - This library **depends** only on SqlAlchemy, although it also supports alembic. Support for
+    `MetaData.create_all` can be important for creating all object types in tests. It also
+    is designed such that objects are registered on the `MetaData` itself, so there is no need for
+    any specific discovery phase.
+
+- Scope
+
+  - Alembic Utils declares specific, individual objects. I.e. you instantiate one specific `PGGrantTable`
+    or `PGView` instance and Alembic know knows you want that object to be created. It cannot drop
+    objects it is not already aware of.
+
+  - This library declares ths objects the system as a whole expects to exist. Similar to Alembic's
+    behavior on tables, it will (by default) detect any **undeclared** objects that should not exist
+    and drop them. That means, you can rely on this object to ensure the state of your migrations
+    matches the state of your database exactly.
+
+- Migration history
+
+  - Alembic Utils imports and references its own objects in your migrations history. This can be
+    unfortunate, in that it deeply ties your migrations history to alembic-utils.
+
+    (In fact, this can be a sticking point, trying to convert **away** from `alembic_utils`, because it
+    will attempt to drop all the (e.g `PGView`) instances previously created when we replaced it with
+    this library.)
+
+  - This library, by contrast, prefers to emit the raw SQL of the operation into your migration.
+    That means you know the exact commands that will execute in your migration, which can be helpful
+    in debugging failure. It also means, if at any point you decide to stop use of the library
+    (or pause a given type of object, due to a bug), you can! This library's behaviors are primarily
+    very much `--autogenerate`-time only.
+
+- Abstraction Level
+
+  - Alembic Utils appears to define a very "literal" interface (for example, `PGView` accepts
+    the whole view definition as a raw literal string).
+
+  - This library tries to, as much as possible, provide a more abstracted interface that enables
+    more compatibility with SQLAlchemy (For example `View` accepts SQLAlchemy objects which can
+    be coerced into a `SELECT`). It also tends towards "builder" interfaces which progressively produce
+    a object (Take a look at the `DefaultGrant` above, for an example of where that's helpful).
+
+A separate note on conversion/compatibility. Where possible, this library tries to support alembic-utils
+native objects as stand-ins for the objects defined in this library. For example, `alembic_utils.pg_view.PGView`
 can be declared instead of a `sqlalchemy_declarative_extensions.View`, and we will internally
 coerce it into the appropriate type. Hopefully this eases any transitional costs, or
 issues using one or the other library.
-
-Alembic utils:
-
-1. Is more directly tied to Alembic and specifically provides functionality for autogenerating
-   DDL for alembic, as the name might imply. It does **not** register into sqlalchemy's event
-   system.
-
-2. Requires one to explicitly find/include the objects one wants to track with alembic.
-
-3. Declares single, specific object instances (like a single, specific `PGGrantTable`). This
-   has the side-effect that it can only track included objects. It cannot, for example,
-   remove objects which should not exist due to their omission.
-
-4. In most cases, it appears to define a very "literal" interface (for example, `PGView` accepts
-   the whole view definition as a raw literal string), rather than attempting to either abstract
-   the objects or accept abstracted (like a `select` object) definition.
-
-5. Appears to only be interested in supporting PostgreSQL.
-
-By contrast, this library:
-
-1. SqlAlchemy is the main dependency and registration point (Alembic is, in fact, an optional dependency).
-   The primary function of the library is to declare the underlying objects. And then registration into
-   sqlalchemy's event system, or registration into alembic's detection system are both optional features.
-
-2. Perhaps a technical detail, but this library registers the declaratively stated objects directly
-   on the metadata/declarative-base. This allows the library to automatically know the intended
-   state of the world, rather than needing to discover objects.
-
-3. The intended purpose of the supported objects is to declare what the state of the world **should**
-   look like. Therefore the function of this library includes the (optional) **removal** of objects
-   detected to exist which are not declared (much like alembic does for tables).
-
-4. As much as possible, this library provides more abstracted interfaces for defining objects.
-   This is particularly important for objects like roles/grants where not every operation is a create
-   or delete (in contrast to something like a view), where a raw SQL string makes it impossible to
-   diff two different a-like objects.
-
-5. Tries to define functionality in cross-dialect terms and only where required farm details out to
-   dialect-specific handlers. Not to claim that all dialects are treated equally (currently only
-   PostgreSQL has first-class support), but technically, there should be no reason we wouldn't support
-   any supportable dialect. Today SQLite (for whatever that's worth), and MySQL have **some** level
-   of support.

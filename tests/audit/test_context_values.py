@@ -39,7 +39,7 @@ def test_sets_session_values(pg):
     pg.add(Foo(id=1, name=None, json=None))
     pg.commit()
 
-    audit_row = pg.execute(Foo.__audit_table__.select()).one()
+    audit_row = pg.execute(Foo.__audit_table__.select()).fetchone()
     assert audit_row.audit_username == "foo@foo.com"
 
 
@@ -56,5 +56,5 @@ def test_fails_to_set_session_values(pg):
     rows = pg.query(Foo).all()
     assert rows == []
 
-    audit_rows = pg.execute(Foo.__audit_table__.select()).all()
+    audit_rows = pg.execute(Foo.__audit_table__.select()).fetchall()
     assert audit_rows == []

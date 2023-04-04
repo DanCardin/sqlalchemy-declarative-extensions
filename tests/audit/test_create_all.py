@@ -45,7 +45,7 @@ def test_audit_table(pg):
     result = [f.id for f in pg.query(Foo).order_by(Foo.id.asc()).all()]
     assert result == [1, 3, 4]
 
-    audit_rows = pg.execute(Foo.__audit_table__.select()).all()
+    audit_rows = pg.execute(Foo.__audit_table__.select()).fetchall()
     audit_rows = [(a, b, *c) for a, b, _, *c in audit_rows]
     assert audit_rows == [
         (1, "I", "user", 1, None, None),

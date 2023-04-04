@@ -37,6 +37,6 @@ def test_disabled_insert_events(pg):
     foo.name = "asdf"
     pg.commit()
 
-    audit_row = pg.execute(Foo.__audit_table__.select()).one()
+    audit_row = pg.execute(Foo.__audit_table__.select()).fetchone()
     assert audit_row.audit_operation == "U"
     assert audit_row.name == "asdf"

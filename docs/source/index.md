@@ -19,7 +19,16 @@ Schemas <schemas>
 Views <views>
 Roles <roles>
 Grants <grants>
+Functions <functions>
+Triggers <triggers>
 Rows <rows>
+```
+
+```{toctree}
+:caption: Higher Level Features
+:hidden:
+
+Audit Tables <audit_tables>
 ```
 
 ```{toctree}

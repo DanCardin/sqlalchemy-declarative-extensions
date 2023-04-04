@@ -51,7 +51,7 @@ def test_create_with_complex_function_requiring_normalization(pg):
     result = pg.execute(text("SELECT gimme()")).scalar()
     assert result is None
 
-    result = pg.execute(select(Foo.id)).scalar()
+    result = pg.query(Foo.id).scalar()
     assert result == 1
 
     connection = pg.connection()

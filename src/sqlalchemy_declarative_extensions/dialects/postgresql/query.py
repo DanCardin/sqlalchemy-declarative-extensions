@@ -190,7 +190,7 @@ def get_triggers_postgresql(connection: Connection):
             events=TriggerEvents.from_bit_string(t.type),
             time=TriggerTimes.from_bit_string(t.type),
             for_each=TriggerForEach.from_bit_string(t.type),
-            condition=t.when.removeprefix("(").removesuffix(")"),
+            condition=t.when.lstrip("(").rstrip(")"),
         )
         triggers.append(trigger)
 
