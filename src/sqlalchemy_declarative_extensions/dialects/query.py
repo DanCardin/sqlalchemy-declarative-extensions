@@ -8,10 +8,12 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
     check_schema_exists_postgresql,
     check_table_exists_postgresql,
     get_default_grants_postgresql,
+    get_functions_postgresql,
     get_grants_postgresql,
     get_objects_postgresql,
     get_roles_postgresql,
     get_schemas_postgresql,
+    get_triggers_postgresql,
     get_view_postgresql,
     get_views_postgresql,
 )
@@ -70,4 +72,16 @@ get_views = dialect_dispatch(
 
 get_view = dialect_dispatch(
     postgresql=get_view_postgresql,
+)
+
+get_functions = dialect_dispatch(
+    postgresql=get_functions_postgresql,
+)
+
+get_function_cls = dialect_dispatch(
+    postgresql=lambda _: postgresql.Function,
+)
+
+get_triggers = dialect_dispatch(
+    postgresql=get_triggers_postgresql,
 )

@@ -3,6 +3,8 @@ def register_alembic_events(
     views: bool = True,
     roles: bool = True,
     grants: bool = True,
+    functions: bool = True,
+    triggers: bool = True,
     rows: bool = True,
 ):
     """Register handlers into alembic's event system for the supported object types.
@@ -23,6 +25,12 @@ def register_alembic_events(
 
     if grants:
         import sqlalchemy_declarative_extensions.alembic.grant
+
+    if functions:
+        import sqlalchemy_declarative_extensions.alembic.function
+
+    if triggers:
+        import sqlalchemy_declarative_extensions.alembic.trigger
 
     if rows:
         import sqlalchemy_declarative_extensions.alembic.row  # noqa

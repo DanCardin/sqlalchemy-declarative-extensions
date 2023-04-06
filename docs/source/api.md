@@ -26,6 +26,16 @@
 ```
 
 ```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.function
+   :members: Functions, Function, register_function
+```
+
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.trigger
+   :members: Triggers, Trigger, register_trigger
+```
+
+```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.row
    :members: Row, Rows
 ```

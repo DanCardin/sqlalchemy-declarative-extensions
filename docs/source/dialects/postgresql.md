@@ -50,3 +50,36 @@ against pre-existing objects and ensure they have the same sets of permissions.
 .. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.grant_type
    :members:
 ```
+
+## Functions
+There currently exists a generic `Function` object which contains all function behavior.
+Note that there **do** exist certain function definition options which are specific to
+Postgres, and should they be implemented you would be required to shift use to the dialect-specific
+version.
+
+Additionally, not all function options are currently supported for Postgres. At current
+moment, only the options required to support the [Audit Table](./audit_tables.md) feature
+have been implemented.
+
+
+## Triggers
+
+```python
+from sqlalchemy_declarative_extensions import Triggers
+from sqlalchemy_declarative_extensions.dialects.postgresql import Trigger
+
+triggers = Triggers().are(
+     Trigger.after("insert", on="foo", execute="gimme")
+     .named("on_insert_foo")
+     .when("pg_trigger_depth() < 1")
+     .for_each_row(),
+)
+```
+
+Trigger options and semantics differ across the different dialects that support them.
+In particular the [TriggerTimes](TriggerTimes), [TriggerForEach](TriggerForEach),
+and [TriggerEvents](TriggerEvents) options are all Postgres-specific.
+
+Additionally, not all trigger options are currently supported for Postgres. At current
+moment, only the options required to support the [Audit Table](./audit_tables.md) feature
+have been implemented.

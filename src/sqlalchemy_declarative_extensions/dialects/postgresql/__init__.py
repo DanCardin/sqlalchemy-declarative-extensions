@@ -1,3 +1,4 @@
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import Function
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant import (
     DefaultGrant,
     DefaultGrantStatement,
@@ -14,22 +15,33 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     TypeGrants,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
+from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
+    Trigger,
+    TriggerEvents,
+    TriggerForEach,
+    TriggerTimes,
+)
 
 __all__ = [
-    "TableGrants",
-    "SequenceGrants",
-    "FunctionGrants",
-    "SchemaGrants",
-    "TypeGrants",
-    "GrantTypes",
+    "DefaultGrant",
+    "DefaultGrant",
+    "DefaultGrantStatement",
+    "DefaultGrantStatement",
     "DefaultGrantTypes",
+    "Function",
+    "FunctionGrants",
     "Grant",
-    "DefaultGrant",
-    "DefaultGrantStatement",
-    "GrantStatement",
-    "DefaultGrant",
-    "DefaultGrantStatement",
     "Grant",
     "GrantStatement",
+    "GrantStatement",
+    "GrantTypes",
     "Role",
+    "SchemaGrants",
+    "SequenceGrants",
+    "TableGrants",
+    "Trigger",
+    "TriggerEvents",
+    "TriggerForEach",
+    "TriggerTimes",
+    "TypeGrants",
 ]
