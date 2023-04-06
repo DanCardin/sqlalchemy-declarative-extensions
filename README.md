@@ -161,16 +161,17 @@ As you can see below, in reality the existence of implementations are going to b
 usage. The current maintainer(s) primarily use PostgreSQL and as such individual features for
 other databases will either suffer or lack implementation.
 
-| | Postgres | MySQL | SQLite |
-| Schema | ✓ | | ✓ |
-| View | ✓ | ✓ | ✓ |
-| Role | ✓ | | |
-| Grant | ✓ | | |
-| Default Grant | ✓ | | |
-| Function | ✓ | _ | |
-| Trigger | ✓ | _ | |
-| Row (data) | ✓ | ✓ | ✓ |
-| "Audit Table" | ✓ | | |
+|               | Postgres | MySQL | SQLite |
+|---------------|----------|-------|--------|
+| Schema        | ✓        |       | ✓      |
+| View          | ✓        | ✓     | ✓      |
+| Role          | ✓        |       | N/A    |
+| Grant         | ✓        |       | N/A    |
+| Default Grant | ✓        |       | N/A    |
+| Function      | ✓        | *     |        |
+| Trigger       | ✓        | *     |        |
+| Row (data)    | ✓        | ✓     | ✓      |
+| "Audit Table" | ✓        |       |        |
 
 The astrisks above note pending or provisional support. The level of expertise in each dialects'
 particular behaviors is not uniform, and deciding on the correct behavior for those dialects
