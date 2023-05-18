@@ -35,7 +35,7 @@ def pmr_postgres_config():
 
 @pytest.fixture
 def pmr_mysql_container(pytestconfig, pmr_mysql_config: MysqlConfig):
-    yield from get_container(pytestconfig, pmr_mysql_config)
+    yield from get_container(pytestconfig, pmr_mysql_config, interval=1)
 
 
 @pytest.fixture

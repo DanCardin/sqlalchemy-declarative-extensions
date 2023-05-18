@@ -37,6 +37,10 @@ def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
     return dispatch
 
 
+def escape_params(query: str) -> str:
+    return query.replace(":", r"\:")
+
+
 if version.startswith("1.3"):
     from sqlalchemy.ext.declarative import (  # type: ignore
         DeclarativeMeta,

@@ -13,7 +13,11 @@ from sqlalchemy.sql.naming import ConventionDict
 from sqlalchemy.sql.schema import DEFAULT_NAMING_CONVENTION
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
-from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, create_mapper
+from sqlalchemy_declarative_extensions.sqlalchemy import (
+    HasMetaData,
+    create_mapper,
+    escape_params,
+)
 
 T = TypeVar("T", bound=HasMetaData)
 
@@ -62,9 +66,6 @@ def view(
         name = cls.__tablename__
         table_args = getattr(cls, "__table_args__", None)
         view_def = cls.__view__
-
-        # if isinstance(cls.__view__, Select):
-        #     cls.__table__ = cls.__view__
 
         schema = find_schema(table_args)
         constraints = find_constraints(table_args)
@@ -188,14 +189,14 @@ class View:
                     # Optimization, the view query **can** change if we re-run it,
                     # but if it's not changed from the first iteration, we assume it wont.
                     if definition1 == compiled_definition:
-                        return compiled_definition
+                        return escape_params(compiled_definition)
 
                     # Re-generate the view, it **can** not produce the same text twice.
                     random_name = "v" + uuid.uuid4().hex
                     conn.execute(text(f"CREATE VIEW {random_name} AS {definition1}"))
                     view = get_view(conn, random_name)
                     definition2 = view.definition
-                    return definition2
+                    return escape_params(definition2)
                 finally:
                     trans.rollback()
         else:
@@ -209,9 +210,11 @@ class View:
             dialect_name_map = {"postgresql": "postgres"}
             dialect_name = dialect_name_map.get(dialect.name, dialect.name)
             return (
-                normalize(
-                    sqlglot.parse_one(compiled_definition, read=dialect_name)
-                ).sql(dialect_name)
+                escape_params(
+                    normalize(
+                        sqlglot.parse_one(compiled_definition, read=dialect_name)
+                    ).sql(dialect_name)
+                )
                 + ";"
             )
 
