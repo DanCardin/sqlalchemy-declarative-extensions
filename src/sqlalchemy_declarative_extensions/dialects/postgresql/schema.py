@@ -238,7 +238,9 @@ views_query = union(
         pg_views.c.viewname.label("name"),
         pg_views.c.definition.label("definition"),
         literal(False).label("materialized"),
-    ).where(_schema_not_pg(pg_views.c.schemaname)),
+    )
+    .where(_schema_not_pg(pg_views.c.schemaname))
+    .where(pg_views.c.viewname.notin_(["pg_stat_statements"])),
     select(
         pg_matviews.c.schemaname.label("schema"),
         pg_matviews.c.matviewname.label("name"),
