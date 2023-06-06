@@ -1,5 +1,5 @@
 from pytest_mock_resources import create_postgres_fixture
-from sqlalchemy import Column, select, text, types
+from sqlalchemy import Column, text, types
 
 from sqlalchemy_declarative_extensions import (
     Function,

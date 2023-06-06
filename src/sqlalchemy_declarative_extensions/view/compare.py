@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from fnmatch import fnmatch
 from typing import Union
 
 from sqlalchemy import MetaData
@@ -68,7 +69,10 @@ def compare_views(
     for view in views:
         view_name = view.qualified_name
 
-        if view_name in views.ignore_views:
+        ignore_matches = any(
+            fnmatch(view_name, view_pattern) for view_pattern in views.ignore_views
+        )
+        if ignore_matches:
             continue
 
         view_created = view_name in new_view_names
@@ -90,7 +94,11 @@ def compare_views(
 
     if not views.ignore_unspecified:
         for removed_view in removed_view_names:
-            if removed_view in views.ignore_views:
+            ignore_matches = any(
+                fnmatch(removed_view, view_pattern)
+                for view_pattern in views.ignore_views
+            )
+            if ignore_matches:
                 continue
 
             view = existing_views_by_name[removed_view]

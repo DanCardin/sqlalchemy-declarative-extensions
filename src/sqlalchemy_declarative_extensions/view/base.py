@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Container, Iterable, List, TypeVar, cast
+from typing import Any, Callable, Iterable, List, TypeVar, cast
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
@@ -304,16 +304,20 @@ class View:
 class Views:
     """The collection of views and associated options comparisons.
 
-    Note, `Views` supports views being specified from certain alternative sources, such
+    Note: `Views` supports views being specified from certain alternative sources, such
     as `alembic_utils`'s `PGView` and `PGMaterializedView`. In order for that to work,
     one needs to either call `View.coerce_from_unknown(alembic_utils_view)` directly, or
     use `Views().are(...)` (which internally calls `coerce_from_unknown`).
+
+    Note: `ignore_views` option accepts a list of strings. Each string is individually
+        interpreted as a "glob". This means a string like "foo.*" would ignore all views
+        contained within the schema "foo".
     """
 
     views: list[View] = field(default_factory=list)
 
     ignore_unspecified: bool = False
-    ignore_views: Container[str] = field(default_factory=set)
+    ignore_views: Iterable[str] = field(default_factory=set)
 
     @classmethod
     def coerce_from_unknown(
