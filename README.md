@@ -1,4 +1,4 @@
-# SqlAlchemy Declarative Extensions
+# SQLAlchemy Declarative Extensions
 
 [![Actions Status](https://github.com/dancardin/sqlalchemy-declarative-extensions/workflows/test/badge.svg)](https://github.com/dancardin/sqlalchemy-declarative-extensions/actions) [![Coverage Status](https://coveralls.io/repos/github/DanCardin/sqlalchemy-declarative-extensions/badge.svg?branch=main)](https://coveralls.io/github/DanCardin/sqlalchemy-declarative-extensions?branch=main) [![Documentation Status](https://readthedocs.org/projects/sqlalchemy-declarative-extensions/badge/?version=latest)](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/?badge=latest)
 
@@ -6,7 +6,7 @@ See the full documentation [here](https://sqlalchemy-declarative-extensions.read
 
 Adds extensions to SQLAlchemy (and/or Alembic) which allows declaratively
 stating the existence of additional kinds of objects about your database
-not natively supported by SqlAlchemy/Alembic.
+not natively supported by SQLAlchemy/Alembic.
 
 This includes:
 
@@ -21,7 +21,7 @@ This includes:
 
 The primary function(s) of this library include:
 
-- Registering onto the SqlAlchemy event system such that `metadata.create_all`
+- Registering onto the SQLAlchemy event system such that `metadata.create_all`
   creates these objects.
 - (Optionally) Registers into Alembic such that `alembic revision --autogenerate`
   automatically creates/updates/deletes declared objects.
@@ -113,7 +113,7 @@ you can use one of two registration hooks: `register_sqlalchemy_events` or `regi
 
 ### `register_sqlalchemy_events`
 
-This registers events in SqlAlchemy's event system such that a `metadata.create_all(...)` call
+This registers events in SQLAlchemy's event system such that a `metadata.create_all(...)` call
 will create the declared database objects.
 
 ```python
@@ -154,7 +154,7 @@ object types in order to have alembic track them
 
 ## Database support
 
-In principle, this library **can** absolutely support any database supported by SqlAlchemy,
+In principle, this library **can** absolutely support any database supported by SQLAlchemy,
 and capable of being introspected enough to support detection of different kinds of objects.
 
 As you can see below, in reality the existence of implementations are going to be purely driven by actual
@@ -210,7 +210,7 @@ which do not overlap, you might **need** to use both.
   - Alembic Utils is directly tied to Alembic and does not support SQLAlchemy's `MetaData.create_all`.
     It's also the responsibility of the user to discover/register objects in alembic.
 
-  - This library **depends** only on SqlAlchemy, although it also supports alembic. Support for
+  - This library **depends** only on SQLAlchemy, although it also supports alembic. Support for
     `MetaData.create_all` can be important for creating all object types in tests. It also
     is designed such that objects are registered on the `MetaData` itself, so there is no need for
     any specific discovery phase.
