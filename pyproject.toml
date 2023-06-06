@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.6.2"
+version = "0.6.3"
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
 
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
@@ -53,7 +53,7 @@ mypy = ">=0.942"
 pytest = ">=7"
 pytest-xdist = "*"
 pytest-alembic = "*"
-pytest-mock-resources = { version = ">=2.6.10", extras = ["docker"] }
+pytest-mock-resources = { version = ">=2.6.13", extras = ["docker"] }
 sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
 pymysql = {version = "*", extras = ["rsa"]}
 

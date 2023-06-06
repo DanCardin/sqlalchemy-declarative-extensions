@@ -1,14 +1,10 @@
-import pytest
-import sqlalchemy.exc
 from pytest_mock_resources import create_postgres_fixture
-from sqlalchemy import Column, text, types
+from sqlalchemy import text
 
 from sqlalchemy_declarative_extensions import (
-    Schemas,
     Views,
     declarative_database,
     register_sqlalchemy_events,
-    view,
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from tests import skip_sqlalchemy13

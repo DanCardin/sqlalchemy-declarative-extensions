@@ -33,12 +33,7 @@ def pmr_postgres_config():
     return PostgresConfig(port=None, ci_port=None)
 
 
-@pytest.fixture
-def pmr_mysql_container(pytestconfig, pmr_mysql_config: MysqlConfig):
-    yield from get_container(pytestconfig, pmr_mysql_config, interval=1)
-
-
-@pytest.fixture
+@pytest.fixture(scope="session")
 def pmr_mysql_config():
     return MysqlConfig(image="mysql:8", port=None, ci_port=None)
 

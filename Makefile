@@ -15,9 +15,9 @@ test:
 	coverage xml
 
 lint:
-	ruff src tests
-	mypy src tests
-	black --check src tests
+	ruff src tests || exit 1
+	mypy src tests || exit 1
+	black --check src tests || exit 1
 
 format:
 	black src tests
