@@ -48,10 +48,5 @@ are welcome!
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.trigger.base
-   :members: Triggers, Trigger, register_trigger
-```
-
-```{eval-rst}
-.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.trigger
-   :members: Trigger
+   :members: Triggers, register_trigger
 ```

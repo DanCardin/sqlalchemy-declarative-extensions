@@ -3,9 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Iterable
 
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData, MetaData
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 
 @dataclass
