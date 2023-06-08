@@ -1,7 +1,11 @@
+from sphinx_pyproject import SphinxConfig
+
+config = SphinxConfig("../../pyproject.toml")
+
 project = "SQLAlechemy Declarative Extensions"
 copyright = "2022, Dan Cardin"
-author = "Dan Cardin"
-release = "0.1.0"
+author = config.author
+release = config.version
 
 extensions = [
     "autoapi.extension",

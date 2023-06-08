@@ -8,6 +8,8 @@
 
 SQLAlchemy <sqlalchemy>
 Alembic <alembic>
+Dialect Specifics <dialects/index>
+Contributing <contributing/index>
 API <api>
 ```
 
@@ -29,13 +31,6 @@ Rows <rows>
 :hidden:
 
 Audit Tables <audit_tables>
-```
-
-```{toctree}
-:caption: Dialect Specific Support
-:hidden:
-
-Postgresql <dialects/postgresql>
 ```
 
 ```{toctree}
