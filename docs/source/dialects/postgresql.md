@@ -1,8 +1,10 @@
 # Postgresql
 
-The primary objects of interest are [Role](postgresql.Role), and
-[DefaultGrant](DefaultGrant) (all other objects are support types which comprise
-these objects or else types which these objects produce).
+The primary objects of interest are
+[Role](sqlalchemy_declarative_extensions.dialects.postgresql.role.Role), and
+[DefaultGrant](sqlalchemy_declarative_extensions.dialects.postgresql.grant.DefaultGrant)
+(all other objects are support types which comprise these objects or else types
+which these objects produce).
 
 ## Role
 
@@ -74,7 +76,7 @@ current moment, only the options required to support the
 ## API
 
 ```{eval-rst}
-.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql
+.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.role
    :members: Role
 ```
 

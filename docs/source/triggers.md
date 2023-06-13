@@ -36,7 +36,7 @@ class Base(_Base):
 
 ```{note}
 Triggers options are wildly different across dialects. As such, you should always use
-the diaelect-specific `Trigger` object.
+the dialect-specific `sqlalchemy_declarative_extensions.trigger.base.Trigger` subclasses.
 ```
 
 ```{note}
@@ -48,5 +48,5 @@ are welcome!
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.trigger.base
-   :members: Triggers, register_trigger
+   :members: Trigger, Triggers, register_trigger
 ```
