@@ -14,7 +14,6 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_typehints",
     "sphinx_copybutton",
 ]
 
@@ -55,5 +54,7 @@ autoapi_dirs = ["../../src/sqlalchemy_declarative_extensions"]
 autoapi_generate_api_docs = False
 
 autodoc_typehints = "description"
+autodoc_typehints_format = "fully-qualified"
+suppress_warnings = ["autoapi.python_import_resolution"]
 
 autosectionlabel_prefix_document = True
