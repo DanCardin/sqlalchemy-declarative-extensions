@@ -5,7 +5,7 @@ other object types, by defining the set of views on the `MetaData` or
 declarative base, like so:
 
 ```python
-from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database, View, Views
 
 _Base = declarative_base()
@@ -57,7 +57,7 @@ at MetaData/model base definition time.
 
 ```python
 from sqlalchemy import Column, types, select
-from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import view
 
 Base = declarative_base()

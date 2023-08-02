@@ -27,8 +27,8 @@ class Base(_Base):
     roles = ...
 ```
 
-Or on the metadata directly, for example when not using the declarative style API
-of SQLAlchemy.
+Or on the metadata directly, for example when not using the declarative style
+API of SQLAlchemy.
 
 ```python
 from sqlalchemy import MetaData
@@ -45,8 +45,8 @@ declare_database(
 
 ## Event Registration
 
-Additionally, you can opt into registration of sqlalchemy's creation-level events,
-i.e. during a `metadata.create_all`.
+Additionally, you can opt into registration of sqlalchemy's creation-level
+events, i.e. during a `metadata.create_all`.
 
 ```python
 from sqlalchemy_declarative_extensions import register_sqlalchemy_events
@@ -54,6 +54,6 @@ from sqlalchemy_declarative_extensions import register_sqlalchemy_events
 register_sqlalchemy_events(schemas=True, roles=True, grants=True, rows=False)
 ```
 
-Note, all available options are disabled by default! We assume this option
-will most often be used in tests, where it's not clear that all options
-can be safely used.
+Note, all available options are disabled by default! We assume this option will
+most often be used in tests, where it's not clear that all options can be safely
+used.

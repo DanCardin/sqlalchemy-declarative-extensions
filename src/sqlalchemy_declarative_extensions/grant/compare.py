@@ -50,7 +50,8 @@ def compare_grants(
 ) -> list[Operation]:
     result: list[Operation] = []
 
-    current_role: str = connection.engine.url.username  # type: ignore
+    assert connection.engine.url.username
+    current_role: str = connection.engine.url.username
 
     filtered_roles: set[str] | None = None
     if grants.only_defined_roles:

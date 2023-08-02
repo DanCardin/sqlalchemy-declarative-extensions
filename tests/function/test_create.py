@@ -10,11 +10,14 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
+()
+
+
 _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     functions = Functions().are(Function("gimme", "SELECT 1;", returns="INTEGER"))

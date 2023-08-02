@@ -10,11 +10,14 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions.view.compare import compare_views
 
-Base_ = declarative_base()
+()
+
+
+_Base = declarative_base()
 
 
 @declarative_database
-class Base(Base_):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     schemas = Schemas().are("fooschema")

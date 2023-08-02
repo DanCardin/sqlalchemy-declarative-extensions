@@ -12,11 +12,14 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import Trigger
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions.trigger.compare import compare_triggers
 
+()
+
+
 _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     functions = Functions().are(

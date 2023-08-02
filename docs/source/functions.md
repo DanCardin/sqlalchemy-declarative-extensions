@@ -1,11 +1,10 @@
 # Functions
 
 ```python
-from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database, Function, Functions
 
 _Base = declarative_base()
-
 
 @declarative_database
 class Base(_Base):

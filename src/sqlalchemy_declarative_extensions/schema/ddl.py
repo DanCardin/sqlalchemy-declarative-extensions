@@ -6,7 +6,7 @@ from sqlalchemy_declarative_extensions.schema import Schema
 
 def schema_ddl(schema: Schema):
     ddl = CreateSchema(schema.name)
-    return ddl.execute_if(callable_=check_schema)  # type: ignore
+    return ddl.execute_if(callable_=check_schema)
 
 
 def check_schema(ddl, target, connection, **_):

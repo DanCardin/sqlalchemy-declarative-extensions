@@ -1,12 +1,6 @@
-[project]
-name = "sqlalchemy-declarative-extensions"
-version = "0.6.3"
-authors = [{name = "Dan Cardin", email = "ddcardin@gmail.com"}]
-description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
-
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.6.3"
+version = "0.6.4"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."

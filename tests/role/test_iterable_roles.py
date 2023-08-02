@@ -8,11 +8,14 @@ from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base_ = declarative_base()
+()
+
+
+_Base = declarative_base()
 
 
 @declarative_database
-class Base(Base_):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     roles = [

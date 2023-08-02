@@ -14,11 +14,14 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import DefaultGrant, 
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base_ = declarative_base()
+()
+
+
+_Base = declarative_base()
 
 
 @declarative_database
-class Base(Base_):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     schemas = Schemas().are("bar", "baz")

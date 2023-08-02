@@ -1,5 +1,5 @@
 import sqlalchemy
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 from typing_extensions import Protocol
 
@@ -8,10 +8,6 @@ version = getattr(sqlalchemy, "__version__", "1.3")
 
 class HasMetaData(Protocol):
     metadata: MetaData
-
-
-class HasTable(Protocol):
-    __table__: Table
 
 
 def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
@@ -42,9 +38,8 @@ def escape_params(query: str) -> str:
 
 
 if version.startswith("1.3"):
-    from sqlalchemy.ext.declarative import (  # type: ignore
+    from sqlalchemy.ext.declarative import (
         DeclarativeMeta,
-        declarative_base,
         instrument_declarative,
     )
 
@@ -55,7 +50,7 @@ if version.startswith("1.3"):
         return instrument_declarative(cls, {}, metadata)
 
 else:
-    from sqlalchemy.orm import DeclarativeMeta, declarative_base, registry
+    from sqlalchemy.orm import DeclarativeMeta, registry
 
     select = sqlalchemy.select
 
@@ -73,6 +68,20 @@ else:
 
     def row_to_dict(row):
         return dict(row)
+
+
+def declarative_base() -> HasMetaData:
+    if version.startswith("2"):
+        from sqlalchemy.orm import DeclarativeBase
+
+        return DeclarativeBase
+
+    if version.startswith("1.3"):
+        from sqlalchemy.ext.declarative import declarative_base
+    else:
+        from sqlalchemy.orm import declarative_base
+
+    return declarative_base()
 
 
 __all__ = [

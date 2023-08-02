@@ -12,11 +12,14 @@ from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base_ = declarative_base()
+()
+
+
+_Base = declarative_base()
 
 
 @declarative_database
-class Base(Base_):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     roles = Roles(ignore_unspecified=True).are(
@@ -40,7 +43,7 @@ class Base(Base_):
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 
-register_sqlalchemy_events(Base, roles=True)
+register_sqlalchemy_events(Base.metadata, roles=True)
 
 
 def test_createall_role(pg):
