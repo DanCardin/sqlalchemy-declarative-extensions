@@ -19,13 +19,14 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base_ = declarative_base()
+()
 
 
 if alembic_utils:
+    _Base = declarative_base()
 
     @declarative_database
-    class Base(Base_):
+    class Base(_Base):  # type: ignore
         __abstract__ = True
 
         schemas = Schemas().are("fooschema")

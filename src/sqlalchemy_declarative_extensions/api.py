@@ -10,7 +10,7 @@ from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.schema.base import Schemas
-from sqlalchemy_declarative_extensions.sqlalchemy import DeclarativeMeta, HasMetaData
+from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 from sqlalchemy_declarative_extensions.trigger.base import Trigger, Triggers
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
 
-T = TypeVar("T", bound=DeclarativeMeta)
+T = TypeVar("T")
 
 
 def declarative_database(base: T) -> T:
@@ -35,16 +35,14 @@ def declarative_database(base: T) -> T:
     call or ``alembic --autogenerate``.
 
     Examples:
-        >>> try:
-        ...     from sqlalchemy.orm import declarative_base
-        ... except ImportError:
-        ...     from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
-        >>> Base_ = declarative_base()
-        >>>
+        >>> from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
         >>> from sqlalchemy_declarative_extensions import declarative_database, Roles
         >>> from sqlalchemy_declarative_extensions.dialects.postgresql import Role
+        >>>
+        >>> _Base = declarative_base()
+
         >>> @declarative_database
-        ... class Base(Base_):
+        ... class Base(_Base):  # type: ignore
         ...     __abstract__ = True
         ...
         ...     schemas = Schemas().are('example')
@@ -65,8 +63,12 @@ def declarative_database(base: T) -> T:
     raw_triggers = getattr(base, "triggers", None)
     raw_rows = getattr(base, "rows", None)
 
+    metadata = getattr(base, "metadata", None)
+    if metadata is None:  # pragma: no cover
+        raise ValueError("Base must have a 'metadata' attribute.")
+
     declare_database(
-        base.metadata,
+        metadata,
         schemas=raw_schemas,
         roles=raw_roles,
         grants=raw_grants,

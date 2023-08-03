@@ -11,7 +11,12 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.audit import audit, set_context_values
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base = declarative_database(declarative_base())
+_Base = declarative_base()
+
+
+@declarative_database
+class Base(_Base):  # type: ignore  # type: ignore
+    __abstract__ = True
 
 
 context_columns = [Column("username", types.Unicode(), nullable=False)]

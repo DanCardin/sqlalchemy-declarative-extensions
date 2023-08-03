@@ -8,11 +8,14 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.dialects.postgresql import Function
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
+()
+
+
 _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     functions = [Function("gimme", "SELECT 3;", returns="INTEGER")]

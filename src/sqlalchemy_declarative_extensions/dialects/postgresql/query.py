@@ -70,7 +70,9 @@ def get_default_grants_postgresql(
     expanded: bool = False,
 ):
     default_permissions = connection.execute(default_acl_query).fetchall()
-    current_role: str = connection.engine.url.username  # type: ignore
+
+    assert connection.engine.url.username
+    current_role: str = connection.engine.url.username
 
     result = []
     for permission in default_permissions:
@@ -144,7 +146,7 @@ def get_views_postgresql(connection: Connection):
             v.definition,
             schema=schema,
             materialized=v.materialized,
-            constraints=indexes or None,  # type: ignore
+            constraints=indexes or None,
         )
         views.append(view)
     return views

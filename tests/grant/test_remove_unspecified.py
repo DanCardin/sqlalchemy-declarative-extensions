@@ -12,11 +12,14 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.grant.compare import compare_grants
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-Base_ = declarative_base()
+()
+
+
+_Base = declarative_base()
 
 
 @declarative_database
-class Base(Base_):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     roles = Roles(ignore_unspecified=True).are("read")

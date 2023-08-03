@@ -19,7 +19,7 @@ from sqlalchemy_declarative_extensions.sqlalchemy import (
     escape_params,
 )
 
-T = TypeVar("T", bound=HasMetaData)
+T = TypeVar("T")
 
 
 def view(
@@ -61,6 +61,9 @@ def view(
     ...
     ...     id = Column(types.Integer, primary_key=True)
     """
+    metadata = getattr(base, "metadata", None)
+    if metadata is None:  # pragma: no cover
+        raise ValueError("Model must have a 'metadata' attribute.")
 
     def decorator(cls):
         name = cls.__tablename__
@@ -87,7 +90,7 @@ def view(
 
 
 def instrument_sqlalchemy(base: T, cls) -> T:
-    temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)
+    temp_metadata = MetaData(naming_convention=base.metadata.naming_convention)  # type: ignore
     return create_mapper(cls, temp_metadata)
 
 
@@ -277,7 +280,7 @@ class View:
             result.extend(from_view.to_sql_drop(dialect))
             result.extend(self.to_sql_create(dialect))
         else:
-            removed, missing = ViewIndex.diff(from_view.constraints, self.constraints)  # type: ignore
+            removed, missing = ViewIndex.diff(from_view.constraints, self.constraints)
             result.extend([c.drop(from_view) for c in removed])
             result.extend([c.create(self) for c in missing])
 
@@ -395,7 +398,7 @@ class ViewIndex:
             convention = "uq"
             instance = ViewIndex(
                 columns=cast(List[str], list(index._pending_colargs)),
-                name=index.name,  # type: ignore
+                name=index.name,
                 unique=True,
             )
         else:  # pragma: no cover

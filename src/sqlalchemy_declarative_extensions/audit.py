@@ -10,14 +10,13 @@ from sqlalchemy_declarative_extensions import (
     register_trigger,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import Trigger
-from sqlalchemy_declarative_extensions.sqlalchemy import HasTable
 
 default_primary_key = Column(
     "audit_pk", types.Integer(), primary_key=True, autoincrement=True
 )
 
 
-T = TypeVar("T", bound=HasTable)
+T = TypeVar("T")
 AUDIT_PK = "audit_pk"
 AUDIT_OPERATION = "audit_operation"
 AUDIT_TIMESTAMP = "audit_timestamp"
@@ -59,8 +58,12 @@ def audit_model(
     update: bool = True,
     delete: bool = True,
 ) -> T:
+    table = getattr(model, "__table__", None)
+    if table is None:  # pragma: no cover
+        raise ValueError(f"{model} is not a valid model, lacks __table__ attribute.")
+
     table = audit_table(
-        model.__table__,
+        table,
         primary_key=primary_key,
         schema=schema,
         ignore_columns=ignore_columns,
@@ -83,8 +86,11 @@ def audit_table(
     update: bool = True,
     delete: bool = True,
 ):
+    metadata = getattr(table, "metadata", None)
+    assert metadata
+
     audit_table = create_audit_table(
-        table.metadata,
+        metadata,
         table,
         primary_key=primary_key,
         schema=schema,
@@ -92,7 +98,7 @@ def audit_table(
         context_columns=context_columns,
     )
     create_audit_functions(
-        table.metadata,
+        metadata,
         table,
         audit_table,
         insert=insert,
@@ -287,3 +293,14 @@ def set_context_values(connectable, **values):
     for name, value in values.items():
         statement = f"SET LOCAL audit.{name} = '{value}'"
         connectable.execute(text(statement))
+
+
+__all__ = [
+    "audit",
+    "audit_model",
+    "audit_table",
+    "create_audit_functions",
+    "create_audit_table",
+    "create_audit_triggers",
+    "set_context_values",
+]

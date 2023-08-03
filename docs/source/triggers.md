@@ -1,7 +1,7 @@
 # Triggers
 
 ```python
-from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy_declarative_extensions import declarative_database, Function, Functions, Triggers
 from sqlalchemy_declarative_extensions.dialects.postgresql import Trigger
 

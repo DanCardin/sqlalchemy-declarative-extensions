@@ -10,11 +10,14 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
+()
+
+
 _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base):
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
 
@@ -30,7 +33,7 @@ function = Function(
     returns="INTEGER",
     language="plpgsql",
 )
-register_function(Base, function)
+register_function(Base.metadata, function)
 
 
 class Foo(Base):
