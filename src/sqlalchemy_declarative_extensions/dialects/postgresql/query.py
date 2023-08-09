@@ -185,6 +185,10 @@ def get_triggers_postgresql(connection: Connection):
             if t.execute_schema == "public"
             else f"{t.execute_schema}.{t.execute_name}"
         )
+
+        condition: str | None = None
+        if t.when is not None:
+            condition = t.when.lstrip("(").rstrip(")")
         trigger = Trigger(
             name=t.name,
             on=on,
@@ -192,7 +196,7 @@ def get_triggers_postgresql(connection: Connection):
             events=TriggerEvents.from_bit_string(t.type),
             time=TriggerTimes.from_bit_string(t.type),
             for_each=TriggerForEach.from_bit_string(t.type),
-            condition=t.when.lstrip("(").rstrip(")"),
+            condition=condition,
         )
         triggers.append(trigger)
 
