@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import textwrap
 from dataclasses import dataclass, replace
 
 from sqlalchemy_declarative_extensions.function import base
@@ -28,7 +29,10 @@ class Function(base.Function):
 
     def normalize(self) -> Function:
         returns = self.returns.lower()
-        return replace(self, returns=type_map.get(returns, returns))
+        definition = textwrap.dedent(self.definition)
+        return replace(
+            self, returns=type_map.get(returns, returns), definition=definition
+        )
 
 
 type_map = {
