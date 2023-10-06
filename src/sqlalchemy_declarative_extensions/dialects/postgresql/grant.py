@@ -35,7 +35,6 @@ from typing import Generic
 
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.sql.expression import text
-from typing_extensions import Protocol, runtime_checkable
 
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     DefaultGrantTypes,
@@ -43,6 +42,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     GrantOptions,
     GrantTypes,
 )
+from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
