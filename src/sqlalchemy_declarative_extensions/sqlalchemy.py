@@ -1,7 +1,8 @@
 import sqlalchemy
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
-from typing_extensions import Protocol
+
+from sqlalchemy_declarative_extensions.typing import Protocol
 
 version = getattr(sqlalchemy, "__version__", "1.3")
 
