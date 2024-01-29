@@ -37,7 +37,7 @@
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.row
-   :members: Row, Rows
+   :members: Row, Rows, Table
 ```
 
 ## Alembic
