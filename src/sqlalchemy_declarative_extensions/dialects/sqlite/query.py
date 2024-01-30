@@ -2,7 +2,6 @@ from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.sqlite.schema import (
-    table_exists_query,
     views_query,
 )
 from sqlalchemy_declarative_extensions.view.base import View
@@ -26,13 +25,3 @@ def get_views_sqlite(connection: Connection):
         View(v.name, v.definition, schema=v.schema)
         for v in connection.execute(views_query()).fetchall()
     ]
-
-
-def check_table_exists_sqlite(
-    connection: Connection, name: str, *, schema: str
-) -> bool:
-    row = connection.execute(
-        table_exists_query(schema),
-        {"name": name, "schema": schema},
-    ).scalar()
-    return bool(row)

@@ -33,12 +33,6 @@ views_query = (
     .where(views.c.table_schema.notin_(["sys"]))
 )
 
-table_exists_query = (
-    select(tables)
-    .where(tables.c.table_schema == bindparam("schema"))
-    .where(tables.c.table_name == bindparam("name"))
-)
-
 schema_exists_query = select(schemata).where(
     schemata.c.schema_name == bindparam("schema")
 )

@@ -150,13 +150,6 @@ schema_exists_query = text(
 )
 
 
-table_exists_query = (
-    select(tables)
-    .where(tables.c.table_schema == bindparam("schema"))
-    .where(tables.c.table_name == bindparam("name"))
-)
-
-
 default_acl_query = select(
     pg_roles.c.rolname.label("role_name"),
     pg_namespace.c.nspname.label("schema_name"),
