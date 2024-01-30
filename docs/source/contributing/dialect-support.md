@@ -36,15 +36,12 @@ Here's an excerpt for example:
 ```python
 from sqlalchemy_declarative_extensions.dialects.mysql.query import (
     check_schema_exists_mysql,
-    check_table_exists_mysql,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
     check_schema_exists_postgresql,
-    check_table_exists_postgresql,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     check_schema_exists_sqlite,
-    check_table_exists_sqlite,
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch
 
@@ -52,12 +49,6 @@ check_schema_exists = dialect_dispatch(
     postgresql=check_schema_exists_postgresql,
     sqlite=check_schema_exists_sqlite,
     mysql=check_schema_exists_mysql,
-)
-
-check_table_exists = dialect_dispatch(
-    postgresql=check_table_exists_postgresql,
-    sqlite=check_table_exists_sqlite,
-    mysql=check_table_exists_mysql,
 )
 ```
 

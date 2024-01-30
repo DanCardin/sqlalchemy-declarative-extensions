@@ -2,7 +2,6 @@ from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.mysql.schema import (
     schema_exists_query,
-    table_exists_query,
     views_query,
 )
 from sqlalchemy_declarative_extensions.view.base import View
@@ -23,10 +22,3 @@ def get_views_mysql(connection: Connection):
 def check_schema_exists_mysql(connection: Connection, name: str) -> bool:
     row = connection.execute(schema_exists_query, {"schema": name}).scalar()
     return not bool(row)
-
-
-def check_table_exists_mysql(connection: Connection, name: str, *, schema: str) -> bool:
-    row = connection.execute(
-        table_exists_query, {"name": name, "schema": schema}
-    ).scalar()
-    return bool(row)

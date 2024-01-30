@@ -39,10 +39,7 @@ def escape_params(query: str) -> str:
 
 
 if version.startswith("1.3"):
-    from sqlalchemy.ext.declarative import (
-        DeclarativeMeta,
-        instrument_declarative,
-    )
+    from sqlalchemy.ext.declarative import DeclarativeMeta, instrument_declarative
 
     def select(*args):
         return sqlalchemy.select(list(args))

@@ -33,15 +33,15 @@ class Row:
     tablename: str
     column_values: dict[str, Any]
 
-    def __init__(self, tablename, **column_values):
+    def __init__(self, tablename, *, schema: str | None = None, **column_values):
+        schema = schema
         try:
             schema, table = tablename.split(".", 1)
         except ValueError:
-            self.schema = None
-            self.tablename = tablename
-        else:
-            self.schema = schema
-            self.tablename = table
+            table = tablename
+
+        self.schema = schema
+        self.tablename = table
 
         self.column_values = column_values
 
@@ -50,6 +50,19 @@ class Row:
         if self.schema:
             return f"{self.schema}.{self.tablename}"
         return self.tablename
+
+    def qualify(self, schema: str | None) -> Row:
+        """Attach a schema to this row, if it doesn't have one already.
+
+        Examples:
+            >>> row = Row("foo")
+            >>> row.qualify("bar")
+            Row(schema='bar', tablename='foo', column_values={})
+        """
+        if self.schema is not None:
+            return self
+
+        return self.__class__(self.tablename, schema=schema, **self.column_values)
 
 
 @dataclass
@@ -74,6 +87,7 @@ class Table:
         ... ]
         [Row(schema=None, tablename='users', column_values={'active': True, 'id': 1, 'name': 'John'}), Row(schema=None, tablename='users', column_values={'active': True, 'id': 2, 'name': 'Bob'})]
     """
+
     name: str
     column_values: dict[str, Any]
 
@@ -82,5 +96,5 @@ class Table:
         self.column_values = column_values
 
     def row(self, **column_values) -> Row:
-        final_values= {**self.column_values, **column_values}
+        final_values = {**self.column_values, **column_values}
         return Row(self.name, **final_values)
