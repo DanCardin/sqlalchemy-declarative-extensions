@@ -6,7 +6,10 @@ from typing import Any, Union
 from sqlalchemy import MetaData, Table, tuple_
 from sqlalchemy.engine.base import Connection
 
-from sqlalchemy_declarative_extensions.dialects import check_table_exists
+from sqlalchemy_declarative_extensions.dialects import (
+    check_table_exists,
+    get_current_schema,
+)
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.sqlalchemy import row_to_dict
 
@@ -100,8 +103,12 @@ RowOp = Union[InsertRowOp, UpdateRowOp, DeleteRowOp]
 def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list[RowOp]:
     result: list[RowOp] = []
 
+    current_schema = get_current_schema(connection)
+
     rows_by_table: dict[Table, list[Row]] = {}
     for row in rows:
+        row = row.qualify(current_schema)
+
         table = metadata.tables.get(row.qualified_name)
         if table is None:
             raise ValueError(f"Unknown table: {row.qualified_name}")
@@ -124,7 +131,7 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
         table_exists = check_table_exists(
             connection,
             table.name,
-            schema=table.schema or connection.dialect.default_schema_name,
+            schema=table.schema or current_schema,
         )
 
         record = None
@@ -160,7 +167,7 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
             table_exists = check_table_exists(
                 connection,
                 table.name,
-                schema=table.schema or connection.dialect.default_schema_name,
+                schema=table.schema or current_schema,
             )
             if not table_exists:
                 continue

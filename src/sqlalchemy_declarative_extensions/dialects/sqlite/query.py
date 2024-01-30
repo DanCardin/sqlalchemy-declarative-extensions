@@ -1,9 +1,7 @@
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialects.sqlite.schema import (
-    views_query,
-)
+from sqlalchemy_declarative_extensions.dialects.sqlite.schema import views_query
 from sqlalchemy_declarative_extensions.view.base import View
 
 

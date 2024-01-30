@@ -39,11 +39,11 @@ def view(
     as though it were a table.
 
     Arguments:
-        base: A declarative base object.
+        base: A declarative base object
         materialized: Whether the view should be a materialized view
         register_as_model: Whether the view should be registered as a SQLAlchemy mapped object.
             Note this only works if the view defines mappable models columns (minimally a primary
-            key), like a proper modeled table.
+            key), like a proper modeled table
 
     >>> try:
     ...     from sqlalchemy.orm import declarative_base
