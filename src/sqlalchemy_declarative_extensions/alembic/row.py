@@ -38,9 +38,7 @@ def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
 
 @renderers.dispatch_for(InsertRowOp)
 def render_insert_table_row(_, op: InsertRowOp):
-    return "op.insert_table_row('{table}', {values})".format(
-        table=op.table, values=op.values
-    )
+    return f"op.insert_table_row('{op.table}', {op.values})"
 
 
 @renderers.dispatch_for(UpdateRowOp)
@@ -52,9 +50,7 @@ def render_update_table_row(_, op: UpdateRowOp):
 
 @renderers.dispatch_for(DeleteRowOp)
 def render_delete_table_row(_, op: DeleteRowOp):
-    return "op.delete_table_row('{table}', {values})".format(
-        table=op.table, values=op.values
-    )
+    return f"op.delete_table_row('{op.table}', {op.values})"
 
 
 @Operations.implementation_for(InsertRowOp)

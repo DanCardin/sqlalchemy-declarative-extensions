@@ -153,7 +153,7 @@ def create_audit_table(
         if col.name not in ignore_columns
     ]
 
-    table = Table(
+    return Table(
         table_name,
         metadata,
         primary_key_column,
@@ -164,7 +164,6 @@ def create_audit_table(
         *table_columns,
         schema=schema or table.schema,
     )
-    return table
 
 
 def create_audit_functions(
