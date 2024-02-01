@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
@@ -47,14 +47,20 @@ psycopg = "*"
 alembic-utils = "0.8.1"
 black = ">=22.3.0"
 coverage = ">=5"
-ruff = "0.1.15"
 mypy = "1.4.1"
+pymysql = {version = "*", extras = ["rsa"]}
 pytest = ">=7"
-pytest-xdist = "*"
 pytest-alembic = "*"
 pytest-mock-resources = { version = ">=2.6.13", extras = ["docker"] }
+pytest-xdist = "*"
+ruff = "0.1.15"
 sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
-pymysql = {version = "*", extras = ["rsa"]}
+
+# snowflake
+fakesnow = {version = "~0.9.2", python = ">=3.9"}
+snowflake-connector-python = {version = ">=3.7", python = ">=3.9"}
+filelock = {version = "*", python = ">=3.9"}
+numpy = {version = ">=1.26", python = ">=3.9"}
 
 [tool.poetry.extras]
 alembic = ["alembic"]
@@ -91,6 +97,7 @@ filterwarnings = [
   'error',
   'ignore:invalid escape sequence.*',
   'ignore:distutils Version classes are deprecated. Use packaging.version instead.:DeprecationWarning',
+  'ignore:_SixMetaPathImporter.find_spec.*:ImportWarning'
 ]
 pytester_example_dir = "tests/examples"
 markers = [

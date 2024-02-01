@@ -34,6 +34,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -55,6 +56,11 @@ jobs:
 
       - name: Install dependencies
         run: poetry install -E parse
+
+      - name: Install snowflake
+        if: ${{ matrix.sqlalchemy-version == '1.4.0' && matrix.python-version != '3.8.0' }}
+        run: |
+          poetry run pip install 'snowflake-sqlalchemy'
 
       - name: Install specific sqlalchemy version
         run: |

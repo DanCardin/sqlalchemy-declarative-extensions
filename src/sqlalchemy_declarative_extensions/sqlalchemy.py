@@ -11,11 +11,12 @@ class HasMetaData(Protocol):
     metadata: MetaData
 
 
-def dialect_dispatch(postgresql=None, sqlite=None, mysql=None):
+def dialect_dispatch(postgresql=None, sqlite=None, mysql=None, snowflake=None):
     dispatchers = {
         "postgresql": postgresql,
         "sqlite": sqlite,
         "mysql": mysql,
+        "snowflake": snowflake,
     }
 
     def dispatch(connection: Connection, *args, **kwargs):

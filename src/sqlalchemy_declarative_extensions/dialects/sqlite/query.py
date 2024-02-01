@@ -5,6 +5,13 @@ from sqlalchemy_declarative_extensions.dialects.sqlite.schema import views_query
 from sqlalchemy_declarative_extensions.view.base import View
 
 
+def get_schemas_sqlite(connection: Connection):
+    from sqlalchemy_declarative_extensions.schema.base import Schema
+
+    schemas = connection.execute(text("PRAGMA database_list")).fetchall()
+    return {Schema(schema) for _, schema, *_ in schemas if schema not in {"main"}}
+
+
 def check_schema_exists_sqlite(connection: Connection, name: str) -> bool:
     """Check whether the given schema exists.
 

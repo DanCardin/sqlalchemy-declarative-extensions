@@ -44,6 +44,23 @@ def pmr_mysql_config():
     return MysqlConfig(image="mysql:8", port=None, ci_port=None)
 
 
+@pytest.fixture
+def snowflake():
+    try:
+        import fakesnow
+        import snowflake.sqlalchemy
+    except ImportError:
+        pytest.skip("Snowflake not installed")
+
+    from sqlalchemy.engine.create import create_engine
+
+    with fakesnow.patch(
+        create_database_on_connect=True,
+        create_schema_on_connect=False,
+    ):
+        yield create_engine("snowflake://test/test/information_schema")
+
+
 @pytest.fixture(autouse=True)
 def clear_registry():
     """Clear out state accumulated by importing alembic modules in env.pys.

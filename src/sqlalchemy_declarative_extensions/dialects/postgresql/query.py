@@ -42,7 +42,7 @@ def get_schemas_postgresql(connection: Connection):
 
 def check_schema_exists_postgresql(connection: Connection, name: str) -> bool:
     row = connection.execute(schema_exists_query, {"schema": name}).scalar()
-    return not bool(row)
+    return bool(row)
 
 
 def get_objects_postgresql(connection: Connection):
