@@ -31,3 +31,8 @@ def test_rows_disabled(pytester):
 @pytest.mark.alembic
 def test_rows_drop_table(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_single_row_ops(pytester):
+    successful_test_run(pytester, count=1)

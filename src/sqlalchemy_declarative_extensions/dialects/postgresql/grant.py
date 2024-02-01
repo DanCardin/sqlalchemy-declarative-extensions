@@ -42,6 +42,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     GrantOptions,
     GrantTypes,
 )
+from sqlalchemy_declarative_extensions.sql import split_schema
 from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
 
 
@@ -345,10 +346,7 @@ def _render_to_or_from(grant: Grant) -> str:
 
 
 def _quote_table_name(name: str):
-    if "." in name:
-        schema, name = name.split(".")
-    else:
-        schema = None
+    schema, name = split_schema(name)
 
     if schema:
         return f'"{schema}"."{name}"'

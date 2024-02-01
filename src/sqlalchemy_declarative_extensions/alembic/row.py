@@ -61,5 +61,4 @@ def execute_row(
     operation: Union[InsertRowOp, UpdateRowOp, DeleteRowOp],
 ):
     conn = operations.get_bind()
-    query = operation.render(conn)
-    conn.execute(query)
+    operation.execute(conn)
