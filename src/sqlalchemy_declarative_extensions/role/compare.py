@@ -30,7 +30,7 @@ class CreateRoleOp(RoleOp):
     def reverse(self):
         return DropRoleOp(self.role)
 
-    def to_sql(self):
+    def to_sql(self) -> list[str]:
         return self.role.to_sql_create()
 
 
@@ -54,7 +54,7 @@ class UpdateRoleOp(RoleOp):
     def reverse(self):
         return UpdateRoleOp(from_role=self.to_role, to_role=self.from_role)
 
-    def to_sql(self):
+    def to_sql(self) -> list[str]:
         return self.from_role.to_sql_update(self.to_role)
 
 
@@ -70,8 +70,8 @@ class DropRoleOp(RoleOp):
     def reverse(self):
         return CreateRoleOp(self.role)
 
-    def to_sql(self):
-        return [self.role.to_sql_drop()]
+    def to_sql(self) -> list[str]:
+        return self.role.to_sql_drop()
 
 
 Operation = Union[CreateRoleOp, UpdateRoleOp, DropRoleOp]

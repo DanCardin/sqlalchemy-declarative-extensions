@@ -31,10 +31,7 @@ def compare_schemas(autogen_context: AutogenContext, upgrade_ops, _):
 @renderers.dispatch_for(CreateSchemaOp)
 @renderers.dispatch_for(DropSchemaOp)
 def render_create_schema(autogen_context: AutogenContext, op: CreateSchemaOp):
-    statement = op.to_sql()
-    cls_name = statement.__class__.__name__
-    autogen_context.imports.add(f"from sqlalchemy.sql.ddl import {cls_name}")
-    return f'op.execute({cls_name}("{statement.element}"))'
+    return f'op.execute("{op.to_sql()}")'
 
 
 @Operations.implementation_for(CreateSchemaOp)

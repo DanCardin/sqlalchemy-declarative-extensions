@@ -76,7 +76,7 @@ def compare_default_grants(
 ):
     result: list[Operation] = []
 
-    existing_default_grants = get_default_grants(connection, roles=roles, expanded=True)
+    existing_default_grants = []  # get_default_grants(connection, roles=roles, expanded=True)
 
     expected_grants = []
     for grant in grants:
@@ -113,7 +113,7 @@ def compare_object_grants(
         if isinstance(sub_g, GrantStatement)
     ]
 
-    existing_tables = get_objects(connection)
+    existing_tables = []  # get_objects(connection)
     existing_tables_by_schema = {
         s: list(g) for s, g in groupby(existing_tables, lambda r: r[0])
     }
@@ -136,7 +136,7 @@ def compare_object_grants(
                         grant.grant.on_objects(table, object_type=object_type).explode()
                     )
 
-    existing_grants = get_grants(connection, roles=roles, expanded=True)
+    existing_grants = []  # get_grants(connection, roles=roles, expanded=True)
 
     if grants.ignore_self_grants:
         existing_grants = [

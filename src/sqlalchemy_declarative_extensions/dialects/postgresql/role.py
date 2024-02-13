@@ -117,6 +117,9 @@ class Role(generic.Role):
 
         result = []
 
+        if self.use_role:
+            result.append(f"SET ROLE {self.use_role};")
+
         diff_options = postgres_render_role_options(diff)
         if diff_options:
             segments = ["ALTER ROLE", role_name, "WITH", *diff_options]
@@ -129,7 +132,12 @@ class Role(generic.Role):
         for remove_name in diff.remove_roles:
             result.append(f"REVOKE {remove_name} FROM {role_name};")
 
+        if self.use_role:
+            result.append("RESET ROLE")
         return result
+
+    def to_sql_drop(self) -> list[str]:
+        return [f'DROP ROLE "{self.name}";']
 
 
 @dataclass

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Iterable, Sequence
 
+from typing_extensions import Self
+
 
 @dataclass(frozen=True)
 class Schemas:
@@ -61,8 +63,14 @@ class Schema:
     name: str
 
     @classmethod
-    def coerce_from_unknown(cls, unknown: Schema | str) -> Schema:
+    def coerce_from_unknown(cls, unknown: Self | str) -> Self:
         if isinstance(unknown, Schema):
             return unknown
 
         return cls(unknown)
+
+    def to_sql_create(self) -> str:
+        return f"CREATE SCHEMA {self.name}"
+
+    def to_sql_drop(self) -> str:
+        return f"DROP SCHEMA {self.name}"
