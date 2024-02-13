@@ -113,3 +113,12 @@ def clear_registry():
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.view", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.function", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.trigger", None)
+
+
+@pytest.fixture
+def snowflake():
+    import fakesnow
+    from sqlalchemy import create_engine
+
+    with fakesnow.patch():
+        yield create_engine("snowflake://foo/foo/foo")

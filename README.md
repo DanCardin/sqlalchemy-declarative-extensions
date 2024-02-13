@@ -1,7 +1,7 @@
 # SQLAlchemy Declarative Extensions
 
 [![Actions Status](https://github.com/dancardin/sqlalchemy-declarative-extensions/workflows/test/badge.svg)](https://github.com/dancardin/sqlalchemy-declarative-extensions/actions)
-[![Coverage Status](https://coveralls.io/repos/github/DanCardin/sqlalchemy-declarative-extensions/badge.svg?branch=main)](https://coveralls.io/github/DanCardin/sqlalchemy-declarative-extensions?branch=main)
+[![codecov](https://codecov.io/gh/DanCardin/chapter-sync/graph/badge.svg?token=e8T6QN2tTz)](https://codecov.io/gh/DanCardin/chapter-sync)
 [![Documentation Status](https://readthedocs.org/projects/sqlalchemy-declarative-extensions/badge/?version=latest)](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/?badge=latest)
 
 See the full documentation
@@ -175,7 +175,7 @@ suffer or lack implementation.
 | ------------- | -------- | ----- | ------ | --------- |
 | Schema        | ✓        | N/A   | ✓      | ✓         |
 | View          | ✓        | ✓     | ✓      |           |
-| Role          | ✓        |       | N/A    |           |
+| Role          | ✓        |       | N/A    | *         |
 | Grant         | ✓        |       | N/A    |           |
 | Default Grant | ✓        |       | N/A    |           |
 | Function      | ✓        | *     |        |           |

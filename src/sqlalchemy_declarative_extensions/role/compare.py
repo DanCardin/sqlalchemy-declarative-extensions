@@ -102,15 +102,15 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
 
         role_created = role_name in new_role_names
 
+        # An input role might be defined as a more general `Role` while
+        # the `existing_role` will always be a concrete dialect-specific version.
+        concrete_defined_role = role_cls.from_unknown_role(role)
+
         if role_created:
-            result.append(CreateRoleOp(role))
+            result.append(CreateRoleOp(concrete_defined_role))
         else:
             existing_role = existing_roles_by_name[role_name]
             role_cls = type(existing_role)
-
-            # An input role might be defined as a more general `Role` while
-            # the `existing_role` will always be a concrete dialect-specific version.
-            concrete_defined_role = role_cls.from_unknown_role(role)
 
             role_updated = existing_role != concrete_defined_role
             if role_updated:
@@ -118,7 +118,7 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
                 result.append(
                     UpdateRoleOp(
                         from_role=existing_role,
-                        to_role=role_cls.from_unknown_role(role),
+                        to_role=concrete_defined_role,
                     )
                 )
 

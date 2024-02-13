@@ -56,8 +56,9 @@ ruff = "0.1.15"
 sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
 
 # snowflake
-fakesnow = {version = "~0.9.2", python = ">=3.9"}
+fakesnow = {version = "~0.9.5", python = ">=3.9"}
 snowflake-connector-python = {version = ">=3.7", python = ">=3.9"}
+snowflake-sqlalchemy = {version = ">=1.5.1", python = ">=3.9"}
 filelock = {version = "*", python = ">=3.9"}
 numpy = {version = ">=1.26", python = ">=3.9"}
 
