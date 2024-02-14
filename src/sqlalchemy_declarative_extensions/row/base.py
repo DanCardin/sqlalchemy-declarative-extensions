@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable
 
+from sqlalchemy_declarative_extensions.sql import split_schema
+
 
 @dataclass
 class Rows:
@@ -34,11 +36,7 @@ class Row:
     column_values: dict[str, Any]
 
     def __init__(self, tablename, *, schema: str | None = None, **column_values):
-        schema = schema
-        try:
-            schema, table = tablename.split(".", 1)
-        except ValueError:
-            table = tablename
+        schema, table = split_schema(tablename, schema=schema)
 
         self.schema = schema
         self.tablename = table

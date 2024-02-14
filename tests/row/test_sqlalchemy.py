@@ -14,9 +14,6 @@ from sqlalchemy_declarative_extensions.row.compare import (
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 
@@ -84,7 +81,7 @@ def test_only_diff_supplied_values(pg):
     )
     result = compare_rows(connection, Base.metadata, rows)
     assert isinstance(result[0], UpdateRowOp)
-    assert result[0].to_values["active"] is True
+    assert result[0].to_values[0]["active"] is True
 
 
 def test_delete_unspecified_rows(pg):
@@ -101,4 +98,4 @@ def test_delete_unspecified_rows(pg):
     result = compare_rows(connection, Base.metadata, rows)
 
     assert isinstance(result[0], DeleteRowOp)
-    assert result[0].values["id"] == 2
+    assert result[0].values[0]["id"] == 2

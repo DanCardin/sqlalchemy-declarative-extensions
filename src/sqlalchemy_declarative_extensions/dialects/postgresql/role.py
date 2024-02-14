@@ -78,7 +78,7 @@ class Role(generic.Role):
 
     def __repr__(self):
         cls_name = self.__class__.__name__
-        options = ", ".join([f"{key}={repr(value)}" for key, value in self.options])
+        options = ", ".join([f"{key}={value!r}" for key, value in self.options])
         return f'{cls_name}("{self.name}", {options})'
 
     def to_sql_create(self) -> str:

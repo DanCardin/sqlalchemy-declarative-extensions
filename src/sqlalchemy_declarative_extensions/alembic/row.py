@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from __future__ import annotations
 
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
@@ -26,7 +26,7 @@ def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     ):  # pragma: no cover
         return
 
-    rows: Optional[Rows] = autogen_context.metadata.info.get("rows")
+    rows: Rows | None = autogen_context.metadata.info.get("rows")
     if not rows:
         return
 
@@ -37,24 +37,24 @@ def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
 
 
 @renderers.dispatch_for(InsertRowOp)
-def render_insert_table_row(_, op: InsertRowOp):
-    return "op.insert_table_row('{table}', {values})".format(
-        table=op.table, values=op.values
-    )
-
-
 @renderers.dispatch_for(UpdateRowOp)
-def render_update_table_row(_, op: UpdateRowOp):
-    return "op.update_table_row('{}', from_values={}, to_values={})".format(
-        op.table, op.from_values, op.to_values
-    )
-
-
 @renderers.dispatch_for(DeleteRowOp)
-def render_delete_table_row(_, op: DeleteRowOp):
-    return "op.delete_table_row('{table}', {values})".format(
-        table=op.table, values=op.values
-    )
+def render_insert_table_row(
+    autogen_context: AutogenContext, op: InsertRowOp | UpdateRowOp | DeleteRowOp
+):
+    metadata = autogen_context.metadata
+    conn = autogen_context.connection
+    assert metadata
+    assert conn
+
+    result = []
+    for query in op.render(metadata):
+        query_str = query.compile(
+            dialect=conn.dialect,
+            compile_kwargs={"literal_binds": True},
+        )
+        result.append(f'op.execute("""{query_str}""")')
+    return result
 
 
 @Operations.implementation_for(InsertRowOp)
@@ -62,8 +62,7 @@ def render_delete_table_row(_, op: DeleteRowOp):
 @Operations.implementation_for(DeleteRowOp)
 def execute_row(
     operations: Operations,
-    operation: Union[InsertRowOp, UpdateRowOp, DeleteRowOp],
+    operation: InsertRowOp | UpdateRowOp | DeleteRowOp,
 ):
     conn = operations.get_bind()
-    query = operation.render(conn)
-    conn.execute(query)
+    operation.execute(conn)

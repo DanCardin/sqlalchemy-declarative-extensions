@@ -9,7 +9,6 @@ def rows_query(rows: Rows):
     def receive_after_create(metadata: MetaData, connection: Connection, **_):
         results = compare_rows(connection, metadata, rows)
         for result in results:
-            query = result.render(connection)
-            connection.execute(query)
+            result.execute(connection)
 
     return receive_after_create
