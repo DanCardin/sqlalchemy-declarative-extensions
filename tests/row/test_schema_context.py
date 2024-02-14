@@ -7,9 +7,7 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
 )
-from sqlalchemy_declarative_extensions.row.compare import (
-    compare_rows,
-)
+from sqlalchemy_declarative_extensions.row.compare import compare_rows
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 _Base = declarative_base()
@@ -18,10 +16,6 @@ _Base = declarative_base()
 @declarative_database
 class Base(_Base):  # type: ignore
     __abstract__ = True
-
-    rows = Rows(ignore_unspecified=True).are(
-        Row("foo", id=1),
-    )
 
 
 class Foo(Base):
@@ -38,17 +32,11 @@ pg = create_postgres_fixture(
 )
 
 
-def test_column_added(pg):
-    pg.execute(text("CREATE TABLE foo (id SERIAL PRIMARY KEY)"))
-    pg.commit()
+def test_insert_missing(pg):
+    pg.execute(text("CREATE SCHEMA foo"))
+    pg.execute(text("SET SEARCH_PATH=foo"))
 
     Base.metadata.create_all(bind=pg.connection())
-    pg.commit()
-
-    result = pg.execute(text("SELECT * FROM foo")).fetchall()
-    assert result == [(1,)]
-
-    pg.execute(text("ALTER TABLE foo ADD name VARCHAR"))
     pg.commit()
 
     rows = Rows(ignore_unspecified=True).are(
@@ -60,5 +48,5 @@ def test_column_added(pg):
             pg.execute(query)
     pg.commit()
 
-    result = pg.execute(text("SELECT * FROM foo")).fetchall()
+    result = pg.execute(text("SELECT * FROM foo.foo")).fetchall()
     assert result == [(1, "qwer")]

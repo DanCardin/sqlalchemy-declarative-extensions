@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Union
 
 from sqlalchemy.engine.base import Connection
-from sqlalchemy.sql.expression import and_, not_, or_
+from sqlalchemy.sql.expression import and_, not_, null, or_, text
 from sqlalchemy.sql.schema import MetaData, Table
 
 from sqlalchemy_declarative_extensions.dialects import (
@@ -25,11 +25,16 @@ class InsertRowOp:
         op = cls(table, values)
         return operations.invoke(op)
 
-    def execute(self, conn: Connection):
-        table = get_table(conn, self.table)
+    def render(self, metadata: MetaData):
+        assert metadata.tables is not None
+        table = metadata.tables[self.table]
+        return [table.insert().values(self.values)]
 
-        query = table.insert().values(self.values)
-        conn.execute(query)
+    def execute(self, conn: Connection):
+        metadata = get_metadata(conn, self.table)
+
+        for query in self.render(metadata):
+            conn.execute(query)
 
     def reverse(self):
         return DeleteRowOp(self.table, self.values)
@@ -46,8 +51,9 @@ class UpdateRowOp:
         op = cls(table, from_values, to_values)
         return operations.invoke(op)
 
-    def execute(self, conn: Connection):
-        table = get_table(conn, self.table)
+    def render(self, metadata: MetaData):
+        assert metadata.tables is not None
+        table = metadata.tables[self.table]
 
         primary_key_columns = [c.name for c in table.primary_key.columns]
 
@@ -56,12 +62,20 @@ class UpdateRowOp:
         else:
             to_values = self.to_values
 
+        result = []
         for to_value in to_values:
             where = [
                 table.c[c] == v for c, v in to_value.items() if c in primary_key_columns
             ]
             values = {c: v for c, v in to_value.items() if c not in primary_key_columns}
             query = table.update().where(*where).values(**values)
+            result.append(query)
+        return result
+
+    def execute(self, conn: Connection):
+        metadata = get_metadata(conn, self.table)
+
+        for query in self.render(metadata):
             conn.execute(query)
 
     def reverse(self):
@@ -78,8 +92,9 @@ class DeleteRowOp:
         op = cls(table, values)
         return operations.invoke(op)
 
-    def execute(self, conn: Connection):
-        table = get_table(conn, self.table)
+    def render(self, metadata: MetaData):
+        assert metadata.tables is not None
+        table = metadata.tables[self.table]
 
         if isinstance(self.values, dict):
             rows_values: list[dict[str, Any]] = [self.values]
@@ -100,14 +115,19 @@ class DeleteRowOp:
                 for row_values in rows_values
             ]
         )
-        query = table.delete().where(where)
-        conn.execute(query)
+        return [table.delete().where(where)]
+
+    def execute(self, conn: Connection):
+        metadata = get_metadata(conn, self.table)
+
+        for query in self.render(metadata):
+            conn.execute(query)
 
     def reverse(self):
         return InsertRowOp(self.table, self.values)
 
 
-def get_table(conn: Connection, tablename: str):
+def get_metadata(conn: Connection, tablename: str):
     m = MetaData()
 
     try:
@@ -117,16 +137,18 @@ def get_table(conn: Connection, tablename: str):
         schema = None
 
     m.reflect(conn, schema=schema, only=[table])
-    return m.tables[tablename]
+    return m
 
 
 RowOp = Union[InsertRowOp, UpdateRowOp, DeleteRowOp]
 
 
 def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list[RowOp]:
+    assert metadata.tables is not None
+
     result: list[RowOp] = []
 
-    existing_metadata, existing_tables = resolve_existing_tables(connection, rows)
+    existing_tables = resolve_existing_tables(connection, rows)
 
     # Collects table-specific primary keys so that we can efficiently compare rows
     # further down by the pk
@@ -146,33 +168,32 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
                 f"Row is missing primary key values required to declaratively specify: {row}"
             )
 
+        table = metadata.tables.get(row.qualified_name)
+        if table is None:
+            continue
+
         pk = tuple([row.column_values[c.name] for c in table.primary_key.columns])
         pk_to_row.setdefault(table.fullname, {})[pk] = row
 
-        existing_table = existing_metadata.tables.get(row.qualified_name)
-        if existing_table is None:
-            continue
-
-        if existing_table.primary_key.columns:
-            filters_by_table.setdefault(existing_table, []).append(
+        if table.primary_key.columns:
+            filters_by_table.setdefault(table, []).append(
                 and_(
-                    *[
-                        c == row.column_values[c.name]
-                        for c in existing_table.primary_key.columns
-                    ]
+                    *[c == row.column_values[c.name] for c in table.primary_key.columns]
                 )
             )
 
     existing_rows_by_table = collect_existing_record_data(
-        connection, existing_metadata, filters_by_table, existing_tables
+        connection, filters_by_table, existing_tables
     )
+
+    existing_metadata = MetaData()
+    assert existing_metadata.tables is not None
 
     table_row_inserts: dict[Table, list[dict[str, Any]]] = {}
     table_row_updates: dict[
         Table, tuple[list[dict[str, Any]], list[dict[str, Any]]]
     ] = {}
     for table, pks in pk_to_row.items():
-        current_table: Table | None = existing_metadata.tables.get(table)
         dest_table = metadata.tables[table]
 
         row_inserts = table_row_inserts.setdefault(dest_table, [])
@@ -185,7 +206,11 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
 
         for pk, row in pks.items():
             if pk in existing_rows:
-                assert current_table is not None
+                if row.qualified_name not in existing_metadata.tables:
+                    existing_metadata.reflect(
+                        bind=connection, schema=row.schema, only=[row.tablename]
+                    )
+                current_table: Table = existing_metadata.tables[table]
 
                 existing_row = existing_rows[pk]
                 row_keys = row.column_values.keys()
@@ -200,11 +225,7 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
                 row_updates[1].append(column_values)
             else:
                 insert_values = {**stub_keys, **row.column_values}
-
-                insert_table: Table = (
-                    current_table if current_table is not None else dest_table
-                )
-                row_inserts.append(filter_column_data(insert_table, insert_values))
+                row_inserts.append(filter_column_data(dest_table, insert_values))
 
     # Deletes should get inserted first, so as to avoid foreign key constraint errors.
     if not rows.ignore_unspecified:
@@ -254,30 +275,19 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
     return result
 
 
-def resolve_existing_tables(
-    connection: Connection, rows: Rows
-) -> tuple[MetaData, dict[str, bool]]:
+def resolve_existing_tables(connection: Connection, rows: Rows) -> dict[str, bool]:
     """Collect a map of referenced tables, to whether or not they exist."""
-    existing_metadata = MetaData()
-
     result = {}
     for row in rows:
         if row.qualified_name in result:
             continue
 
-        # If the table doesn't exist yet, we can likely assume it's being autogenerated
-        # in the current revision and as such, will just emit insert statements.
         table_exists = check_table_exists(
             connection,
             row.tablename,
             schema=row.schema,
         )
         result[row.qualified_name] = table_exists
-
-        if table_exists and row.qualified_name not in existing_metadata.tables:
-            existing_metadata.reflect(
-                bind=connection, schema=row.schema, only=[row.tablename]
-            )
 
     for fq_tablename in rows.included_tables:
         schema, tablename = split_schema(fq_tablename)
@@ -287,12 +297,11 @@ def resolve_existing_tables(
             schema=schema,
         )
 
-    return existing_metadata, result
+    return result
 
 
 def collect_existing_record_data(
     connection: Connection,
-    metadata: MetaData,
     filters_by_table,
     existing_tables: dict[str, bool],
 ) -> dict[str, dict[tuple[Any, ...], dict[str, Any]]]:
@@ -305,8 +314,12 @@ def collect_existing_record_data(
 
         primary_key_columns = [c.name for c in table.primary_key.columns]
 
-        current_table = metadata.tables[table.fullname]
-        records = connection.execute(select(current_table).where(or_(*filters)))
+        filter_str = or_(*filters).compile(
+            dialect=connection.dialect, compile_kwargs={"literal_binds": True}
+        )
+        records = connection.execute(
+            text(f"SELECT * FROM {table.fullname} WHERE {filter_str}")  # noqa: S608
+        )
         assert records
 
         existing_rows = result.setdefault(table.fullname, {})
@@ -319,4 +332,6 @@ def collect_existing_record_data(
 
 
 def filter_column_data(table: Table, row: dict):
-    return {c: v for c, v in row.items() if c in table.columns}
+    return {
+        c: v if v is not None else null() for c, v in row.items() if c in table.columns
+    }
