@@ -5,6 +5,12 @@ import pytest
 from pytest_mock_resources import MysqlConfig, PostgresConfig, create_postgres_fixture
 from pytest_mock_resources.container.base import get_container
 
+# isort: split
+# XXX: Deal with python 3.8-specific reload issue due to the `sys.modules` hack below.
+import pydantic
+
+assert pydantic
+
 pytest_plugins = "pytester"
 
 
