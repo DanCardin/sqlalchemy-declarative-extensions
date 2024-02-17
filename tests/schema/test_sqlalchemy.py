@@ -8,9 +8,6 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 
@@ -25,7 +22,9 @@ class Foo(Base):
     __tablename__ = "foo"
     __table_args__ = {"schema": "fooschema"}
 
-    id = sqlalchemy.Column(sqlalchemy.types.Integer(), primary_key=True)
+    id = sqlalchemy.Column(
+        sqlalchemy.types.Integer(), primary_key=True, autoincrement=False
+    )
 
 
 register_sqlalchemy_events(Base.metadata, schemas=True)
@@ -44,5 +43,12 @@ def test_createall_schema_pg(pg):
 def test_createall_schema_sqlite(sqlite):
     Base.metadata.create_all(bind=sqlite, checkfirst=False)
     with sqlite.connect() as conn:
+        result = conn.execute(Foo.__table__.select()).fetchall()
+    assert result == []
+
+
+def test_createall_schema_snowflake(snowflake):
+    Base.metadata.create_all(bind=snowflake, checkfirst=False)
+    with snowflake.connect() as conn:
         result = conn.execute(Foo.__table__.select()).fetchall()
     assert result == []

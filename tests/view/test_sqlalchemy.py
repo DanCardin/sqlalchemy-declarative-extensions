@@ -8,16 +8,12 @@ from sqlalchemy import Column, types
 from sqlalchemy_declarative_extensions import (
     Row,
     Rows,
-    Schemas,
     declarative_database,
     register_sqlalchemy_events,
     view,
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base, select
 from tests import skip_sqlalchemy13
-
-()
-
 
 _Base = declarative_base()
 
@@ -26,18 +22,16 @@ _Base = declarative_base()
 class Base(_Base):  # type: ignore
     __abstract__ = True
 
-    schemas = Schemas().are("fooschema")
     rows = Rows().are(
-        Row("fooschema.foo", id=1),
-        Row("fooschema.foo", id=2),
-        Row("fooschema.foo", id=12),
-        Row("fooschema.foo", id=13),
+        Row("foo", id=1),
+        Row("foo", id=2),
+        Row("foo", id=12),
+        Row("foo", id=13),
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
-    __table_args__ = {"schema": "fooschema"}
 
     id = Column(types.Integer(), primary_key=True)
 
@@ -48,7 +42,6 @@ foo_table = Foo.__table__
 @view(Base, register_as_model=True)
 class Bar:
     __tablename__ = "bar"
-    __table_args__ = {"schema": "fooschema"}
     __view__ = select(foo_table.c.id).where(foo_table.c.id > 10)
 
     id = Column(types.Integer(), primary_key=True)
@@ -57,7 +50,6 @@ class Bar:
 @view(Base, register_as_model=True)
 class Baz:
     __tablename__ = "baz"
-    __table_args__ = {"schema": "fooschema"}
     __view__ = select(foo_table.c.id).where(foo_table.c.id < 10)
 
     id = Column(types.Integer(), primary_key=True)

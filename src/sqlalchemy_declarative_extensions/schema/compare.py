@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Union
 
 from sqlalchemy.engine.base import Connection
+from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 from sqlalchemy_declarative_extensions.dialects import get_schemas
 from sqlalchemy_declarative_extensions.schema.base import Schema, Schemas
@@ -21,6 +22,9 @@ class CreateSchemaOp:
     def reverse(self):
         return DropSchemaOp(self.schema)
 
+    def to_sql(self):
+        return CreateSchema(self.schema.name)
+
 
 @dataclass
 class DropSchemaOp:
@@ -33,6 +37,9 @@ class DropSchemaOp:
 
     def reverse(self):
         return CreateSchemaOp(self.schema)
+
+    def to_sql(self):
+        return DropSchema(self.schema.name)
 
 
 SchemaOp = Union[CreateSchemaOp, DropSchemaOp]

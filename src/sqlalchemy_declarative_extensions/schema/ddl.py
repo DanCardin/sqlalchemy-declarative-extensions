@@ -1,14 +1,18 @@
-from sqlalchemy.schema import CreateSchema
+from __future__ import annotations
 
-from sqlalchemy_declarative_extensions.dialects import check_schema_exists
-from sqlalchemy_declarative_extensions.schema import Schema
+from sqlalchemy import MetaData
+from sqlalchemy.engine import Connection
 
-
-def schema_ddl(schema: Schema):
-    ddl = CreateSchema(schema.name)
-    return ddl.execute_if(callable_=check_schema)
+from sqlalchemy_declarative_extensions.schema import Schemas
+from sqlalchemy_declarative_extensions.schema.compare import compare_schemas
 
 
-def check_schema(ddl, target, connection, **_):
-    schema = ddl.element
-    return check_schema_exists(connection, name=schema)
+def schema_ddl(metadata: MetaData, connection: Connection, **_):
+    roles: Schemas | None = metadata.info.get("schemas")
+    if not roles:  # pragma: no cover
+        return
+
+    result = compare_schemas(connection, roles)
+    for op in result:
+        statements = op.to_sql()
+        connection.execute(statements)

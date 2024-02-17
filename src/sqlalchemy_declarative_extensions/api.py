@@ -171,12 +171,11 @@ def register_sqlalchemy_events(
     concrete_rows = metadata.info.get("rows")
 
     if concrete_schemas and schemas:
-        for schema in concrete_schemas:
-            event.listen(
-                metadata,
-                "before_create",
-                schema_ddl(schema),
-            )
+        event.listen(
+            metadata,
+            "before_create",
+            schema_ddl,
+        )
 
     if concrete_roles and roles:
         event.listen(
