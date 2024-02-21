@@ -281,9 +281,9 @@ class View:
             result.extend(self.to_sql_create(dialect))
         else:
             from_view_constraints = cast(
-                Optional[list[ViewIndex]], from_view.constraints
+                Optional[List[ViewIndex]], from_view.constraints
             )
-            constraints = cast(Optional[list[ViewIndex]], self.constraints)
+            constraints = cast(Optional[List[ViewIndex]], self.constraints)
 
             removed, missing = ViewIndex.diff(from_view_constraints, constraints)
             result.extend([c.drop(from_view) for c in removed])
