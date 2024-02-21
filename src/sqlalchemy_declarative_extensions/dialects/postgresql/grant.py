@@ -27,6 +27,7 @@ GRANT { USAGE | ALL [ PRIVILEGES ] }
     ON TYPES
     TO { [ GROUP ] role_name | PUBLIC } [, ...] [ WITH GRANT OPTION ]
 """
+
 from __future__ import annotations
 
 import itertools
@@ -176,7 +177,8 @@ class DefaultGrantStatement(Generic[G]):
 
     def for_role(self, role: str | HasName) -> DefaultGrantStatement:
         return replace(
-            self, default_grant=replace(self.default_grant, target_role=role)
+            self,
+            default_grant=replace(self.default_grant, target_role=_coerce_name(role)),
         )
 
     def invert(self) -> DefaultGrantStatement:

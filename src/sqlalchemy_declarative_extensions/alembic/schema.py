@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
@@ -15,9 +17,9 @@ Operations.register_operation("drop_schema")(DropSchemaOp)
 
 
 @comparators.dispatch_for("schema")
-def compare_schemas(autogen_context: AutogenContext, upgrade_ops, schemas: Schemas):
+def compare_schemas(autogen_context: AutogenContext, upgrade_ops, _):
     assert autogen_context.metadata
-    schemas = autogen_context.metadata.info.get("schemas")
+    schemas: Schemas | None = autogen_context.metadata.info.get("schemas")
     if not schemas:
         return
 

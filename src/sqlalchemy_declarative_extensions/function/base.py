@@ -79,7 +79,7 @@ class Functions:
         yield from self.functions
 
     def are(self, *functions: Function):
-        return replace(self, functions=functions)
+        return replace(self, functions=list(functions))
 
 
 def register_function(base_or_metadata: HasMetaData | MetaData, function: Function):

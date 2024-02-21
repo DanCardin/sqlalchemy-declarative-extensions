@@ -104,7 +104,7 @@ def get_current_schema(connection: Connection) -> str | None:
     schema = connection.execute(select(func.current_schema())).scalar()
 
     default_schema = connection.dialect.default_schema_name
-    if schema == default_schema:
+    if not schema or schema == default_schema:
         return None
 
     return schema.lower()

@@ -1,7 +1,10 @@
-.PHONY: build test lint format
+.PHONY: install build test lint format
 .DEFAULT_GOAL := help
 
 WORKER_COUNT ?= 4
+
+install:
+	poetry install -E parse -E alembic
 
 build:
 	poetry build
@@ -17,8 +20,8 @@ test:
 lint:
 	ruff src tests || exit 1
 	mypy src tests || exit 1
-	black --check src tests || exit 1
+	ruff format --check src tests
 
 format:
-	black src tests
 	ruff src tests --fix
+	ruff format src tests
