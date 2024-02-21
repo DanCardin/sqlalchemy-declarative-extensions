@@ -8,6 +8,7 @@ from sqlalchemy import Column, types
 from sqlalchemy_declarative_extensions import (
     Row,
     Rows,
+    Schemas,
     declarative_database,
     register_sqlalchemy_events,
     view,
@@ -22,18 +23,20 @@ _Base = declarative_base()
 class Base(_Base):  # type: ignore
     __abstract__ = True
 
+    schemas = Schemas().are("fooschema")
     rows = Rows().are(
-        Row("foo", id=1),
-        Row("foo", id=2),
-        Row("foo", id=12),
-        Row("foo", id=13),
+        Row("fooschema.foo", id=1),
+        Row("fooschema.foo", id=2),
+        Row("fooschema.foo", id=12),
+        Row("fooschema.foo", id=13),
     )
 
 
 class Foo(Base):
     __tablename__ = "foo"
+    __table_args__ = {"schema": "fooschema"}
 
-    id = Column(types.Integer(), primary_key=True)
+    id = Column(types.Integer(), primary_key=True, autoincrement=False)
 
 
 foo_table = Foo.__table__
@@ -42,6 +45,7 @@ foo_table = Foo.__table__
 @view(Base, register_as_model=True)
 class Bar:
     __tablename__ = "bar"
+    __table_args__ = {"schema": "fooschema"}
     __view__ = select(foo_table.c.id).where(foo_table.c.id > 10)
 
     id = Column(types.Integer(), primary_key=True)
@@ -50,6 +54,7 @@ class Bar:
 @view(Base, register_as_model=True)
 class Baz:
     __tablename__ = "baz"
+    __table_args__ = {"schema": "fooschema"}
     __view__ = select(foo_table.c.id).where(foo_table.c.id < 10)
 
     id = Column(types.Integer(), primary_key=True)
@@ -72,6 +77,11 @@ def test_create_view_postgresql(pg):
 @skip_sqlalchemy13
 def test_create_view_mysql(mysql):
     run_test(mysql)
+
+
+@skip_sqlalchemy13
+def test_create_view_snowflake(snowflake_session):
+    run_test(snowflake_session)
 
 
 def run_test(session):

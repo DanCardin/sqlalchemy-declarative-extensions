@@ -8,6 +8,7 @@ from pytest_mock_resources.container.base import get_container
 # isort: split
 # XXX: Deal with python 3.8-specific reload issue due to the `sys.modules` hack below.
 import pydantic
+from sqlalchemy.orm.session import Session
 
 assert pydantic
 
@@ -56,9 +57,16 @@ def snowflake():
 
     with fakesnow.patch(
         create_database_on_connect=True,
-        create_schema_on_connect=False,
+        create_schema_on_connect=True,
     ):
-        yield create_engine("snowflake://test/test/information_schema")
+        engine = create_engine("snowflake://test/test/schema")
+        yield engine
+
+
+@pytest.fixture
+def snowflake_session(snowflake):
+    with Session(bind=snowflake) as session:
+        yield session
 
 
 @pytest.fixture(autouse=True)

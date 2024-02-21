@@ -23,6 +23,8 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
 from sqlalchemy_declarative_extensions.dialects.snowflake.query import (
     check_schema_exists_snowflake,
     get_schemas_snowflake,
+    get_view_snowflake,
+    get_views_snowflake,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     check_schema_exists_sqlite,
@@ -72,10 +74,12 @@ get_views = dialect_dispatch(
     postgresql=get_views_postgresql,
     sqlite=get_views_sqlite,
     mysql=get_views_mysql,
+    snowflake=get_views_snowflake,
 )
 
 get_view = dialect_dispatch(
     postgresql=get_view_postgresql,
+    snowflake=get_view_snowflake,
 )
 
 get_functions = dialect_dispatch(

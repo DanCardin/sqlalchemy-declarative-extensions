@@ -174,7 +174,7 @@ suffer or lack implementation.
 |               | Postgres | MySQL | SQLite | Snowflake |
 | ------------- | -------- | ----- | ------ | --------- |
 | Schema        | ✓        | N/A   | ✓      | ✓         |
-| View          | ✓        | ✓     | ✓      |           |
+| View          | ✓        | ✓     | ✓      | ✓         |
 | Role          | ✓        |       | N/A    |           |
 | Grant         | ✓        |       | N/A    |           |
 | Default Grant | ✓        |       | N/A    |           |
