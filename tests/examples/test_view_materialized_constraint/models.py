@@ -4,9 +4,6 @@ from sqlalchemy import Column, Index, UniqueConstraint, types
 from sqlalchemy_declarative_extensions import ViewIndex, declarative_database, view
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base, select
 
-()
-
-
 _Base = declarative_base()
 
 

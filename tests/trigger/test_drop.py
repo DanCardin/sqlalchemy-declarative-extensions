@@ -9,9 +9,6 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions.trigger.compare import compare_triggers
 
-()
-
-
 _Base = declarative_base()
 
 

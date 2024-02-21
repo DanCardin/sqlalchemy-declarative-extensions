@@ -10,9 +10,6 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 

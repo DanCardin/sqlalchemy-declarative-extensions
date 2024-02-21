@@ -19,9 +19,6 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 if alembic_utils:
     _Base = declarative_base()
 
