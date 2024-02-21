@@ -77,13 +77,16 @@ def compare_views(
 
         view_created = view_name in new_view_names
 
-        normalized_view = view.normalize(
-            connection, metadata, using_connection=normalize_with_connection
-        )
-
         if view_created:
+            normalized_view = view.normalize(
+                connection, metadata, using_connection=False
+            )
             result.append(CreateViewOp(normalized_view))
         else:
+            normalized_view = view.normalize(
+                connection, metadata, using_connection=normalize_with_connection
+            )
+
             existing_view = existing_views_by_name[view_name]
             normalized_existing_view = existing_view.normalize(
                 connection, metadata, using_connection=normalize_with_connection
