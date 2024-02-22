@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Iterable, List, TypeVar, cast
+from typing import Any, Callable, Iterable, List, Optional, TypeVar, cast
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
@@ -280,7 +280,12 @@ class View:
             result.extend(from_view.to_sql_drop(dialect))
             result.extend(self.to_sql_create(dialect))
         else:
-            removed, missing = ViewIndex.diff(from_view.constraints, self.constraints)
+            from_view_constraints = cast(
+                Optional[List[ViewIndex]], from_view.constraints
+            )
+            constraints = cast(Optional[List[ViewIndex]], self.constraints)
+
+            removed, missing = ViewIndex.diff(from_view_constraints, constraints)
             result.extend([c.drop(from_view) for c in removed])
             result.extend([c.create(self) for c in missing])
 
@@ -398,7 +403,7 @@ class ViewIndex:
             convention = "uq"
             instance = ViewIndex(
                 columns=cast(List[str], list(index._pending_colargs)),
-                name=index.name,
+                name=str(index.name) if index.name else None,
                 unique=True,
             )
         else:  # pragma: no cover
@@ -408,7 +413,9 @@ class ViewIndex:
             return instance
 
         naming_convention = metadata.naming_convention or DEFAULT_NAMING_CONVENTION
-        template = naming_convention.get(convention) or naming_convention["ix"]
+        template = cast(
+            str, naming_convention.get(convention) or naming_convention["ix"]
+        )
         cd = ConventionDict(
             _ViewIndexAdapter(instance), source_view, metadata.naming_convention
         )

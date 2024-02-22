@@ -62,7 +62,7 @@ class Triggers:
         yield from self.triggers
 
     def are(self, *triggers: Trigger):
-        return replace(self, triggers=triggers)
+        return replace(self, triggers=list(triggers))
 
 
 def register_trigger(base_or_metadata: HasMetaData | MetaData, trigger: Trigger):

@@ -8,9 +8,6 @@ from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 
@@ -35,7 +32,7 @@ class Base(_Base):  # type: ignore
 pg = create_postgres_fixture(scope="function")
 
 
-register_sqlalchemy_events(Base, roles=True)
+register_sqlalchemy_events(Base, roles=True)  # type: ignore
 
 
 def test_createall_role(pg):

@@ -3,9 +3,6 @@ from sqlalchemy import Column, types
 from sqlalchemy_declarative_extensions import Row, Rows, declarative_database
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 

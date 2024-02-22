@@ -45,9 +45,8 @@ psycopg = "*"
 
 [tool.poetry.group.dev.dependencies]
 alembic-utils = "0.8.1"
-black = ">=22.3.0"
 coverage = ">=5"
-mypy = "1.4.1"
+mypy = "1.8.0"
 pymysql = {version = "*", extras = ["rsa"]}
 pytest = ">=7"
 pytest-alembic = "*"
@@ -69,7 +68,7 @@ parse = ["sqlglot"]
 [tool.mypy]
 strict_optional = true
 ignore_missing_imports = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 implicit_reexport = true
 incremental = true
 plugins = ['sqlalchemy.ext.mypy.plugin']

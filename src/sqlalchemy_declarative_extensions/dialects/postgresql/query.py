@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Container, List, cast
 
+from sqlalchemy import Index, UniqueConstraint
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
@@ -123,7 +124,7 @@ def get_views_postgresql(connection: Connection):
     for v in connection.execute(views_query).fetchall():
         schema = v.schema if v.schema != "public" else None
 
-        indexes = [
+        indexes: list[ViewIndex | Index | UniqueConstraint] = [
             ViewIndex(
                 name=raw["name"],
                 unique=raw["unique"],

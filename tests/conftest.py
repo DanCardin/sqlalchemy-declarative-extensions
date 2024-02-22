@@ -48,7 +48,7 @@ def pmr_mysql_config():
 def snowflake():
     try:
         import fakesnow
-        import snowflake.sqlalchemy
+        import snowflake.sqlalchemy  # noqa
     except ImportError:
         pytest.skip("Snowflake not installed")
 

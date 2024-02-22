@@ -193,12 +193,12 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
     table_row_updates: dict[
         Table, tuple[list[dict[str, Any]], list[dict[str, Any]]]
     ] = {}
-    for table, pks in pk_to_row.items():
-        dest_table = metadata.tables[table]
+    for tablename, pks in pk_to_row.items():
+        dest_table = metadata.tables[tablename]
 
         row_inserts = table_row_inserts.setdefault(dest_table, [])
 
-        existing_rows = existing_rows_by_table.get(table, {})
+        existing_rows = existing_rows_by_table.get(tablename, {})
 
         stub_keys = {
             key: None for row in pks.values() for key in row.column_values.keys()
@@ -210,7 +210,7 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
                     existing_metadata.reflect(
                         bind=connection, schema=row.schema, only=[row.tablename]
                     )
-                current_table: Table = existing_metadata.tables[table]
+                current_table: Table = existing_metadata.tables[tablename]
 
                 existing_row = existing_rows[pk]
                 row_keys = row.column_values.keys()

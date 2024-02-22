@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, cast
 
 from sqlalchemy import Column, MetaData, Table, text, types
 
@@ -123,8 +123,8 @@ def create_audit_table(
     ignore_columns: set = set(),
     context_columns: list[Column] | None = None,
 ) -> Table:
-    naming_convention = metadata.naming_convention.get(
-        "audit_function", "%(table_name)s_audit"
+    naming_convention = cast(
+        str, metadata.naming_convention.get("audit_function", "%(table_name)s_audit")
     )
     table_name = naming_convention % {
         "table_fullname": table.fullname,
@@ -174,8 +174,11 @@ def create_audit_functions(
     update: bool = True,
     delete: bool = True,
 ) -> list[Function]:
-    naming_convention = metadata.naming_convention.get(
-        "audit_function", "%(schema)s_%(table_name)s_audit"
+    naming_convention = cast(
+        str,
+        metadata.naming_convention.get(
+            "audit_function", "%(schema)s_%(table_name)s_audit"
+        ),
     )
     function_name = naming_convention % {
         "schema": table.schema or "public",
@@ -252,8 +255,11 @@ def create_audit_triggers(
     update: bool = True,
     delete: bool = True,
 ) -> list[Trigger]:
-    naming_convention = metadata.naming_convention.get(
-        "audit_trigger", "%(schema)s_%(table_name)s_audit"
+    naming_convention = cast(
+        str,
+        metadata.naming_convention.get(
+            "audit_trigger", "%(schema)s_%(table_name)s_audit"
+        ),
     )
     function_name = naming_convention % {
         "schema": table.schema or "public",

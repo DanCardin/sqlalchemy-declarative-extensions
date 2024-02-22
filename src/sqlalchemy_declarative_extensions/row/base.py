@@ -26,7 +26,7 @@ class Rows:
         yield from self.rows
 
     def are(self, *rows: Row):
-        return replace(self, rows=rows)
+        return replace(self, rows=list(rows))
 
 
 @dataclass

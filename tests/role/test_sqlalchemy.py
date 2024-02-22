@@ -12,9 +12,6 @@ from sqlalchemy_declarative_extensions.dialects import get_roles
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
-()
-
-
 _Base = declarative_base()
 
 

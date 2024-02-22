@@ -33,7 +33,7 @@ class Foo(Base):
 
     id = Column(types.Integer(), primary_key=True)
     name = Column(types.Unicode(), nullable=False)
-    active = Column(types.Boolean())
+    active = Column(types.Boolean())  # type: ignore
 
 
 register_sqlalchemy_events(Base.metadata, rows=True)

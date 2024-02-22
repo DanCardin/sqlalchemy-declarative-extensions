@@ -13,9 +13,6 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from tests import skip_sqlalchemy13
 
-()
-
-
 _Base = declarative_base()
 
 
