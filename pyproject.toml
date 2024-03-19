@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.7.2"
+version = "0.8.0"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
@@ -96,7 +96,8 @@ filterwarnings = [
   'error',
   'ignore:invalid escape sequence.*',
   'ignore:distutils Version classes are deprecated. Use packaging.version instead.:DeprecationWarning',
-  'ignore:_SixMetaPathImporter.find_spec.*:ImportWarning'
+  'ignore:_SixMetaPathImporter.find_spec.*:ImportWarning',
+  'ignore:`ignore_views` is deprecated, use `ignore` instead:DeprecationWarning',
 ]
 pytester_example_dir = "tests/examples"
 markers = [

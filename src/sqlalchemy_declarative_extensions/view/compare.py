@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import warnings
+from dataclasses import dataclass, replace
 from fnmatch import fnmatch
 from typing import Union
 
@@ -54,6 +55,12 @@ def compare_views(
     metadata: MetaData,
     normalize_with_connection: bool = True,
 ) -> list[Operation]:
+    if views.ignore_views:
+        warnings.warn(
+            "`ignore_views` is deprecated, use `ignore` instead", DeprecationWarning
+        )
+        views = replace(views, ignore=list(views.ignore_views) + list(views.ignore))
+
     result: list[Operation] = []
 
     views_by_name = {r.qualified_name: r for r in views.views}
@@ -70,7 +77,7 @@ def compare_views(
         view_name = view.qualified_name
 
         ignore_matches = any(
-            fnmatch(view_name, view_pattern) for view_pattern in views.ignore_views
+            fnmatch(view_name, view_pattern) for view_pattern in views.ignore
         )
         if ignore_matches:
             continue
@@ -98,8 +105,7 @@ def compare_views(
     if not views.ignore_unspecified:
         for removed_view in removed_view_names:
             ignore_matches = any(
-                fnmatch(removed_view, view_pattern)
-                for view_pattern in views.ignore_views
+                fnmatch(removed_view, view_pattern) for view_pattern in views.ignore
             )
             if ignore_matches:
                 continue

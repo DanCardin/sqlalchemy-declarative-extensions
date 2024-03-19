@@ -21,7 +21,7 @@ class Base(_Base):  # type: ignore
     __abstract__ = True
 
     schemas = Schemas().are("fooschema")
-    views = Views(ignore_views=["fooschema.bar", "moo"])
+    views = Views(ignore=["fooschema.bar", "moo"])
 
 
 class Foo(Base):

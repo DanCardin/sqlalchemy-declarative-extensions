@@ -56,8 +56,16 @@ class Function:
 
 @dataclass
 class Functions:
+    """The collection of functions and associated options comparisons.
+
+    Note: `ignore` option accepts a sequence of strings. Each string is individually
+        interpreted as a "glob". This means a string like "foo.*" would ignore all views
+        contained within the schema "foo".
+    """
+
     functions: list[Function] = field(default_factory=list)
 
+    ignore: list[str] = field(default_factory=list)
     ignore_unspecified: bool = False
 
     @classmethod

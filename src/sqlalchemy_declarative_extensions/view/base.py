@@ -190,7 +190,7 @@ class View:
                     definition1 = view.definition
 
                     # Optimization, the view query **can** change if we re-run it,
-                    # but if it's not changed from the first iteration, we assume it wont.
+                    # but if it's not changed from the first iteration, we assume it won't.
                     if definition1 == compiled_definition:
                         return escape_params(compiled_definition)
 
@@ -317,7 +317,7 @@ class Views:
     one needs to either call `View.coerce_from_unknown(alembic_utils_view)` directly, or
     use `Views().are(...)` (which internally calls `coerce_from_unknown`).
 
-    Note: `ignore_views` option accepts a list of strings. Each string is individually
+    Note: `ignore` option accepts a list of strings. Each string is individually
         interpreted as a "glob". This means a string like "foo.*" would ignore all views
         contained within the schema "foo".
     """
@@ -325,6 +325,8 @@ class Views:
     views: list[View] = field(default_factory=list)
 
     ignore_unspecified: bool = False
+
+    ignore: Iterable[str] = field(default_factory=set)
     ignore_views: Iterable[str] = field(default_factory=set)
 
     @classmethod
