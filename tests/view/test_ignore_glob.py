@@ -19,7 +19,7 @@ class Base(_Base):  # type: ignore
     __abstract__ = True
 
     schemas = Schemas().are("foo", "bar", "ignoreme")
-    views = Views(ignore_views=["foo.*", "*.wat"])
+    views = Views(ignore=["foo.*"], ignore_views=["*.wat"])
 
 
 @view(Base, register_as_model=True)

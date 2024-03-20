@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from typing import Callable, TypeVar
+
 import sqlalchemy
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
+from typing_extensions import Concatenate, ParamSpec
 
 from sqlalchemy_declarative_extensions.typing import Protocol
 
@@ -11,7 +16,16 @@ class HasMetaData(Protocol):
     metadata: MetaData
 
 
-def dialect_dispatch(postgresql=None, sqlite=None, mysql=None, snowflake=None):
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def dialect_dispatch(
+    postgresql: Callable[Concatenate[Connection, P], T] | None = None,
+    sqlite: Callable[Concatenate[Connection, P], T] | None = None,
+    mysql: Callable[Concatenate[Connection, P], T] | None = None,
+    snowflake: Callable[Concatenate[Connection, P], T] | None = None,
+) -> Callable[Concatenate[Connection, P], T]:
     dispatchers = {
         "postgresql": postgresql,
         "sqlite": sqlite,
@@ -19,7 +33,7 @@ def dialect_dispatch(postgresql=None, sqlite=None, mysql=None, snowflake=None):
         "snowflake": snowflake,
     }
 
-    def dispatch(connection: Connection, *args, **kwargs):
+    def dispatch(connection: Connection, *args: P.args, **kwargs: P.kwargs) -> T:
         dialect_name = connection.dialect.name
         if dialect_name == "pmrsqlite":
             dialect_name = "sqlite"

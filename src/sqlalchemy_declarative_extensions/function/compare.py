@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
 from dataclasses import dataclass
-from typing import Union
+from typing import Sequence, Union
 
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
@@ -57,7 +58,7 @@ def compare_functions(
     functions_by_name = {f.qualified_name: f for f in functions.functions}
     expected_function_names = set(functions_by_name)
 
-    existing_functions = get_functions(connection)
+    existing_functions = filter_functions(get_functions(connection), functions.ignore)
     existing_functions_by_name = {r.qualified_name: r for r in existing_functions}
     existing_function_names = set(existing_functions_by_name)
 
@@ -91,3 +92,15 @@ def compare_functions(
             result.append(DropFunctionOp(function))
 
     return result
+
+
+def filter_functions(
+    functions: Sequence[Function], exclude: list[str]
+) -> list[Function]:
+    return [
+        f
+        for f in functions
+        if not any(
+            fnmatch.fnmatch(f.qualified_name, exclusion) for exclusion in exclude
+        )
+    ]

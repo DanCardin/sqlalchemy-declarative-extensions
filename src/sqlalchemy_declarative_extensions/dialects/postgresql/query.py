@@ -153,7 +153,7 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
     )
 
 
-def get_functions_postgresql(connection: Connection):
+def get_functions_postgresql(connection: Connection) -> list[Function]:
     functions = []
     for f in connection.execute(functions_query).fetchall():
         function = Function(
