@@ -7,9 +7,6 @@ from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
 )
-from sqlalchemy_declarative_extensions.row.compare import (
-    compare_rows,
-)
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 _Base = declarative_base()
@@ -20,7 +17,7 @@ class Base(_Base):  # type: ignore
     __abstract__ = True
 
     rows = Rows(ignore_unspecified=True).are(
-        Row("foo", id=1),
+        Row("foo", id=1, name="qwer"),
     )
 
 
@@ -40,9 +37,7 @@ pg = create_postgres_fixture(
 
 def test_column_added(pg):
     pg.execute(text("CREATE TABLE foo (id SERIAL PRIMARY KEY)"))
-    pg.commit()
-
-    Base.metadata.create_all(bind=pg.connection())
+    pg.execute(text("INSERT INTO foo VALUES (1)"))
     pg.commit()
 
     result = pg.execute(text("SELECT * FROM foo")).fetchall()
@@ -51,13 +46,7 @@ def test_column_added(pg):
     pg.execute(text("ALTER TABLE foo ADD name VARCHAR"))
     pg.commit()
 
-    rows = Rows(ignore_unspecified=True).are(
-        Row("foo", id=1, name="qwer"),
-    )
-    result = compare_rows(pg.connection(), Base.metadata, rows)
-    for op in result:
-        for query in op.render(Base.metadata):
-            pg.execute(query)
+    Base.metadata.create_all(bind=pg.connection())
     pg.commit()
 
     result = pg.execute(text("SELECT * FROM foo")).fetchall()
