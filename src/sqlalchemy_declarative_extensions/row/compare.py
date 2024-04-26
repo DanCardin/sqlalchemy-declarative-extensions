@@ -314,16 +314,8 @@ def collect_existing_record_data(
 
         primary_key_columns = [c.name for c in table.primary_key.columns]
 
-        filter_str = str(
-            or_(*filters).compile(
-                dialect=connection.dialect, compile_kwargs={"literal_binds": True}
-            )
-        )
-        filter_str = filter_str.replace(":", r"\:")
-
-        records = connection.execute(
-            text(f"SELECT * FROM {table.fullname} WHERE {filter_str}")  # noqa: S608
-        )
+        query = select(text("*")).select_from(table).where(or_(*filters))
+        records = connection.execute(query)
         assert records
 
         existing_rows = result.setdefault(table.fullname, {})
