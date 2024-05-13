@@ -1,28 +1,19 @@
 from typing import Optional
 
-from sqlalchemy import column, literal, table
-
-from sqlalchemy_declarative_extensions.sqlalchemy import select
-
-
-def make_sqlite_schema(schema: Optional[str] = None):
-    tablename = "sqlite_schema"
-    if schema:
-        tablename = f"{schema}.{tablename}"
-
-    return table(
-        tablename,
-        column("type"),
-        column("name"),
-        column("sql"),
-    )
+from sqlalchemy import bindparam, text
 
 
 def views_query(schema: Optional[str] = None):
-    sqlite_schema = make_sqlite_schema(schema)
-    return select(
-        literal(None).label("schema"),
-        literal(None),
-        sqlite_schema.c.name.label("name"),
-        sqlite_schema.c.sql.label("definition"),
-    ).where(sqlite_schema.c.type == "view")
+    tablename = "sqlite_master"
+    if schema:
+        tablename = f"{schema}.{tablename}"
+
+    return text(
+        "SELECT"  # noqa: S608
+        " :schema AS schema,"
+        " name AS name,"
+        " sql AS definition,"
+        " false as materialized"
+        f" FROM {tablename}"
+        " WHERE type == 'view'",
+    ).bindparams(bindparam("schema", schema))

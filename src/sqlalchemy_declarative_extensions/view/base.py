@@ -22,9 +22,7 @@ from sqlalchemy_declarative_extensions.sqlalchemy import (
 T = TypeVar("T")
 
 
-def view(
-    base: T, materialized: bool = False, register_as_model=False
-) -> Callable[[type], T]:
+def view(base, materialized: bool = False, register_as_model=False) -> Callable[[T], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
