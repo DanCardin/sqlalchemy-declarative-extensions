@@ -22,9 +22,7 @@ from sqlalchemy_declarative_extensions.sqlalchemy import (
 T = TypeVar("T")
 
 
-def view(
-    base: T, materialized: bool = False, register_as_model=False
-) -> Callable[[type], T]:
+def view(base, materialized: bool = False, register_as_model=False) -> Callable[[T], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -212,6 +210,11 @@ class View:
 
             dialect_name_map = {"postgresql": "postgres"}
             dialect_name = dialect_name_map.get(dialect.name, dialect.name)
+
+            # aiosqlite, pmrsqlite, etc
+            if "sqlite" in dialect_name:
+                dialect_name = "sqlite"
+
             return (
                 escape_params(
                     normalize(

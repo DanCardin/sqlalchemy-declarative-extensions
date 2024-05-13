@@ -26,7 +26,9 @@ def check_schema_exists_sqlite(connection: Connection, name: str) -> bool:
 
 
 def get_views_sqlite(connection: Connection):
+    schemas = get_schemas_sqlite(connection)
     return [
         View(v.name, v.definition, schema=v.schema)
-        for v in connection.execute(views_query()).fetchall()
+        for schema in [*schemas, None]
+        for v in connection.execute(views_query(schema and schema.name)).fetchall()
     ]
