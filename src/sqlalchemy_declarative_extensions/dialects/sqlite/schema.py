@@ -21,6 +21,7 @@ def make_sqlite_schema(schema: Optional[str] = None):
 def views_query(schema: Optional[str] = None):
     sqlite_schema = make_sqlite_schema(schema)
     return select(
+        literal(None).label("schema"),
         literal(None),
         sqlite_schema.c.name.label("name"),
         sqlite_schema.c.sql.label("definition"),

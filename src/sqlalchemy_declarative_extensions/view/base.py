@@ -212,6 +212,11 @@ class View:
 
             dialect_name_map = {"postgresql": "postgres"}
             dialect_name = dialect_name_map.get(dialect.name, dialect.name)
+
+            # aiosqlite, pmrsqlite, etc
+            if "sqlite" in dialect_name:
+                dialect_name = "sqlite"
+
             return (
                 escape_params(
                     normalize(

@@ -74,6 +74,11 @@ def test_create_view_mysql(mysql):
     run_test(mysql)
 
 
+@skip_sqlalchemy13
+def test_create_view_sqlite(sqlite):
+    run_test(sqlite)
+
+
 def run_test(session):
     Base.metadata.create_all(bind=session.connection())
     session.commit()
