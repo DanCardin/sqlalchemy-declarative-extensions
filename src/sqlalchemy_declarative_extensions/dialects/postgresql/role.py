@@ -60,7 +60,12 @@ class Role(generic.Role):
     @classmethod
     def from_unknown_role(cls, r: generic.Role | Role) -> Role:
         if not isinstance(r, Role):
-            return Role(r.name, in_roles=sorted(r.in_roles) if r.in_roles else None)
+            return Role(
+                r.name,
+                in_roles=sorted(r.in_roles, key=generic.by_name)
+                if r.in_roles
+                else None,
+            )
 
         return r
 
@@ -81,7 +86,7 @@ class Role(generic.Role):
         options = ", ".join([f"{key}={value!r}" for key, value in self.options])
         return f'{cls_name}("{self.name}", {options})'
 
-    def to_sql_create(self) -> str:
+    def to_sql_create(self) -> list[str]:
         segments = ["CREATE ROLE", self.name]
 
         options = postgres_render_role_options(self)
@@ -90,12 +95,12 @@ class Role(generic.Role):
         segments.extend(options)
 
         if self.in_roles is not None:
-            in_roles = ", ".join(self.in_roles)
+            in_roles = ", ".join(generic.role_names(self.in_roles))
             segment = f"IN ROLE {in_roles}"
             segments.append(segment)
 
         command = " ".join(segments)
-        return command + ";"
+        return [command + ";"]
 
     def to_sql_update(self, to_role: Role) -> list[str]:
         role_name = to_role.name
@@ -195,8 +200,8 @@ class RoleDiff:
             bypass_rls=bypass_rls,
             connection_limit=connection_limit,
             valid_until=valid_until,
-            add_roles=add_roles,
-            remove_roles=remove_roles,
+            add_roles=generic.role_names(add_roles),
+            remove_roles=generic.role_names(remove_roles),
         )
 
 

@@ -71,7 +71,7 @@ class DropRoleOp(RoleOp):
         return CreateRoleOp(self.role)
 
     def to_sql(self):
-        return self.role.to_sql_drop()
+        return [self.role.to_sql_drop()]
 
 
 Operation = Union[CreateRoleOp, UpdateRoleOp, DropRoleOp]
@@ -82,7 +82,7 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
     if not roles:
         return result
 
-    roles_by_name = {r.name: r for r in roles.roles}
+    roles_by_name = {r.name: r for r in roles.roles if not r.external}
     expected_role_names = set(roles_by_name)
 
     existing_roles = get_roles(connection)
@@ -97,19 +97,20 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
     for role in topological_sort(roles.roles):
         role_name = role.name
 
-        if role_name in roles.ignore_roles:
+        if role_name in roles.ignore_roles or role.external:
             continue
 
         role_created = role_name in new_role_names
 
-        if role_created:
-            result.append(CreateRoleOp(role))
-        else:
-            existing_role = existing_roles_by_name[role_name]
+        # An input role might be defined as a more general `Role` while
+        # the `existing_role` will always be a concrete dialect-specific version.
+        concrete_defined_role = role_cls.from_unknown_role(role).normalize()
 
-            # An input role might be defined as a more general `Role` while
-            # the `existing_role` will always be a concrete dialect-specific version.
-            concrete_defined_role = role_cls.from_unknown_role(role)
+        if role_created:
+            result.append(CreateRoleOp(concrete_defined_role))
+        else:
+            existing_role = existing_roles_by_name[role_name].normalize()
+            role_cls = type(existing_role)
 
             role_updated = existing_role != concrete_defined_role
             if role_updated:
@@ -117,7 +118,7 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
                 result.append(
                     UpdateRoleOp(
                         from_role=existing_role,
-                        to_role=role_cls.from_unknown_role(role),
+                        to_role=concrete_defined_role,
                     )
                 )
 
@@ -125,6 +126,7 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
         for removed_role in removed_role_names:
             if removed_role in roles.ignore_roles:
                 continue
+
             result.append(DropRoleOp(role_cls(removed_role)))
 
     return result

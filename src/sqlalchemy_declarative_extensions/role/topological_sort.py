@@ -1,6 +1,6 @@
 from typing import Dict, Iterable, Set
 
-from sqlalchemy_declarative_extensions.role.generic import Role
+from sqlalchemy_declarative_extensions.role.generic import Role, role_names
 
 
 def topological_sort(roles: Iterable[Role]):
@@ -67,7 +67,7 @@ def generate_role_dependency_map(role_name_map: Dict[str, Role]) -> Dict[str, Se
     result: Dict[str, Set[str]] = {}
     valid_role_names = set(role_name_map)
     for name, role in role_name_map.items():
-        in_roles = set(role.in_roles or [])
+        in_roles = set(role_names(role.in_roles or []))
 
         if not in_roles.issubset(valid_role_names):
             missing_roles = ", ".join(sorted(in_roles - valid_role_names))
@@ -76,5 +76,5 @@ def generate_role_dependency_map(role_name_map: Dict[str, Role]) -> Dict[str, Se
                 "top-level roles, but are missing in the list of top-level "
                 f"roles: {missing_roles}."
             )
-        result[name] = in_roles
+        result[name] = set(in_roles)
     return result
