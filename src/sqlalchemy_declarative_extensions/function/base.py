@@ -31,27 +31,22 @@ class Function:
         raise NotImplementedError()  # pragma: no cover
 
     def to_sql_create(self, replace=False):
-        components = ["CREATE"]
-
-        if replace:
-            components.append("OR REPLACE")
-
-        components.append("FUNCTION")
-        components.append(self.qualified_name + "()")
-
-        if self.returns:
-            components.append(f"RETURNS {self.returns}")
-
-        components.append(f"LANGUAGE {self.language}")
-        components.append(f"AS $${self.definition}$$")
-
-        return " ".join(components) + ";"
+        raise NotImplementedError()
 
     def to_sql_update(self):
         return self.to_sql_create(replace=True)
 
     def to_sql_drop(self):
         return f"DROP FUNCTION {self.qualified_name}();"
+
+    def with_name(self, name: str):
+        return replace(self, name=name)
+
+    def with_language(self, language: str):
+        return replace(self, language=language)
+
+    def with_return_type(self, return_type: str):
+        return replace(self, returns=return_type)
 
 
 @dataclass

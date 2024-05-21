@@ -77,6 +77,7 @@ pg_proc = table(
     column("pronamespace"),
     column("prolang"),
     column("prorettype"),
+    column("prosecdef"),
 )
 
 pg_language = table(
@@ -258,6 +259,7 @@ functions_query = (
         pg_language.c.lanname.label("language"),
         pg_type.c.typname.label("return_type"),
         pg_proc.c.prosrc.label("source"),
+        pg_proc.c.prosecdef.label("security_definer"),
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)

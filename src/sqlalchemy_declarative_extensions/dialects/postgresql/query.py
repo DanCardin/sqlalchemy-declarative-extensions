@@ -10,7 +10,10 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
     parse_acl,
     parse_default_acl,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql.function import Function
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
+    Function,
+    FunctionSecurity,
+)
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     default_acl_query,
@@ -165,6 +168,9 @@ def get_functions_postgresql(connection: Connection) -> list[Function]:
             returns=f.return_type,
             language=f.language,
             schema=f.schema if f.schema != "public" else None,
+            security=FunctionSecurity.definer
+            if f.security_definer
+            else FunctionSecurity.invoker,
         )
         functions.append(function)
     return functions
