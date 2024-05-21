@@ -30,6 +30,7 @@ from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     get_views_sqlite,
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch, select
+from sqlalchemy_declarative_extensions.view import View
 
 get_schemas = dialect_dispatch(
     postgresql=get_schemas_postgresql,
@@ -72,6 +73,11 @@ get_views = dialect_dispatch(
     postgresql=get_views_postgresql,
     sqlite=get_views_sqlite,
     mysql=get_views_mysql,
+)
+
+get_view_cls = dialect_dispatch(
+    postgresql=lambda _: postgresql.View,
+    default=lambda _: View,
 )
 
 get_view = dialect_dispatch(

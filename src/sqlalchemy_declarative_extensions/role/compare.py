@@ -106,7 +106,6 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
             result.append(CreateRoleOp(role))
         else:
             existing_role = existing_roles_by_name[role_name]
-            role_cls = type(existing_role)
 
             # An input role might be defined as a more general `Role` while
             # the `existing_role` will always be a concrete dialect-specific version.

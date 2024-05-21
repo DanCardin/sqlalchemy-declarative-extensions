@@ -5,11 +5,11 @@ from sqlalchemy_declarative_extensions import (
     Row,
     Rows,
     Schemas,
-    View,
     declarative_database,
     register_sqlalchemy_events,
     register_view,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql import View
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
 _Base = declarative_base()

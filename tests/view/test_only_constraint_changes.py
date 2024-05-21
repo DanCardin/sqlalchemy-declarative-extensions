@@ -3,12 +3,12 @@ from sqlalchemy import Column, text, types
 
 from sqlalchemy_declarative_extensions import (
     Schemas,
-    View,
     ViewIndex,
     declarative_database,
     register_sqlalchemy_events,
     register_view,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql import View
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 from sqlalchemy_declarative_extensions.view.compare import compare_views
 

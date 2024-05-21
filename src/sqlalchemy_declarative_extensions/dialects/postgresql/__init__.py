@@ -21,6 +21,11 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
     TriggerForEach,
     TriggerTimes,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.view import (
+    MaterializedOptions,
+    View,
+)
+from sqlalchemy_declarative_extensions.view.base import ViewIndex
 
 __all__ = [
     "DefaultGrant",
@@ -35,6 +40,7 @@ __all__ = [
     "GrantStatement",
     "GrantStatement",
     "GrantTypes",
+    "MaterializedOptions",
     "Role",
     "SchemaGrants",
     "SequenceGrants",
@@ -44,4 +50,6 @@ __all__ = [
     "TriggerForEach",
     "TriggerTimes",
     "TypeGrants",
+    "View",
+    "ViewIndex",
 ]

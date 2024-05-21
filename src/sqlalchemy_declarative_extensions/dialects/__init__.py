@@ -13,6 +13,7 @@ from sqlalchemy_declarative_extensions.dialects.query import (
     get_schemas,
     get_triggers,
     get_view,
+    get_view_cls,
     get_views,
 )
 
@@ -22,6 +23,7 @@ __all__ = [
     "get_current_schema",
     "get_default_grants",
     "get_function_cls",
+    "get_functions",
     "get_grants",
     "get_objects",
     "get_role_cls",
@@ -29,8 +31,8 @@ __all__ = [
     "get_schemas",
     "get_triggers",
     "get_view",
+    "get_view_cls",
     "get_views",
-    "get_functions",
     "mysql",
     "postgresql",
     "sqlite",

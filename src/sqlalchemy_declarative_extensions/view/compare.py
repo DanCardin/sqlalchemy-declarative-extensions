@@ -8,7 +8,7 @@ from typing import Union
 from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection, Dialect
 
-from sqlalchemy_declarative_extensions.dialects import get_views
+from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 
@@ -63,7 +63,12 @@ def compare_views(
 
     result: list[Operation] = []
 
-    views_by_name = {r.qualified_name: r for r in views.views}
+    view_cls = get_view_cls(connection)
+    concrete_defined_views: list[View] = [
+        view_cls.coerce_from_unknown(view) for view in views.views
+    ]
+
+    views_by_name = {r.qualified_name: r for r in concrete_defined_views}
     expected_view_names = set(views_by_name)
 
     existing_views = get_views(connection)
@@ -73,7 +78,7 @@ def compare_views(
     new_view_names = expected_view_names - existing_view_names
     removed_view_names = existing_view_names - expected_view_names
 
-    for view in views:
+    for view in concrete_defined_views:
         view_name = view.qualified_name
 
         ignore_matches = any(
