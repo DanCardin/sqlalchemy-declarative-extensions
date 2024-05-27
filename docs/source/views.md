@@ -101,8 +101,15 @@ Finally, you can directly call `register_view` to imperitively register a normal
 ## Materialized views
 
 Materialized views can be created by adding the `materialized=True` kwarg to the
-`@view` decorator, or else by supplying the same kwarg directly to the `View`
+`@view` decorator, or else by supplying the same kwarg directly to a supported `View`
 constructor.
+
+```{note}
+Only certain dialects support `materialized` and `constraints`. If you need these
+options, you should reach for the dialect-specific variant defined at
+`sqlalchemy_declarative_extensions.dialects.<dialect>.View` instead of the generic
+one.
+```
 
 Note that in order to refresh materialized views concurrently, the Postgres
 requires the view to have a unique constraint. The constraint can be applied in
@@ -121,3 +128,12 @@ Additionally the sqlalchemy `UniqueConstraint` index type is supported.
 Internally these options are converted to
 `sqlalchemy_declarative_extensions.ViewIndex`, which you **can** instead use
 directly, if desired.
+
+### `MaterializedOptions`
+
+The `materialized` argument (either through `@view` or through direct construction
+of a `View` object) can be **either** a `bool` or a dialect-specific `MaterializedOptions`
+object.
+
+Use of the bool implies the dialect's default settings for construction of a materialized
+view.

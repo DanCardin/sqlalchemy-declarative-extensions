@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Iterable, List, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Optional, TypeVar, cast
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
@@ -11,6 +12,7 @@ from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.sql.elements import conv
 from sqlalchemy.sql.naming import ConventionDict
 from sqlalchemy.sql.schema import DEFAULT_NAMING_CONVENTION
+from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import (
@@ -19,10 +21,21 @@ from sqlalchemy_declarative_extensions.sqlalchemy import (
     escape_params,
 )
 
+if TYPE_CHECKING:
+    from sqlalchemy_declarative_extensions.dialects.postgresql import (
+        MaterializedOptions,
+    )
+
 T = TypeVar("T")
+ViewType = TypeVar("ViewType", "View", "DeclarativeView")
 
 
-def view(base, materialized: bool = False, register_as_model=False) -> Callable[[T], T]:
+def view(
+    base,
+    *,
+    register_as_model=False,
+    materialized: bool | dict | MaterializedOptions = False,
+) -> Callable[[T], T]:
     """Decorate a class or declarative base model in order to register a View.
 
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
@@ -38,10 +51,12 @@ def view(base, materialized: bool = False, register_as_model=False) -> Callable[
 
     Arguments:
         base: A declarative base object
-        materialized: Whether the view should be a materialized view
         register_as_model: Whether the view should be registered as a SQLAlchemy mapped object.
             Note this only works if the view defines mappable models columns (minimally a primary
             key), like a proper modeled table
+        materialized: Whether a view should be materialized or not. Accepts a `bool` for default
+            options, a dialect-specific `MaterializedOptions` variant, or a dict describing that
+            dialect-specific variant.
 
     >>> try:
     ...     from sqlalchemy.orm import declarative_base
@@ -64,19 +79,7 @@ def view(base, materialized: bool = False, register_as_model=False) -> Callable[
         raise ValueError("Model must have a 'metadata' attribute.")
 
     def decorator(cls):
-        name = cls.__tablename__
-        table_args = getattr(cls, "__table_args__", None)
-        view_def = cls.__view__
-
-        schema = find_schema(table_args)
-        constraints = find_constraints(table_args)
-        instance = View(
-            name,
-            view_def,
-            schema=schema,
-            materialized=materialized,
-            constraints=constraints,
-        )
+        instance = DeclarativeView(cls, materialized)
 
         register_view(base, instance)
 
@@ -92,7 +95,7 @@ def instrument_sqlalchemy(base: T, cls) -> T:
     return create_mapper(cls, temp_metadata)
 
 
-def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
+def register_view(base_or_metadata: HasMetaData | MetaData, view: ViewType):
     """Register a view onto the given declarative base or `Metadata`.
 
     This can be used instead of the [view](view) decorator, if you are constructing
@@ -111,6 +114,52 @@ def register_view(base_or_metadata: HasMetaData | MetaData, view: View):
 
 
 @dataclass
+class DeclarativeView:
+    cls: type
+    materialized: bool | dict | MaterializedOptions
+
+    @property
+    def name(self):
+        return self.cls.__tablename__
+
+    @property
+    def table_args(self):
+        return getattr(self.cls, "__table_args__", None)
+
+    @property
+    def view_def(self):
+        return self.cls.__view__
+
+    @property
+    def schema(self):
+        table_args = self.table_args
+        if isinstance(table_args, dict):
+            return table_args.get("schema")
+
+        if isinstance(table_args, Iterable):
+            for table_arg in table_args:
+                if isinstance(table_arg, dict):
+                    return table_arg.get("schema")
+
+        return None
+
+    @property
+    def constraints(self):
+        table_args = self.table_args
+        if isinstance(table_args, dict):
+            return None
+
+        if isinstance(table_args, Iterable):
+            return [
+                arg
+                for arg in table_args
+                if isinstance(arg, (UniqueConstraint, ViewIndex, Index))
+            ]
+
+        return None
+
+
+@dataclass
 class View:
     """Definition of a view.
 
@@ -126,30 +175,22 @@ class View:
     name: str
     definition: str | Select
     schema: str | None = None
-    materialized: bool = False
+    materialized: bool | dict | MaterializedOptions = False
     constraints: list[Index | UniqueConstraint | ViewIndex] | None = field(default=None)
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Any) -> View:
         if isinstance(unknown, View):
+            if unknown.materialized or unknown.constraints:
+                warnings.warn(
+                    "`materialized` and `constraints` have been relocated to dialect-specific MaterializedView variants.",
+                    DeprecationWarning,
+                )
+
             return unknown
 
-        try:
-            import alembic_utils  # noqa
-        except ImportError:  # pragma: no cover
-            pass
-        else:
-            from alembic_utils.pg_materialized_view import PGMaterializedView
-            from alembic_utils.pg_view import PGView
-
-            if isinstance(unknown, (PGView, PGMaterializedView)):
-                materialized = isinstance(unknown, PGMaterializedView)
-                return cls(
-                    name=unknown.signature,
-                    definition=unknown.definition,
-                    schema=unknown.schema,
-                    materialized=materialized,
-                )
+        if isinstance(unknown, DeclarativeView):
+            return cls(unknown.name, unknown.view_def, unknown.schema)
 
         raise NotImplementedError(
             f"Unsupported view source object {unknown}"
@@ -242,7 +283,7 @@ class View:
 
     def normalize(
         self, conn: Connection, metadata: MetaData, using_connection: bool = True
-    ) -> View:
+    ) -> Self:
         constraints = None
         if self.constraints:
             constraints = [
@@ -257,16 +298,11 @@ class View:
         )
 
     def to_sql_create(self, dialect: Dialect) -> list[str]:
+        assert self.materialized is False
+
         definition = self.compile_definition(dialect)
 
-        components = ["CREATE"]
-        if self.materialized:
-            components.append("MATERIALIZED")
-
-        components.append("VIEW")
-        components.append(self.qualified_name)
-        components.append("AS")
-        components.append(definition)
+        components = ["CREATE", "VIEW", self.qualified_name, "AS", definition]
         statement = " ".join(components)
 
         result = [statement]
@@ -309,75 +345,6 @@ class View:
         result.append(statement)
 
         return result
-
-
-@dataclass
-class Views:
-    """The collection of views and associated options comparisons.
-
-    Note: `Views` supports views being specified from certain alternative sources, such
-    as `alembic_utils`'s `PGView` and `PGMaterializedView`. In order for that to work,
-    one needs to either call `View.coerce_from_unknown(alembic_utils_view)` directly, or
-    use `Views().are(...)` (which internally calls `coerce_from_unknown`).
-
-    Note: `ignore` option accepts a list of strings. Each string is individually
-        interpreted as a "glob". This means a string like "foo.*" would ignore all views
-        contained within the schema "foo".
-    """
-
-    views: list[View] = field(default_factory=list)
-
-    ignore_unspecified: bool = False
-
-    ignore: Iterable[str] = field(default_factory=set)
-    ignore_views: Iterable[str] = field(default_factory=set)
-
-    @classmethod
-    def coerce_from_unknown(
-        cls, unknown: None | Iterable[View] | Views
-    ) -> Views | None:
-        if isinstance(unknown, Views):
-            return unknown
-
-        if isinstance(unknown, Iterable):
-            return cls().are(*unknown)
-
-        return None
-
-    def append(self, view: View):
-        self.views.append(view)
-
-    def __iter__(self):
-        yield from self.views
-
-    def are(self, *views: View):
-        return replace(self, views=[View.coerce_from_unknown(v) for v in views])
-
-
-def find_schema(table_args=None):
-    if isinstance(table_args, dict):
-        return table_args.get("schema")
-
-    if isinstance(table_args, Iterable):
-        for table_arg in table_args:
-            if isinstance(table_arg, dict):
-                return table_arg.get("schema")
-
-    return None
-
-
-def find_constraints(table_args=None):
-    if isinstance(table_args, dict):
-        return None
-
-    if isinstance(table_args, Iterable):
-        return [
-            arg
-            for arg in table_args
-            if isinstance(arg, (UniqueConstraint, ViewIndex, Index))
-        ]
-
-    return None
 
 
 @dataclass
@@ -509,3 +476,46 @@ class _ColumnNamingAdapter:
     @property
     def _ddl_label(self):
         return self.name
+
+
+@dataclass
+class Views:
+    """The collection of views and associated options comparisons.
+
+    Note: `Views` supports views being specified from certain alternative sources, such
+    as `alembic_utils`'s `PGView` and `PGMaterializedView`. In order for that to work,
+    one needs to either call `View.coerce_from_unknown(alembic_utils_view)` directly, or
+    use `Views().are(...)` (which internally calls `coerce_from_unknown`).
+
+    Note: `ignore` option accepts a list of strings. Each string is individually
+        interpreted as a "glob". This means a string like "foo.*" would ignore all views
+        contained within the schema "foo".
+    """
+
+    views: list[View | DeclarativeView] = field(default_factory=list)
+
+    ignore_unspecified: bool = False
+
+    ignore: Iterable[str] = field(default_factory=set)
+    ignore_views: Iterable[str] = field(default_factory=set)
+
+    @classmethod
+    def coerce_from_unknown(
+        cls, unknown: None | Iterable[View] | Views
+    ) -> Views | None:
+        if isinstance(unknown, Views):
+            return unknown
+
+        if isinstance(unknown, Iterable):
+            return cls().are(*unknown)
+
+        return None
+
+    def append(self, view: View | DeclarativeView):
+        self.views.append(view)
+
+    def __iter__(self):
+        yield from self.views
+
+    def are(self, *views: View):
+        return replace(self, views=list(views))

@@ -25,6 +25,7 @@ def dialect_dispatch(
     sqlite: Callable[Concatenate[Connection, P], T] | None = None,
     mysql: Callable[Concatenate[Connection, P], T] | None = None,
     snowflake: Callable[Concatenate[Connection, P], T] | None = None,
+    default: Callable[Concatenate[Connection, P], T] | None = None,
 ) -> Callable[Concatenate[Connection, P], T]:
     dispatchers = {
         "postgresql": postgresql,
@@ -35,10 +36,10 @@ def dialect_dispatch(
 
     def dispatch(connection: Connection, *args: P.args, **kwargs: P.kwargs) -> T:
         dialect_name = connection.dialect.name
-        if dialect_name == "pmrsqlite":
+        if "sqlite" in dialect_name:
             dialect_name = "sqlite"
 
-        dispatcher = dispatchers.get(dialect_name)
+        dispatcher = dispatchers.get(dialect_name) or default
         if dispatcher is None:  # pragma: no cover
             raise NotImplementedError(
                 f"'{dialect_name}' is not yet supported for this operation."

@@ -5,6 +5,7 @@ from typing import Container, List, cast
 from sqlalchemy import Index, UniqueConstraint
 from sqlalchemy.engine import Connection
 
+from sqlalchemy_declarative_extensions.dialects.postgresql import View, ViewIndex
 from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
     parse_acl,
     parse_default_acl,
@@ -29,8 +30,10 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
     TriggerForEach,
     TriggerTimes,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.view import (
+    MaterializedOptions,
+)
 from sqlalchemy_declarative_extensions.sql import qualify_name
-from sqlalchemy_declarative_extensions.view.base import View, ViewIndex
 
 
 def get_schemas_postgresql(connection: Connection):
@@ -136,7 +139,7 @@ def get_views_postgresql(connection: Connection):
             v.name,
             v.definition,
             schema=schema,
-            materialized=v.materialized,
+            materialized=MaterializedOptions() if v.materialized else False,
             constraints=indexes or None,
         )
         views.append(view)
