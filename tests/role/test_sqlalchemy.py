@@ -87,7 +87,8 @@ def test_pg_role_default(pg):
             ]
             conn.execute(text("drop role foo"))
 
-            conn.execute(text(Role("foo").to_sql_create()))
+            for sql in Role("foo").to_sql_create():
+                conn.execute(text(sql))
             trans.commit()
 
         default_role = get_roles(conn, exclude=[pg.pmr_credentials.username])[0]

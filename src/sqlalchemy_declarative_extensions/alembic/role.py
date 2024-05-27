@@ -26,37 +26,16 @@ def _compare_roles(autogen_context, upgrade_ops, _):
 
 
 @renderers.dispatch_for(CreateRoleOp)
-def render_create_role(autogen_context: AutogenContext, op: CreateRoleOp):
-    command = op.role.to_sql_create()
-    return f'op.execute("""{command}""")'
-
-
-@renderers.dispatch_for(UpdateRoleOp)
-def render_update_role(autogen_context: AutogenContext, op: UpdateRoleOp):
-    commands = op.from_role.to_sql_update(op.to_role)
-    return [f'op.execute("""{command}""")' for command in commands]
-
-
 @renderers.dispatch_for(DropRoleOp)
-def render_drop_role(autogen_context: AutogenContext, op: DropRoleOp):
-    command = op.role.to_sql_drop()
-    return f'op.execute("""{command}""")'
+@renderers.dispatch_for(UpdateRoleOp)
+def render_role(autogen_context: AutogenContext, op: CreateRoleOp):
+    return [f'op.execute("""{command}""")' for command in op.to_sql()]
 
 
 @Operations.implementation_for(CreateRoleOp)
-def create_role(operations, op):
-    command = op.role.to_sql_create()
-    operations.execute(command)
-
-
 @Operations.implementation_for(UpdateRoleOp)
-def update_role(operations, op):
-    commands = op.from_role.to_sql_update(op.to_role)
+@Operations.implementation_for(DropRoleOp)
+def create_role(operations, op):
+    commands = op.to_sql()
     for command in commands:
         operations.execute(command)
-
-
-@Operations.implementation_for(DropRoleOp)
-def drop_role(operations, op):
-    command = op.role.to_sql_drop()
-    operations.execute(command)
