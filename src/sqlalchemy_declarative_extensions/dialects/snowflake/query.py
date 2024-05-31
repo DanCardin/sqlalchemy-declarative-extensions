@@ -10,7 +10,7 @@ def get_schemas_snowflake(connection: Connection):
     schemas_query = text(
         "SELECT schema_name"
         " FROM information_schema.schemata"
-        " WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'main')"
+        " WHERE lower(schema_name) NOT IN ('information_schema', 'pg_catalog', 'main')"
     )
 
     return {
@@ -22,7 +22,7 @@ def check_schema_exists_snowflake(connection: Connection, name: str) -> bool:
     schema_exists_query = text(
         "SELECT schema_name"
         " FROM information_schema.schemata"
-        " WHERE schema_name = :schema"
+        " WHERE lower(schema_name) = lower(:schema)"
     )
     row = connection.execute(schema_exists_query, {"schema": name}).scalar()
     return bool(row)
