@@ -42,5 +42,13 @@ In particular, the current function support is heavily oriented around support f
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.function.base
-   :members: Functions, Function, register_function
+   :members: Functions, Function, register_function, Procedure
+```
+
+Note, there also exist dialect-specific variants which you must use in order to make use of
+any dialect-specific options.
+
+```{eval-rst}
+.. autoapimodule:: sqlalchemy_declarative_extensions.dialects.postgresql.function
+   :members: Function, Procedure
 ```

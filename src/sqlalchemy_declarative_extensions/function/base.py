@@ -1,25 +1,27 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable
+from typing import ClassVar, Iterable
 
 from sqlalchemy import MetaData
+from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 
 @dataclass
-class Function:
-    """Describes a user defined function.
+class Procedure:
+    """Describes a user defined procedure.
 
     Many function attributes are not currently supported. Support is **currently**
     minimal due to being a means to an end for defining triggers.
     """
 
+    kind: ClassVar[str] = "PROCEDURE"
+
     name: str
     definition: str
-    returns: str = "void"
     language: str = "sql"
     schema: str | None = None
 
@@ -27,7 +29,7 @@ class Function:
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
 
-    def normalize(self) -> Function:
+    def normalize(self) -> Self:
         raise NotImplementedError()  # pragma: no cover
 
     def to_sql_create(self, replace=False):
@@ -37,7 +39,7 @@ class Function:
         return self.to_sql_create(replace=True)
 
     def to_sql_drop(self):
-        return f"DROP FUNCTION {self.qualified_name}();"
+        return f"DROP {self.kind} {self.qualified_name}();"
 
     def with_name(self, name: str):
         return replace(self, name=name)
@@ -50,6 +52,19 @@ class Function:
 
 
 @dataclass
+class Function(Procedure):
+    """Describes a user defined function.
+
+    Many function attributes are not currently supported. Support is **currently**
+    minimal due to being a means to an end for defining triggers.
+    """
+
+    kind: ClassVar[str] = "FUNCTION"
+
+    returns: str = "void"
+
+
+@dataclass
 class Functions:
     """The collection of functions and associated options comparisons.
 
@@ -58,14 +73,14 @@ class Functions:
         contained within the schema "foo".
     """
 
-    functions: list[Function] = field(default_factory=list)
+    functions: list[Function | Procedure] = field(default_factory=list)
 
     ignore: list[str] = field(default_factory=list)
     ignore_unspecified: bool = False
 
     @classmethod
     def coerce_from_unknown(
-        cls, unknown: None | Iterable[Function] | Functions
+        cls, unknown: None | Iterable[Function | Procedure] | Functions
     ) -> Functions | None:
         if isinstance(unknown, Functions):
             return unknown
@@ -75,13 +90,13 @@ class Functions:
 
         return None
 
-    def append(self, function: Function):
+    def append(self, function: Function | Procedure):
         self.functions.append(function)
 
     def __iter__(self):
         yield from self.functions
 
-    def are(self, *functions: Function):
+    def are(self, *functions: Function | Procedure):
         return replace(self, functions=list(functions))
 
 
