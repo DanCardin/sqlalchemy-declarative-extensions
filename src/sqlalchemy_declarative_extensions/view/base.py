@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import uuid
 import warnings
 from dataclasses import dataclass, field, replace
@@ -41,8 +42,10 @@ def view(
     Given some object with the attributes: `__tablename__`, (optionally for schema) `__table_args__`,
     and `__view__`, registers a View object.
 
-    The `__view__` attribute can be either a raw string query, or a SQLAlchemy object
-    capable of being compiled (namely :func:`~sqlalchemy.sql.expression.text` or :func:`~sqlalchemy.sql.expression.select`).
+    The `__view__` attribute can be either a raw string query, a SQLAlchemy object
+    capable of being compiled (namely :func:`~sqlalchemy.sql.expression.text` or
+    :func:`~sqlalchemy.sql.expression.select`), or a no-argument function which returns
+    either of the two.
 
     This intentionally allows one to register a Model definition as a view,
     and have it register in the same way you might otherwise manually define it.
@@ -128,6 +131,9 @@ class DeclarativeView:
 
     @property
     def view_def(self):
+        if inspect.isfunction(self.cls.__view__):
+            return self.cls.__view__()
+
         return self.cls.__view__
 
     @property
