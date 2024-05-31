@@ -13,6 +13,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
     FunctionSecurity,
+    Procedure,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
@@ -162,16 +163,31 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
 def get_functions_postgresql(connection: Connection) -> list[Function]:
     functions = []
     for f in connection.execute(functions_query).fetchall():
-        function = Function(
-            name=f.name,
-            definition=f.source,
-            returns=f.return_type,
-            language=f.language,
-            schema=f.schema if f.schema != "public" else None,
-            security=FunctionSecurity.definer
-            if f.security_definer
-            else FunctionSecurity.invoker,
+        name = f.name
+        definition = f.source
+        language = f.language
+        schema = f.schema if f.schema != "public" else None
+        security = (
+            FunctionSecurity.definer if f.security_definer else FunctionSecurity.invoker
         )
+
+        if f.kind == "p":
+            function = Procedure(
+                name=name,
+                definition=definition,
+                language=language,
+                schema=schema,
+                security=security,
+            )
+        else:
+            function = Function(
+                name=name,
+                definition=definition,
+                language=language,
+                schema=schema,
+                security=security,
+                returns=f.return_type,
+            )
         functions.append(function)
     return functions
 
