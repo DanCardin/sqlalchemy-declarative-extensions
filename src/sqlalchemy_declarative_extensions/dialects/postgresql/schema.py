@@ -78,6 +78,7 @@ pg_proc = table(
     column("prolang"),
     column("prorettype"),
     column("prosecdef"),
+    column("prokind"),
 )
 
 pg_language = table(
@@ -252,6 +253,25 @@ view_query = (
 )
 
 
+procedures_query = (
+    select(
+        pg_proc.c.proname.label("name"),
+        pg_namespace.c.nspname.label("schema"),
+        pg_language.c.lanname.label("language"),
+        pg_type.c.typname.label("return_type"),
+        pg_proc.c.prosrc.label("source"),
+        pg_proc.c.prosecdef.label("security_definer"),
+        pg_proc.c.prokind.label("kind"),
+    )
+    .select_from(
+        pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
+        .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
+        .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
+    )
+    .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
+    .where(pg_proc.c.prokind == "p")
+)
+
 functions_query = (
     select(
         pg_proc.c.proname.label("name"),
@@ -260,6 +280,7 @@ functions_query = (
         pg_type.c.typname.label("return_type"),
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
+        pg_proc.c.prokind.label("kind"),
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
@@ -267,6 +288,7 @@ functions_query = (
         .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
     )
     .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
+    .where(pg_proc.c.prokind != "p")
 )
 
 

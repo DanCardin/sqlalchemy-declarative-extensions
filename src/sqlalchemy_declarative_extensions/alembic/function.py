@@ -5,6 +5,7 @@ from alembic.autogenerate.render import renderers
 from sqlalchemy_declarative_extensions.function.compare import (
     CreateFunctionOp,
     DropFunctionOp,
+    Operation,
     UpdateFunctionOp,
     compare_functions,
 )
@@ -22,21 +23,9 @@ def _compare_functions(autogen_context, upgrade_ops, _):
 
 
 @renderers.dispatch_for(CreateFunctionOp)
-def render_create_function(autogen_context: AutogenContext, op: CreateFunctionOp):
-    assert autogen_context.connection
-    command = op.to_sql()
-    return f'op.execute("""{command}""")'
-
-
 @renderers.dispatch_for(UpdateFunctionOp)
-def render_update_function(autogen_context: AutogenContext, op: UpdateFunctionOp):
-    assert autogen_context.connection
-    command = op.to_sql()
-    return f'op.execute("""{command}""")'
-
-
 @renderers.dispatch_for(DropFunctionOp)
-def render_drop_function(autogen_context: AutogenContext, op: DropFunctionOp):
+def render_create_function(autogen_context: AutogenContext, op: Operation):
     assert autogen_context.connection
     command = op.to_sql()
     return f'op.execute("""{command}""")'

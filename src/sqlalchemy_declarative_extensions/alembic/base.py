@@ -4,6 +4,7 @@ def register_alembic_events(
     roles: bool = True,
     grants: bool = True,
     functions: bool = True,
+    procedures: bool = True,
     triggers: bool = True,
     rows: bool = True,
 ):
@@ -28,6 +29,9 @@ def register_alembic_events(
 
     if functions:
         import sqlalchemy_declarative_extensions.alembic.function
+
+    if procedures:
+        import sqlalchemy_declarative_extensions.alembic.procedure
 
     if triggers:
         import sqlalchemy_declarative_extensions.alembic.trigger

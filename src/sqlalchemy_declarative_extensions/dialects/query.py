@@ -14,6 +14,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
     get_functions_postgresql,
     get_grants_postgresql,
     get_objects_postgresql,
+    get_procedures_postgresql,
     get_roles_postgresql,
     get_schemas_postgresql,
     get_triggers_postgresql,
@@ -82,6 +83,14 @@ get_view_cls = dialect_dispatch(
 
 get_view = dialect_dispatch(
     postgresql=get_view_postgresql,
+)
+
+get_procedures = dialect_dispatch(
+    postgresql=get_procedures_postgresql,
+)
+
+get_procedure_cls = dialect_dispatch(
+    postgresql=lambda _: postgresql.Procedure,
 )
 
 get_functions = dialect_dispatch(
