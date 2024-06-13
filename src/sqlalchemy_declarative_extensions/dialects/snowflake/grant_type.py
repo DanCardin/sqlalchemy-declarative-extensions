@@ -15,6 +15,10 @@ class GrantOptions(FromStrings):
         """
         return []
 
+    @classmethod
+    def all(cls: type[Self]) -> list[Self]:
+        return list(cls)
+
 
 class DatabaseGrants(GrantOptions):
     create = "CREATE"
@@ -23,8 +27,16 @@ class DatabaseGrants(GrantOptions):
     usage = "USAGE"
 
 
+class FileFormatGrants(GrantOptions):
+    usage = "USAGE"
+
+
 class FunctionGrants(GrantOptions):
-    execute = "USAGE"
+    usage = "USAGE"
+
+
+class ProcedureGrants(GrantOptions):
+    usage = "USAGE"
 
 
 class TableGrants(GrantOptions):
@@ -38,6 +50,10 @@ class TableGrants(GrantOptions):
     evolve_schema = "EVOLVE SCHEMA"
 
 
+class TaskGrants(GrantOptions):
+    monitor = "MONITOR"
+
+
 class TypeGrants(GrantOptions):
     usage = "USAGE"
 
@@ -49,8 +65,22 @@ class SchemaGrants(GrantOptions):
     monitor = "MONITOR"
 
 
+class StageGrants(GrantOptions):
+    usage = "USAGE"
+    read = "READ"
+
+
+class StreamGrants(GrantOptions):
+    select = "SELECT"
+
+
 class SequenceGrants(GrantOptions):
     usage = "USAGE"
+
+
+class ViewGrants(GrantOptions):
+    references = "REFERENCES"
+    select = "SELECT"
 
 
 class WarehouseGrants(GrantOptions):
@@ -68,66 +98,78 @@ G = TypeVar(
     SchemaGrants,
     SequenceGrants,
     TableGrants,
+    TaskGrants,
     TypeGrants,
     WarehouseGrants,
 )
 
 
 class GrantTypes(FromStrings):
+    file_format = "FILE FORMAT"
     database = "DATABASE"
     function = "FUNCTION"
+    procedure = "PROCEDURE"
     schema = "SCHEMA"
     sequence = "SEQUENCE"
+    stage = "STAGE"
+    stream = "STREAM"
     table = "TABLE"
+    task = "TASK"
     type = "TYPE"
     warehouse = "WAREHOUSE"
+    view = "VIEW"
 
     def to_variants(self):
         return {
             self.database: DatabaseGrants,
+            self.file_format: FileFormatGrants,
             self.function: FunctionGrants,
+            self.procedure: ProcedureGrants,
             self.schema: SchemaGrants,
             self.sequence: SequenceGrants,
+            self.stage: StageGrants,
+            self.stream: StreamGrants,
             self.table: TableGrants,
+            self.task: TaskGrants,
             self.type: TypeGrants,
+            self.view: ViewGrants,
             self.warehouse: WarehouseGrants,
         }[self]
 
 
-class FutureGrantTypes(FromStrings):
+class DefaultGrantTypes(FromStrings):
+    file_format = "FILE FORMAT"
     function = "FUNCTION"
+    procedure = "PROCEDURE"
+    schema = "SCHEMA"
+    sequence = "SEQUENCE"
+    stage = "STAGE"
+    stream = "STREAM"
     table = "TABLE"
+    task = "TASK"
     type = "TYPE"
-    sequence = "SEQUENCE"
-    sequence = "SEQUENCE"
+    view = "VIEW"
 
-    # procedures tasks views stages file_formats, streams
-
-    @classmethod
-    def _str_to_kind(cls):
-        return {
-            "f": cls.function,
-            "r": cls.table,
-            "T": cls.type,
-            "S": cls.sequence,
-        }
-
-    @classmethod
-    def from_relkind(cls, relkind: str):
-        return cls._str_to_kind()[relkind]
+    # views stages file_formats, streams
+    #
+    # @classmethod
+    # def from_relkind(cls, relkind: str):
+    #     return cls._str_to_kind()[relkind]
 
     def to_variants(self):
-        return {
-            self.table: TableGrants,
-            self.sequence: SequenceGrants,
-            self.function: FunctionGrants,
-            self.type: TypeGrants,
-        }[self]
+        return self.to_grant_type().to_variants()
 
     def to_grant_type(self):
         return {
-            self.table: GrantTypes.table,
-            self.sequence: GrantTypes.sequence,
             self.function: GrantTypes.function,
+            self.procedure: GrantTypes.procedure,
+            self.schema: GrantTypes.schema,
+            self.sequence: GrantTypes.sequence,
+            self.table: GrantTypes.table,
+            self.task: GrantTypes.task,
             self.type: GrantTypes.type,
+            self.view: GrantTypes.view,
+            self.file_format: GrantTypes.file_format,
+            self.stream: GrantTypes.stream,
+            self.stage: GrantTypes.stage,
         }[self]

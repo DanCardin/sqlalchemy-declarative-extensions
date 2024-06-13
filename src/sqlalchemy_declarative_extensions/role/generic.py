@@ -73,6 +73,9 @@ class Role:
     def to_sql_drop(self) -> list[str]:
         return [f'DROP ROLE "{self.name}";']
 
+    def to_sql_use(self, undo: bool) -> list[str]:
+        raise NotImplementedError()
+
     def __enter__(self):
         context.enter_role(self)
 

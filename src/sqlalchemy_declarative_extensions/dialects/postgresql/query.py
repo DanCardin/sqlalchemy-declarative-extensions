@@ -16,6 +16,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
+    databases_query,
     default_acl_query,
     functions_query,
     object_acl_query,
@@ -43,7 +44,8 @@ def get_schemas_postgresql(connection: Connection):
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
     return {
-        Schema(schema) for schema, *_ in connection.execute(schemas_query).fetchall()
+        schema: Schema(schema)
+        for schema, *_ in connection.execute(schemas_query).fetchall()
     }
 
 
@@ -201,3 +203,12 @@ def get_triggers_postgresql(connection: Connection):
         triggers.append(trigger)
 
     return triggers
+
+
+def get_databases_postgresql(connection: Connection):
+    from sqlalchemy_declarative_extensions.database.base import Database
+
+    return {
+        database: Database(database)
+        for database, *_ in connection.execute(databases_query).fetchall()
+    }

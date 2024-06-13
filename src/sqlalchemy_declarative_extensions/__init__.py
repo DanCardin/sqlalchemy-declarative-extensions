@@ -15,6 +15,7 @@ from sqlalchemy_declarative_extensions.role import Role
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row import Row, Rows
 from sqlalchemy_declarative_extensions.schema import Schema, Schemas
+from sqlalchemy_declarative_extensions.database import Database, Databases
 from sqlalchemy_declarative_extensions.trigger import (
     Trigger,
     Triggers,
@@ -29,6 +30,8 @@ from sqlalchemy_declarative_extensions.view import (
 )
 
 __all__ = [
+    "Database",
+    "Databases",
     "declarative_database",
     "declare_database",
     "dialects",
@@ -36,8 +39,8 @@ __all__ = [
     "Functions",
     "Grants",
     "register_alembic_events",
-    "register_sqlalchemy_events",
     "register_function",
+    "register_sqlalchemy_events",
     "register_trigger",
     "register_view",
     "Role",

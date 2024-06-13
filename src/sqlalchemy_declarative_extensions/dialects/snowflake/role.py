@@ -135,21 +135,11 @@ class Role(generic.Role):
 
         command = " ".join(segments) + ";"
 
-        result = []
-
-        if self.use_role:
-            result.append("SET ROLE=current_role();")
-            result.append(f"USE ROLE {self.use_role}")
-
-        result.append(command)
+        result = [command]
 
         if self.in_roles:
             for role in generic.role_names(self.in_roles):
                 result.append(f"GRANT ROLE {role} TO {self.kind} {self.name};")
-
-        if self.use_role:
-            result.append("USE ROLE IDENTIFIER($ROLE)")
-            result.append("UNSET ROLE")
 
         return result
 
@@ -170,6 +160,17 @@ class Role(generic.Role):
 
         for remove_name in diff.remove_roles:
             result.append(f"REVOKE {remove_name} FROM {self.kind} {role_name};")
+
+        return result
+
+    def to_sql_use(self, undo: bool) -> list[str]:
+        result = []
+        if undo:
+            result.append("USE ROLE IDENTIFIER($ROLE);")
+            result.append("UNSET ROLE;")
+        else:
+            result.append("SET ROLE=current_role();")
+            result.append(f"USE ROLE {self.name}")
 
         return result
 

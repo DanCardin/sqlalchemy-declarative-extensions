@@ -34,22 +34,14 @@ import itertools
 from dataclasses import dataclass, replace
 from typing import Generic
 
-from sqlalchemy.sql.elements import TextClause
-from sqlalchemy.sql.expression import text
-
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     DefaultGrantTypes,
     G,
     GrantOptions,
     GrantTypes,
 )
-from sqlalchemy_declarative_extensions.sql import split_schema
-from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
-
-
-@runtime_checkable
-class HasName(Protocol):
-    name: str
+from sqlalchemy_declarative_extensions.grant import base
+from sqlalchemy_declarative_extensions.sql import HasName, coerce_name, split_schema
 
 
 @dataclass(frozen=True)
@@ -69,7 +61,7 @@ class Grant(Generic[G]):
     ) -> Grant:
         return cls(
             grants=tuple(sorted([grant, *grants])),  # type: ignore
-            target_role=_coerce_name(to),
+            target_role=coerce_name(to),
             grant_option=grant_option,
         )
 
@@ -83,7 +75,7 @@ class Grant(Generic[G]):
         variants = object_type.to_variants()
         grant = replace(self, grants=tuple(_map_grant_names(variants, *self.grants)))
 
-        names = [_coerce_name(obj) for obj in objects]
+        names = [coerce_name(obj) for obj in objects]
         return GrantStatement(grant, grant_type=object_type, targets=tuple(names))
 
     def on_tables(self, *tables: str | HasName):
@@ -113,7 +105,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.table,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -124,7 +116,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.sequence,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -135,7 +127,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.type,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
@@ -146,7 +138,7 @@ class DefaultGrant:
         return cls(
             grant_type=DefaultGrantTypes.function,
             in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     def for_role(self, role: str):
@@ -171,20 +163,20 @@ class DefaultGrant:
 
 
 @dataclass(frozen=True)
-class DefaultGrantStatement(Generic[G]):
+class DefaultGrantStatement(base.DefaultGrantStatement, Generic[G]):
     default_grant: DefaultGrant
     grant: Grant[G]
 
     def for_role(self, role: str | HasName) -> DefaultGrantStatement:
         return replace(
             self,
-            default_grant=replace(self.default_grant, target_role=_coerce_name(role)),
+            default_grant=replace(self.default_grant, target_role=coerce_name(role)),
         )
 
     def invert(self) -> DefaultGrantStatement:
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
-    def to_sql(self) -> TextClause:
+    def to_sql(self) -> list[str]:
         result = []
 
         result.append("ALTER DEFAULT PRIVILEGES")
@@ -201,8 +193,8 @@ class DefaultGrantStatement(Generic[G]):
         result.append(f"ON {self.default_grant.grant_type.value}S")
         result.append(_render_to_or_from(self.grant))
 
-        text_result = " ".join(result)
-        return text(text_result + ";")
+        text_result = " ".join(result) + ";"
+        return [text_result]
 
     def explode(self):
         return [
@@ -263,7 +255,7 @@ class DefaultGrantStatement(Generic[G]):
 
 
 @dataclass(frozen=True)
-class GrantStatement(Generic[G]):
+class GrantStatement(base.GrantStatement, Generic[G]):
     grant: Grant[G]
     grant_type: GrantTypes
     targets: tuple[str, ...]
@@ -272,9 +264,9 @@ class GrantStatement(Generic[G]):
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
     def for_role(self, role: str | HasName) -> GrantStatement:
-        return replace(self, grant=replace(self.grant, target_role=_coerce_name(role)))
+        return replace(self, grant=replace(self.grant, target_role=coerce_name(role)))
 
-    def to_sql(self) -> TextClause:
+    def to_sql(self) -> list[str]:
         result = []
 
         result.append(_render_grant_or_revoke(self.grant))
@@ -288,8 +280,8 @@ class GrantStatement(Generic[G]):
         if grant_option:
             result.append(grant_option)
 
-        text_result = " ".join(result)
-        return text(text_result + ";")
+        text_result = " ".join(result) + ";"
+        return [text_result]
 
     def explode(self):
         return [
@@ -367,16 +359,10 @@ def _render_grant_option(grant: Grant) -> str | None:
 
 
 def _map_schema_names(*schemas: str | HasName):
-    return sorted([_coerce_name(s) for s in schemas])
+    return sorted([coerce_name(s) for s in schemas])
 
 
 def _map_grant_names(variant: G, *grants: str | G):
     return sorted(
         [g if isinstance(g, GrantOptions) else variant.from_string(g) for g in grants]
     )
-
-
-def _coerce_name(name: str | HasName):
-    if isinstance(name, HasName):
-        return name.name
-    return name

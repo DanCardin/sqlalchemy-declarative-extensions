@@ -16,7 +16,8 @@ def get_schemas_snowflake(connection: Connection):
     )
 
     return {
-        Schema(schema) for schema, *_ in connection.execute(schemas_query).fetchall()
+        schema: Schema(schema)
+        for schema, *_ in connection.execute(schemas_query).fetchall()
     }
 
 
@@ -49,3 +50,14 @@ def get_roles_snowflake(connection: Connection, exclude=None):
     ]
 
     return [*roles]
+
+
+def get_databases_snowflake(connection: Connection):
+    from sqlalchemy_declarative_extensions.database.base import Database
+
+    databases_query = text("SELECT database_name" " FROM information_schema.databases")
+
+    return {
+        database: Database(database)
+        for database, *_ in connection.execute(databases_query).fetchall()
+    }

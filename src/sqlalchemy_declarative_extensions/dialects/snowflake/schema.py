@@ -7,7 +7,7 @@ from typing_extensions import Self
 from sqlalchemy_declarative_extensions.schema import base
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(order=True)
 class Schema(base.Schema):
     """Represents a schema."""
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, Union
+from typing import Generic, Iterable, Sequence, TypeVar, Union
 
-from sqlalchemy_declarative_extensions.dialects import postgresql
+from sqlalchemy.sql.elements import TextClause
+from typing_extensions import Self
 
-G = Union[postgresql.DefaultGrantStatement, postgresql.GrantStatement]
+from sqlalchemy_declarative_extensions.sql import split_schema
 
 
 @dataclass
@@ -65,3 +66,90 @@ class Grants:
 
     def are(self, *grants: G):
         return replace(self, grants=list(grants))
+
+
+Grant = TypeVar("Grant")
+DefaultGrant = TypeVar("DefaultGrant")
+GrantType = TypeVar("GrantType")
+
+
+@dataclass(frozen=True)
+class DefaultGrantStatement(Generic[DefaultGrant, Grant]):
+    default_grant: DefaultGrant
+    grant: Grant
+
+    def invert(self) -> Self:
+        raise NotImplementedError()
+
+    def to_sql(self) -> list[str]:
+        raise NotImplementedError()
+
+    def explode(self) -> list[Self]:
+        raise NotImplementedError()
+
+    @classmethod
+    def combine(cls, grants: Sequence[Self]) -> list[Self]:
+        raise NotImplementedError()
+
+
+@dataclass(frozen=True)
+class GrantStatement(Generic[Grant, GrantType]):
+    grant: Grant
+    grant_type: GrantType
+
+    def invert(self) -> Self:
+        raise NotImplementedError()
+
+    def to_sql(self) -> list[str]:
+        raise NotImplementedError()
+
+    def explode(self) -> list[Self]:
+        raise NotImplementedError()
+
+    @classmethod
+    def combine(cls, grants: list[GrantStatement]):
+        raise NotImplementedError()
+
+
+def render_grant_or_revoke(grant: Grant) -> str:
+    if grant.revoke_:
+        return "REVOKE"
+    return "GRANT"
+
+
+def render_to_or_from(grant: Grant) -> str:
+    if grant.revoke_:
+        return f'FROM "{grant.target_role}"'
+    return f'TO "{grant.target_role}"'
+
+
+def quote_table_name(name: str):
+    schema, name = split_schema(name)
+
+    if schema:
+        return f'"{schema}"."{name}"'
+    return f'"{name}"'
+
+
+def _render_privilege(grant: Grant, grant_type: DefaultGrantTypes | GrantTypes) -> str:
+    grant_variant_cls = grant_type.to_variants()
+    return ", ".join(v.value for v in grant_variant_cls.from_strings(grant.grants))
+
+
+def render_grant_option(grant: Grant) -> str | None:
+    if grant.grant_option:
+        return "WITH GRANT OPTION"
+    return None
+
+
+def map_schema_names(*schemas: str | HasName):
+    return sorted([coerce_name(s) for s in schemas])
+
+
+def map_grant_names(variant: G, *grants: str | G):
+    return sorted(
+        [g if isinstance(g, GrantOptions) else variant.from_string(g) for g in grants]
+    )
+
+
+G = Union[DefaultGrantStatement, GrantStatement]

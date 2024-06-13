@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Iterable, Sequence
 
 from typing_extensions import Self
+
 from sqlalchemy_declarative_extensions.context import context
 
 if TYPE_CHECKING:
@@ -11,37 +12,37 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class Schemas:
-    """A collection of schemas and the settings for diff/collection.
+class Databases:
+    """A collection of databases and the settings for diff/collection.
 
     Arguments:
-        schemas: The list of grants
+        databases: The list of grants
         ignore_unspecified: Optionally ignore detected grants which do not match
             the set of defined grants.
 
     Examples:
-        - No schemas
+        - No databases
 
-        >>> schemas = Schemas()
+        >>> databases = Databases()
 
         - Some options set
 
-        >>> schemas = Schemas(ignore_unspecified=True)
+        >>> databases = Databases(ignore_unspecified=True)
 
-        - With some actual schemas
+        - With some actual databases
 
-        >>> from sqlalchemy_declarative_extensions import Schema, Schemas
-        >>> schema = Schemas().are("foo", Schema("bar"), ...)
+        >>> from sqlalchemy_declarative_extensions import Database, Databases
+        >>> database = Databases().are("foo", Database("bar"), ...)
     """
 
-    schemas: Sequence[Schema] = ()
+    databases: Sequence[Database] = ()
     ignore_unspecified: bool = False
 
     @classmethod
     def coerce_from_unknown(
-        cls, unknown: None | Iterable[Schema | str] | Schemas
-    ) -> Schemas | None:
-        if isinstance(unknown, Schemas):
+        cls, unknown: None | Iterable[Database | str] | Databases
+    ) -> Databases | None:
+        if isinstance(unknown, Databases):
             return unknown
 
         if isinstance(unknown, Iterable):
@@ -50,19 +51,21 @@ class Schemas:
         return None
 
     def __iter__(self):
-        yield from self.schemas
+        yield from self.databases
 
-    def are(self, *schemas: Schema | str):
-        """Declare the set of schemas which should exist."""
+    def are(self, *databases: Database | str):
+        """Declare the set of databases which should exist."""
         return replace(
             self,
-            schemas=tuple([Schema.coerce_from_unknown(schema) for schema in schemas]),
+            databases=tuple(
+                [Database.coerce_from_unknown(database) for database in databases]
+            ),
         )
 
 
 @dataclass(order=True)
-class Schema:
-    """Represents a schema."""
+class Database:
+    """Represents a database."""
 
     name: str
 
@@ -74,13 +77,13 @@ class Schema:
 
     @classmethod
     def coerce_from_unknown(cls, unknown: Self | str) -> Self:
-        if isinstance(unknown, Schema):
+        if isinstance(unknown, Database):
             return unknown
 
         return cls(unknown)
 
     def to_sql_create(self) -> str:
-        return f"CREATE SCHEMA {self.name}"
+        return f"CREATE DATABASE {self.name}"
 
     def to_sql_drop(self) -> str:
-        return f"DROP SCHEMA {self.name}"
+        return f"DROP DATABASE {self.name}"

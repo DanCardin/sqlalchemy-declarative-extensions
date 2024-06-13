@@ -4,25 +4,22 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass, replace
-from typing import Generic
+from typing import TYPE_CHECKING, Generic, Sequence
 
-from sqlalchemy.sql.elements import TextClause
-from sqlalchemy.sql.expression import text
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.context import context
 from sqlalchemy_declarative_extensions.dialects.snowflake.grant_type import (
-    FutureGrantTypes,
+    DefaultGrantTypes,
     G,
     GrantOptions,
     GrantTypes,
 )
-from sqlalchemy_declarative_extensions.sql import split_schema
-from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
+from sqlalchemy_declarative_extensions.grant import base
+from sqlalchemy_declarative_extensions.sql import HasName, coerce_name, split_schema
 
-
-@runtime_checkable
-class HasName(Protocol):
-    name: str
+if TYPE_CHECKING:
+    from sqlalchemy_declarative_extensions.role import Role
 
 
 @dataclass(frozen=True)
@@ -42,7 +39,7 @@ class Grant(Generic[G]):
     ) -> Grant:
         return cls(
             grants=tuple(sorted([grant, *grants])),  # type: ignore
-            target_role=_coerce_name(to),
+            target_role=coerce_name(to),
             grant_option=grant_option,
         )
 
@@ -56,8 +53,19 @@ class Grant(Generic[G]):
         variants = object_type.to_variants()
         grant = replace(self, grants=tuple(_map_grant_names(variants, *self.grants)))
 
-        names = [_coerce_name(obj) for obj in objects]
-        return GrantStatement(grant, grant_type=object_type, targets=tuple(names))
+        names = [coerce_name(obj) for obj in objects]
+        return GrantStatement(
+            grant,
+            grant_type=object_type,
+            targets=tuple(names),
+            use_role=coerce_name(context.role) if context.role else None,
+        )
+
+    def on_databases(self, *databases: str | HasName):
+        return self.on_objects(*databases, object_type=GrantTypes.database)
+
+    def on_warehouses(self, *warehouses: str | HasName):
+        return self.on_objects(*warehouses, object_type=GrantTypes.warehouse)
 
     def on_tables(self, *tables: str | HasName):
         return self.on_objects(*tables, object_type=GrantTypes.table)
@@ -73,57 +81,98 @@ class Grant(Generic[G]):
 
 
 @dataclass(frozen=True)
-class FutureGrant:
-    grant_type: FutureGrantTypes
-    in_schemas: tuple[str, ...]
+class DefaultGrant:
+    grant_type: DefaultGrantTypes
+    in_databases: tuple[str, ...] = ()
+    in_schemas: tuple[str, ...] = ()
     target_role: str | None = None
 
     @classmethod
-    def on_tables_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+    def _on_kind_in_database(
+        cls,
+        grant_type: DefaultGrantTypes,
+        in_databases: tuple[str | HasName, ...],
+        for_role: HasName | None = None,
     ) -> Self:
-        schemas = _map_schema_names(*in_schemas)
+        databases = _map_schema_names(*in_databases)
         return cls(
-            grant_type=FutureGrantTypes.table,
-            in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+            grant_type=grant_type,
+            in_databases=tuple(databases),
+            target_role=coerce_name(for_role) if for_role is not None else None,
         )
 
     @classmethod
-    def on_sequences_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+    def on_schemas_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
     ) -> Self:
-        schemas = _map_schema_names(*in_schemas)
-        return cls(
-            grant_type=FutureGrantTypes.sequence,
-            in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
-        )
+        return cls._on_kind_in_database(DefaultGrantTypes.schema, databases, for_role)
+
+    @classmethod
+    def on_tables_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.table, databases, for_role)
+
+    @classmethod
+    def on_sequences_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.sequence, databases, for_role)
 
     @classmethod
     def on_types_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+        cls, *databases: str | HasName, for_role: HasName | None = None
     ) -> Self:
-        schemas = _map_schema_names(*in_schemas)
-        return cls(
-            grant_type=FutureGrantTypes.type,
-            in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+        return cls._on_kind_in_database(DefaultGrantTypes.type, databases, for_role)
+
+    @classmethod
+    def on_functions_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.function, databases, for_role)
+
+    @classmethod
+    def on_procedures_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(
+            DefaultGrantTypes.procedure, databases, for_role
         )
 
     @classmethod
-    def on_functions_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+    def on_tasks_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
     ) -> Self:
-        schemas = _map_schema_names(*in_schemas)
-        return cls(
-            grant_type=FutureGrantTypes.function,
-            in_schemas=tuple(schemas),
-            target_role=_coerce_name(for_role) if for_role is not None else None,
+        return cls._on_kind_in_database(DefaultGrantTypes.task, databases, for_role)
+
+    @classmethod
+    def on_views_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.view, databases, for_role)
+
+    @classmethod
+    def on_stages_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.stage, databases, for_role)
+
+    @classmethod
+    def on_file_formats_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(
+            DefaultGrantTypes.file_format, databases, for_role
         )
 
-    def for_role(self, role: str):
-        return replace(self, target_role=role)
+    @classmethod
+    def on_streams_in_database(
+        cls, *databases: str | HasName, for_role: HasName | None = None
+    ) -> Self:
+        return cls._on_kind_in_database(DefaultGrantTypes.stream, databases, for_role)
+
+    def for_role(self, role: Role | str):
+        return replace(self, target_role=coerce_name(role))
 
     def grant(
         self,
@@ -137,53 +186,65 @@ class FutureGrant:
                 grants=tuple(
                     _map_grant_names(self.grant_type.to_variants(), grant, *grants)
                 ),
-                target_role=to,
+                target_role=coerce_name(to),
                 grant_option=grant_option,
             )
-        return FutureGrantStatement(self, grant)
+        return DefaultGrantStatement(
+            self, grant, use_role=coerce_name(context.role) if context.role else None
+        )
 
 
 @dataclass(frozen=True)
-class FutureGrantStatement(Generic[G]):
-    future_grant: FutureGrant
+class DefaultGrantStatement(base.DefaultGrantStatement, Generic[G]):
+    default_grant: DefaultGrant
     grant: Grant[G]
+    use_role: Role | str | None = None
 
-    def for_role(self, role: str | HasName) -> FutureGrantStatement:
+    def for_role(self, role: str | HasName) -> DefaultGrantStatement:
         return replace(
             self,
-            default_grant=replace(self.future_grant, target_role=_coerce_name(role)),
+            default_grant=replace(self.default_grant, target_role=coerce_name(role)),
         )
 
-    def invert(self) -> FutureGrantStatement:
+    def invert(self) -> DefaultGrantStatement:
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
-    def to_sql(self) -> TextClause:
+    def to_sql(self) -> list[str]:
         result = []
 
-        result.append("ALTER DEFAULT PRIVILEGES")
-
-        if self.future_grant.target_role:
-            result.append(f'FOR ROLE "{self.future_grant.target_role}"')
-
-        schemas_str = ", ".join([f'"{t}"' for t in self.future_grant.in_schemas])
-        result.append(f"IN SCHEMA {schemas_str}")
-
         result.append(_render_grant_or_revoke(self.grant))
-        result.append(_render_privilege(self.grant, self.future_grant.grant_type))
+        result.append(_render_privilege(self.grant, self.default_grant.grant_type))
+        result.append(f"ON FUTURE {self.default_grant.grant_type.value}S")
 
-        result.append(f"ON {self.future_grant.grant_type.value}S")
+        in_databases = self.default_grant.in_databases
+        in_schemas = self.default_grant.in_schemas
+        assert (in_databases or in_schemas) and not (in_databases and in_schemas)
+
+        if in_databases:
+            schemas_str = ", ".join([f'"{t}"' for t in in_databases])
+            result.append(f"IN DATABASE {schemas_str}")
+
+        if in_schemas:
+            schemas_str = ", ".join([f'"{t}"' for t in in_schemas])
+            result.append(f"IN SCHEMA {schemas_str}")
+
         result.append(_render_to_or_from(self.grant))
 
-        text_result = " ".join(result)
-        return text(text_result + ";")
+        grant_option = _render_grant_option(self.grant)
+        if grant_option:
+            result.append(grant_option)
+
+        text_result = " ".join(result) + ";"
+        return [text_result]
 
     def explode(self):
+        # TODO: Also do in_schemas, also disallow in_schemas and in_databases at the same time
         return [
-            FutureGrantStatement(
-                future_grant=FutureGrant(
-                    grant_type=self.future_grant.grant_type,
+            DefaultGrantStatement(
+                default_grant=DefaultGrant(
+                    grant_type=self.default_grant.grant_type,
                     in_schemas=(schema,),
-                    target_role=self.future_grant.target_role,
+                    target_role=self.default_grant.target_role,
                 ),
                 grant=Grant(
                     grants=(grant,),
@@ -191,21 +252,23 @@ class FutureGrantStatement(Generic[G]):
                     grant_option=self.grant.grant_option,
                     revoke_=self.grant.revoke_,
                 ),
+                use_role=self.use_role,
             )
-            for schema in self.future_grant.in_schemas
+            for schema in self.default_grant.in_databases
             for grant in self.grant.grants
         ]
 
     @classmethod
-    def combine(cls, grants: list[FutureGrantStatement]):
-        def by_statement(g: FutureGrantStatement):
+    def combine(cls, grants: list[DefaultGrantStatement]):
+        def by_statement(g: DefaultGrantStatement):
             return (
-                g.future_grant.grant_type,
-                g.future_grant.in_schemas,
-                g.future_grant.target_role or "",
+                g.default_grant.grant_type,
+                g.default_grant.in_schemas,
+                g.default_grant.target_role or "",
                 g.grant.target_role,
                 g.grant.grant_option,
                 g.grant.revoke_,
+                g.use_role,
             )
 
         result = []
@@ -217,9 +280,10 @@ class FutureGrantStatement(Generic[G]):
             target_role,
             grant_option,
             revoke,
+            use_role,
         ), group in groups:
             item = cls(
-                future_grant=FutureGrant(
+                default_grant=DefaultGrant(
                     grant_type=grant_type,
                     in_schemas=in_schemas,
                     target_role=default_target_role or None,
@@ -230,24 +294,26 @@ class FutureGrantStatement(Generic[G]):
                     revoke_=revoke,
                     grants=tuple([g for i in group for g in i.grant.grants]),
                 ),
+                use_role=use_role,
             )
             result.append(item)
         return result
 
 
 @dataclass(frozen=True)
-class GrantStatement(Generic[G]):
+class GrantStatement(base.GrantStatement, Generic[G]):
     grant: Grant[G]
     grant_type: GrantTypes
     targets: tuple[str, ...]
+    use_role: Role | str | None = None
 
     def invert(self) -> GrantStatement:
         return replace(self, grant=replace(self.grant, revoke_=not self.grant.revoke_))
 
     def for_role(self, role: str | HasName) -> GrantStatement:
-        return replace(self, grant=replace(self.grant, target_role=_coerce_name(role)))
+        return replace(self, grant=replace(self.grant, target_role=coerce_name(role)))
 
-    def to_sql(self) -> TextClause:
+    def to_sql(self) -> list[str]:
         result = []
 
         result.append(_render_grant_or_revoke(self.grant))
@@ -261,8 +327,8 @@ class GrantStatement(Generic[G]):
         if grant_option:
             result.append(grant_option)
 
-        text_result = " ".join(result)
-        return text(text_result + ";")
+        text_result = " ".join(result) + ";"
+        return [text_result]
 
     def explode(self):
         return [
@@ -275,25 +341,34 @@ class GrantStatement(Generic[G]):
                 ),
                 grant_type=self.grant_type,
                 targets=(target,),
+                use_role=self.use_role,
             )
             for target in self.targets
             for grant in self.grant.grants
         ]
 
     @classmethod
-    def combine(cls, grants: list[GrantStatement]):
-        def by_statement(g: GrantStatement):
+    def combine(cls, grants: Sequence[Self]) -> list[Self]:
+        def by_statement(g: Self):
             return (
                 g.grant_type,
                 g.targets,
                 g.grant.target_role,
                 g.grant.grant_option,
                 g.grant.revoke_,
+                g.use_role,
             )
 
         result = []
         groups = itertools.groupby(sorted(grants, key=by_statement), key=by_statement)
-        for (grant_type, targets, target_role, grant_option, revoke), group in groups:
+        for (
+            grant_type,
+            targets,
+            target_role,
+            grant_option,
+            revoke,
+            use_role,
+        ), group in groups:
             item = cls(
                 grant_type=grant_type,
                 targets=targets,
@@ -303,6 +378,7 @@ class GrantStatement(Generic[G]):
                     revoke_=revoke,
                     grants=tuple([g for i in group for g in i.grant.grants]),
                 ),
+                use_role=use_role,
             )
             result.append(item)
         return result
@@ -328,7 +404,7 @@ def _quote_table_name(name: str):
     return f'"{name}"'
 
 
-def _render_privilege(grant: Grant, grant_type: FutureGrantTypes | GrantTypes) -> str:
+def _render_privilege(grant: Grant, grant_type: DefaultGrantTypes | GrantTypes) -> str:
     grant_variant_cls = grant_type.to_variants()
     return ", ".join(v.value for v in grant_variant_cls.from_strings(grant.grants))
 
@@ -340,16 +416,10 @@ def _render_grant_option(grant: Grant) -> str | None:
 
 
 def _map_schema_names(*schemas: str | HasName):
-    return sorted([_coerce_name(s) for s in schemas])
+    return sorted([coerce_name(s) for s in schemas])
 
 
 def _map_grant_names(variant: G, *grants: str | G):
     return sorted(
         [g if isinstance(g, GrantOptions) else variant.from_string(g) for g in grants]
     )
-
-
-def _coerce_name(name: str | HasName):
-    if isinstance(name, HasName):
-        return name.name
-    return name
