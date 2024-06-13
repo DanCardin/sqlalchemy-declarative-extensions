@@ -19,7 +19,11 @@ class FromStrings(enum.Enum):
     ) -> FromStringsSelf:
         if isinstance(string, str):
             normalized_str = string.upper()
-            return cls(normalized_str)
+            try:
+                return cls(normalized_str)
+            except ValueError as e:
+                options_str = ", ".join([str(v.value) for v in cls])
+                raise ValueError(f"{e}. Valid options include: {options_str}") from None
         return string
 
     def __lt__(self, other):

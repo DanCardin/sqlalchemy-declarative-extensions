@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlalchemy_declarative_extensions.typing import Protocol, runtime_checkable
+
 
 def qualify_name(schema: str | None, name: str, quote=False) -> str:
     if not schema or schema == "public":
@@ -20,3 +22,14 @@ def split_schema(
     except ValueError:
         table = tablename
     return schema, table
+
+
+@runtime_checkable
+class HasName(Protocol):
+    name: str
+
+
+def coerce_name(name: str | HasName):
+    if isinstance(name, HasName):
+        return name.name
+    return name

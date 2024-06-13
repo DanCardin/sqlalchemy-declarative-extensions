@@ -15,8 +15,5 @@ def role_ddl(metadata: MetaData, connection: Connection, **_):
     result = compare_roles(connection, roles)
     for op in result:
         statements = op.to_sql()
-        if isinstance(statements, list):
-            for statement in statements:
-                connection.execute(text(statement))
-        else:
-            connection.execute(text(statements))
+        for statement in statements:
+            connection.execute(text(statement))

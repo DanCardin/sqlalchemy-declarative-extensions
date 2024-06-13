@@ -9,7 +9,9 @@ def get_schemas_sqlite(connection: Connection):
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
     schemas = connection.execute(text("PRAGMA database_list")).fetchall()
-    return {Schema(schema) for _, schema, *_ in schemas if schema not in {"main"}}
+    return {
+        schema: Schema(schema) for _, schema, *_ in schemas if schema not in {"main"}
+    }
 
 
 def check_schema_exists_sqlite(connection: Connection, name: str) -> bool:
