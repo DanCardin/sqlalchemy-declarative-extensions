@@ -131,13 +131,13 @@ def declare_database(
 
 def register_sqlalchemy_events(
     maybe_metadata: MetaData | HasMetaData,
-    schemas=False,
-    roles=False,
-    grants=False,
-    views=False,
-    functions=False,
-    triggers=False,
-    rows=False,
+    schemas: bool | list[str] = False,
+    roles: bool | list[str] = False,
+    grants: bool = False,
+    views: bool | list[str] = False,
+    functions: bool | list[str] = False,
+    triggers: bool | list[str] = False,
+    rows: bool | list[str] = False,
 ):
     """Register handlers for supported object types into SQLAlchemy's event system.
 
@@ -148,6 +148,12 @@ def register_sqlalchemy_events(
 
     Note this is the opposite of the defaults when registering against SQLAlchemy's
     event system.
+
+    Valid parameter/flag values include:
+
+        - bool: Enables all objects of that object type
+        - list[str]: Performs a glob-match of each item by its unique identifier (typically name),
+                     and ignores all non-matching objects.
     """
     from sqlalchemy_declarative_extensions.function.ddl import function_ddl
     from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
@@ -171,17 +177,19 @@ def register_sqlalchemy_events(
     concrete_rows = metadata.info.get("rows")
 
     if concrete_schemas and schemas:
+        schema_filter = schemas if isinstance(schemas, list) else None
         event.listen(
             metadata,
             "before_create",
-            schema_ddl,
+            schema_ddl(concrete_schemas, schema_filter),
         )
 
     if concrete_roles and roles:
+        role_filter = roles if isinstance(roles, list) else None
         event.listen(
             metadata,
             "before_create",
-            role_ddl,
+            role_ddl(concrete_roles, role_filter),
         )
 
     if concrete_grants and grants:
@@ -198,29 +206,33 @@ def register_sqlalchemy_events(
         )
 
     if concrete_views and views:
+        view_filter = views if isinstance(views, list) else None
         event.listen(
             metadata,
             "after_create",
-            view_ddl(concrete_views),
+            view_ddl(concrete_views, view_filter),
         )
 
     if concrete_functions and functions:
+        function_filter = functions if isinstance(functions, list) else None
         event.listen(
             metadata,
             "after_create",
-            function_ddl(concrete_functions),
+            function_ddl(concrete_functions, function_filter),
         )
 
     if concrete_triggers and triggers:
+        trigger_filter = triggers if isinstance(triggers, list) else None
         event.listen(
             metadata,
             "after_create",
-            trigger_ddl(concrete_triggers),
+            trigger_ddl(concrete_triggers, trigger_filter),
         )
 
     if concrete_rows and rows:
+        row_filter = rows if isinstance(rows, list) else None
         event.listen(
             metadata,
             "after_create",
-            rows_query(concrete_rows),
+            rows_query(concrete_rows, row_filter),
         )

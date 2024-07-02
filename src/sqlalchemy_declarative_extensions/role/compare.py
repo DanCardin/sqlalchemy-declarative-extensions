@@ -37,7 +37,7 @@ class CreateRoleOp(RoleOp):
 @dataclass
 class UpdateRoleOp(RoleOp):
     from_role: Role
-    to_role: Role
+    role: Role
 
     @classmethod
     def update_role(
@@ -52,10 +52,10 @@ class UpdateRoleOp(RoleOp):
         return operations.invoke(op)
 
     def reverse(self):
-        return UpdateRoleOp(from_role=self.to_role, to_role=self.from_role)
+        return UpdateRoleOp(from_role=self.role, role=self.from_role)
 
     def to_sql(self):
-        return self.from_role.to_sql_update(self.to_role)
+        return self.from_role.to_sql_update(self.role)
 
 
 @dataclass
@@ -118,7 +118,7 @@ def compare_roles(connection: Connection, roles: Roles) -> list[Operation]:
                 result.append(
                     UpdateRoleOp(
                         from_role=existing_role,
-                        to_role=concrete_defined_role,
+                        role=concrete_defined_role,
                     )
                 )
 
