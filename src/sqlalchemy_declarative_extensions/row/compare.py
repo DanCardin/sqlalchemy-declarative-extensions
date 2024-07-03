@@ -11,7 +11,7 @@ from sqlalchemy_declarative_extensions.dialects import (
     check_table_exists,
 )
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
-from sqlalchemy_declarative_extensions.sql import split_schema
+from sqlalchemy_declarative_extensions.sql import match_name, split_schema
 from sqlalchemy_declarative_extensions.sqlalchemy import row_to_dict, select
 
 
@@ -143,7 +143,12 @@ def get_metadata(conn: Connection, tablename: str):
 RowOp = Union[InsertRowOp, UpdateRowOp, DeleteRowOp]
 
 
-def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list[RowOp]:
+def compare_rows(
+    connection: Connection,
+    metadata: MetaData,
+    rows: Rows,
+    row_filter: list[str] | None = None,
+) -> list[RowOp]:
     assert metadata.tables is not None
 
     result: list[RowOp] = []
@@ -157,6 +162,9 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
     # Collects the ongoing filter required to select all referenced records (by their pk)
     filters_by_table: dict[Table, list] = {}
     for row in rows:
+        if not match_name(row.qualified_name, row_filter):
+            continue
+
         table = metadata.tables.get(row.qualified_name)
         if table is None:
             raise ValueError(f"Unknown table: {row.qualified_name}")
@@ -230,6 +238,9 @@ def compare_rows(connection: Connection, metadata: MetaData, rows: Rows) -> list
     # Deletes should get inserted first, so as to avoid foreign key constraint errors.
     if not rows.ignore_unspecified:
         for table_name in rows.included_tables:
+            if not match_name(table_name, row_filter):
+                continue
+
             table = metadata.tables[table_name]
             filters_by_table.setdefault(table, [])
 

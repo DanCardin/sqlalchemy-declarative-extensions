@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
+from collections.abc import Sequence
+
 
 def qualify_name(schema: str | None, name: str, quote=False) -> str:
     if not schema or schema == "public":
@@ -20,3 +23,13 @@ def split_schema(
     except ValueError:
         table = tablename
     return schema, table
+
+
+def match_name(name: str, globs: Sequence[str] | None) -> bool:
+    if globs is None:
+        return True
+
+    for glob in globs:
+        if fnmatch.fnmatch(name, glob):
+            return True
+    return False

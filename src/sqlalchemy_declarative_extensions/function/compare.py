@@ -25,13 +25,13 @@ class CreateFunctionOp:
 @dataclass
 class UpdateFunctionOp:
     from_function: Function
-    to_function: Function
+    function: Function
 
     def reverse(self):
-        return UpdateFunctionOp(self.to_function, self.from_function)
+        return UpdateFunctionOp(self.function, self.from_function)
 
     def to_sql(self) -> str:
-        return self.to_function.to_sql_update()
+        return self.function.to_sql_update()
 
 
 @dataclass

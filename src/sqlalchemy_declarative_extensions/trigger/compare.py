@@ -24,15 +24,13 @@ class CreateTriggerOp:
 @dataclass
 class UpdateTriggerOp:
     from_trigger: Trigger
-    to_trigger: Trigger
+    trigger: Trigger
 
     def reverse(self):
-        return UpdateTriggerOp(
-            from_trigger=self.to_trigger, to_trigger=self.from_trigger
-        )
+        return UpdateTriggerOp(from_trigger=self.trigger, trigger=self.from_trigger)
 
     def to_sql(self, connection: Connection) -> list[str]:
-        return self.to_trigger.to_sql_update(connection)
+        return self.trigger.to_sql_update(connection)
 
 
 @dataclass

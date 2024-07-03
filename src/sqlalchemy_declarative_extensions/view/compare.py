@@ -26,13 +26,13 @@ class CreateViewOp:
 @dataclass
 class UpdateViewOp:
     from_view: View
-    to_view: View
+    view: View
 
     def reverse(self):
-        return UpdateViewOp(from_view=self.to_view, to_view=self.from_view)
+        return UpdateViewOp(from_view=self.view, view=self.from_view)
 
     def to_sql(self, dialect: Dialect) -> list[str]:
-        return self.to_view.to_sql_update(self.from_view, dialect)
+        return self.view.to_sql_update(self.from_view, dialect)
 
 
 @dataclass
