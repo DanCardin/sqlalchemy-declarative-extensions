@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from sqlalchemy_declarative_extensions.context import context
 
-@dataclass(frozen=True)
+
+@dataclass
 class Role:
     """Represent a role.
 
@@ -18,6 +20,16 @@ class Role:
 
     in_roles: list[Role | str] | None = None
     external: bool = False
+
+    use_role: Role | str | None = None
+
+    def __post_init__(self):
+        if self.use_role:
+            return
+
+        use_role = context.role
+        if use_role:
+            self.use_role = use_role
 
     @classmethod
     def coerce_from_unknown(cls, unknown: str | Role) -> Role:
@@ -41,7 +53,9 @@ class Role:
 
     def normalize(self):
         return replace(
-            self, in_roles=role_names(self.in_roles) if self.in_roles else None
+            self,
+            in_roles=role_names(self.in_roles) if self.in_roles else None,
+            use_role=role_name(self.use_role) if self.use_role else None,
         )
 
     def to_sql_create(self) -> list[str]:
@@ -59,6 +73,12 @@ class Role:
     def to_sql_drop(self) -> str:
         return f'DROP ROLE "{self.name}";'
 
+    def __enter__(self):
+        context.enter_role(self)
+
+    def __exit__(self, *_):
+        context.exit_role()
+
 
 def by_name(r: Role | str) -> str:
     if isinstance(r, Role):
@@ -66,5 +86,9 @@ def by_name(r: Role | str) -> str:
     return r
 
 
+def role_name(role: Role | str) -> str:
+    return role.name if isinstance(role, Role) else role
+
+
 def role_names(roles: list[Role | str]) -> list[str]:
-    return [r.name if isinstance(r, Role) else r for r in roles]
+    return [role_name(r) for r in roles]

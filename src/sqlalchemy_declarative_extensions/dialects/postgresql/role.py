@@ -7,14 +7,14 @@ from sqlalchemy_declarative_extensions.role import generic
 
 
 class ValidUntilInifinty:
-    """Sentinal value to indicate that the role's `valid_until` field is infinite.
+    """Sentinel value to indicate that the role's `valid_until` field is infinite.
 
     Using normal `ALTER ROLE` statements, setting `valid until` to `'infinity'` seems
     to be the canonical method, rather than being able to unset the value entirely.
     """
 
 
-@dataclass(frozen=True)
+@dataclass
 class Role(generic.Role):
     """Define a role object.
 
@@ -100,7 +100,16 @@ class Role(generic.Role):
             segments.append(segment)
 
         command = " ".join(segments)
-        return [command + ";"]
+
+        result = []
+        if self.use_role:
+            result.append(f"SET ROLE {self.use_role};")
+
+        result.append(command + ";")
+
+        if self.use_role:
+            result.append("RESET ROLE")
+        return result
 
     def to_sql_update(self, to_role: Role) -> list[str]:
         role_name = to_role.name
