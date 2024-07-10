@@ -14,12 +14,17 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
     FunctionSecurity,
 )
+from sqlalchemy_declarative_extensions.dialects.postgresql.procedure import (
+    Procedure,
+    ProcedureSecurity,
+)
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     default_acl_query,
     functions_query,
     object_acl_query,
     objects_query,
+    procedures_query,
     roles_query,
     schema_exists_query,
     schemas_query,
@@ -159,20 +164,52 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
     )
 
 
+def get_procedures_postgresql(connection: Connection) -> list[Procedure]:
+    procedures = []
+    for f in connection.execute(procedures_query).fetchall():
+        name = f.name
+        definition = f.source
+        language = f.language
+        schema = f.schema if f.schema != "public" else None
+
+        procedure = Procedure(
+            name=name,
+            definition=definition,
+            language=language,
+            schema=schema,
+            security=(
+                ProcedureSecurity.definer
+                if f.security_definer
+                else ProcedureSecurity.invoker
+            ),
+        )
+        procedures.append(procedure)
+
+    return procedures
+
+
 def get_functions_postgresql(connection: Connection) -> list[Function]:
     functions = []
     for f in connection.execute(functions_query).fetchall():
+        name = f.name
+        definition = f.source
+        language = f.language
+        schema = f.schema if f.schema != "public" else None
+
         function = Function(
-            name=f.name,
-            definition=f.source,
+            name=name,
+            definition=definition,
+            language=language,
+            schema=schema,
+            security=(
+                FunctionSecurity.definer
+                if f.security_definer
+                else FunctionSecurity.invoker
+            ),
             returns=f.return_type,
-            language=f.language,
-            schema=f.schema if f.schema != "public" else None,
-            security=FunctionSecurity.definer
-            if f.security_definer
-            else FunctionSecurity.invoker,
         )
         functions.append(function)
+
     return functions
 
 

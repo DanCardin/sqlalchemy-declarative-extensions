@@ -6,28 +6,28 @@ from dataclasses import dataclass, replace
 
 from typing_extensions import Self
 
-from sqlalchemy_declarative_extensions.function import base
+from sqlalchemy_declarative_extensions.procedure import base
 
 
 @enum.unique
-class FunctionSecurity(enum.Enum):
+class ProcedureSecurity(enum.Enum):
     invoker = "INVOKER"
     definer = "DEFINER"
 
 
 @dataclass
-class Function(base.Function):
-    """Describes a PostgreSQL function.
+class Procedure(base.Procedure):
+    """Describes a PostgreSQL procedure.
 
     Many attributes are not currently supported. Support is **currently**
     minimal due to being a means to an end for defining triggers, but can certainly
     be evaluated/added on request.
     """
 
-    security: FunctionSecurity = FunctionSecurity.invoker
+    security: ProcedureSecurity = ProcedureSecurity.invoker
 
     @classmethod
-    def from_unknown_function(cls, f: base.Function) -> Self:
+    def from_unknown_procedure(cls, f: base.Procedure) -> Self:
         if isinstance(f, cls):
             return f
 
@@ -36,7 +36,6 @@ class Function(base.Function):
             definition=f.definition,
             language=f.language,
             schema=f.schema,
-            returns=f.returns,
         )
 
     def to_sql_create(self, replace=False):
@@ -45,11 +44,10 @@ class Function(base.Function):
         if replace:
             components.append("OR REPLACE")
 
-        components.append("FUNCTION")
+        components.append("PROCEDURE")
         components.append(self.qualified_name + "()")
-        components.append(f"RETURNS {self.returns}")
 
-        if self.security == FunctionSecurity.definer:
+        if self.security == ProcedureSecurity.definer:
             components.append("SECURITY DEFINER")
 
         components.append(f"LANGUAGE {self.language}")
@@ -57,18 +55,15 @@ class Function(base.Function):
 
         return " ".join(components) + ";"
 
-    def with_security(self, security: FunctionSecurity):
+    def normalize(self) -> Self:
+        definition = textwrap.dedent(self.definition)
+        return replace(self, definition=definition)
+
+    def with_security(self, security: ProcedureSecurity):
         return replace(self, security=security)
 
     def with_security_definer(self):
-        return replace(self, security=FunctionSecurity.definer)
-
-    def normalize(self) -> Function:
-        definition = textwrap.dedent(self.definition)
-        returns = self.returns.lower()
-        return replace(
-            self, definition=definition, returns=type_map.get(returns, returns)
-        )
+        return replace(self, security=ProcedureSecurity.definer)
 
 
 type_map = {

@@ -7,6 +7,7 @@ from sqlalchemy.sql.schema import MetaData
 
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
 from sqlalchemy_declarative_extensions.grant.base import Grants
+from sqlalchemy_declarative_extensions.procedure.base import Procedure, Procedures
 from sqlalchemy_declarative_extensions.role.base import Roles
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.schema.base import Schemas
@@ -59,6 +60,7 @@ def declarative_database(base: T) -> T:
     raw_schemas = getattr(base, "schemas", None)
     raw_grants = getattr(base, "grants", None)
     raw_views = getattr(base, "views", None)
+    raw_procedures = getattr(base, "procedures", None)
     raw_functions = getattr(base, "functions", None)
     raw_triggers = getattr(base, "triggers", None)
     raw_rows = getattr(base, "rows", None)
@@ -73,6 +75,7 @@ def declarative_database(base: T) -> T:
         roles=raw_roles,
         grants=raw_grants,
         views=raw_views,
+        procedures=raw_procedures,
         functions=raw_functions,
         triggers=raw_triggers,
         rows=raw_rows,
@@ -87,6 +90,7 @@ def declare_database(
     roles: None | Iterable[generic.Role | postgresql.Role | str] | Roles = None,
     grants: None | Iterable[G] | Grants = None,
     views: None | Iterable[View] | Views = None,
+    procedures: None | Iterable[Procedure] | Procedures = None,
     functions: None | Iterable[Function] | Functions = None,
     triggers: None | Iterable[Trigger] | Triggers = None,
     rows: None | Iterable[Row] | Rows = None,
@@ -116,6 +120,7 @@ def declare_database(
         roles: The set of roles to ensure exist.
         grants: The set of grants to ensure are applied to the roles/schemas/tables.
         views: The set of views to ensure exist.
+        procedures: The set of procedures to ensure exist.
         functions: The set of functions to ensure exist.
         triggers: The set of triggers to ensure exist.
         rows: The set of rows to ensure are applied to the roles/schemas/tables.
@@ -124,6 +129,7 @@ def declare_database(
     metadata.info["roles"] = Roles.coerce_from_unknown(roles)
     metadata.info["grants"] = Grants.coerce_from_unknown(grants)
     metadata.info["views"] = Views.coerce_from_unknown(views)
+    metadata.info["procedures"] = Procedures.coerce_from_unknown(procedures)
     metadata.info["functions"] = Functions.coerce_from_unknown(functions)
     metadata.info["triggers"] = Triggers.coerce_from_unknown(triggers)
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
@@ -135,6 +141,7 @@ def register_sqlalchemy_events(
     roles: bool | list[str] = False,
     grants: bool = False,
     views: bool | list[str] = False,
+    procedures: bool | list[str] = False,
     functions: bool | list[str] = False,
     triggers: bool | list[str] = False,
     rows: bool | list[str] = False,
@@ -157,6 +164,7 @@ def register_sqlalchemy_events(
     """
     from sqlalchemy_declarative_extensions.function.ddl import function_ddl
     from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
+    from sqlalchemy_declarative_extensions.procedure.ddl import procedure_ddl
     from sqlalchemy_declarative_extensions.role.ddl import role_ddl
     from sqlalchemy_declarative_extensions.row.query import rows_query
     from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
@@ -172,6 +180,7 @@ def register_sqlalchemy_events(
     concrete_roles = metadata.info.get("roles")
     concrete_grants = metadata.info.get("grants")
     concrete_views = metadata.info.get("views")
+    concrete_procedures = metadata.info.get("procedures")
     concrete_functions = metadata.info.get("functions")
     concrete_triggers = metadata.info.get("triggers")
     concrete_rows = metadata.info.get("rows")
@@ -211,6 +220,14 @@ def register_sqlalchemy_events(
             metadata,
             "after_create",
             view_ddl(concrete_views, view_filter),
+        )
+
+    if concrete_procedures and procedures:
+        procedure_filter = procedures if isinstance(procedures, list) else None
+        event.listen(
+            metadata,
+            "after_create",
+            procedure_ddl(concrete_procedures, procedure_filter),
         )
 
     if concrete_functions and functions:

@@ -111,5 +111,6 @@ def clear_registry():
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.grant", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.row", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.view", None)
+    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.procedure", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.function", None)
     sys.modules.pop("sqlalchemy_declarative_extensions.alembic.trigger", None)

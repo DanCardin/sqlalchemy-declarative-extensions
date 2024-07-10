@@ -1,4 +1,7 @@
-from sqlalchemy_declarative_extensions.dialects.postgresql.function import Function
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
+    Function,
+    FunctionSecurity,
+)
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant import (
     DefaultGrant,
     DefaultGrantStatement,
@@ -13,6 +16,10 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.grant_type import (
     SequenceGrants,
     TableGrants,
     TypeGrants,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql.procedure import (
+    Procedure,
+    ProcedureSecurity,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
@@ -35,12 +42,15 @@ __all__ = [
     "DefaultGrantTypes",
     "Function",
     "FunctionGrants",
+    "FunctionSecurity",
     "Grant",
     "Grant",
     "GrantStatement",
     "GrantStatement",
     "GrantTypes",
     "MaterializedOptions",
+    "Procedure",
+    "ProcedureSecurity",
     "Role",
     "SchemaGrants",
     "SequenceGrants",
