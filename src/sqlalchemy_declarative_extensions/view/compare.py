@@ -6,13 +6,16 @@ from fnmatch import fnmatch
 from typing import Union
 
 from sqlalchemy.engine import Connection, Dialect
+from sqlalchemy import MetaData
+from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
+from sqlalchemy_declarative_extensions.op import Op
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 
 @dataclass
-class CreateViewOp:
+class CreateViewOp(Op):
     view: View
 
     def reverse(self):
@@ -23,7 +26,7 @@ class CreateViewOp:
 
 
 @dataclass
-class UpdateViewOp:
+class UpdateViewOp(Op):
     from_view: View
     view: View
 
@@ -35,7 +38,7 @@ class UpdateViewOp:
 
 
 @dataclass
-class DropViewOp:
+class DropViewOp(Op):
     view: View
 
     def reverse(self):
