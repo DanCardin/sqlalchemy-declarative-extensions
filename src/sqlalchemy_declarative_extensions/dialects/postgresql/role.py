@@ -99,23 +99,17 @@ class Role(generic.Role):
             segment = f"IN ROLE {in_roles}"
             segments.append(segment)
 
-        command = " ".join(segments)
-
-        result = []
-        if self.use_role:
-            result.append(f"SET ROLE {self.use_role};")
-
-        result.append(command + ";")
-
-        if self.use_role:
-            result.append("RESET ROLE")
-        return result
+        command = " ".join(segments) + ";"
+        return [command]
 
     def to_sql_update(self, to_role: Role) -> list[str]:
         role_name = to_role.name
         diff = RoleDiff.diff(self, to_role)
 
         result = []
+
+        if self.use_role:
+            result.append(f"SET ROLE {self.use_role};")
 
         diff_options = postgres_render_role_options(diff)
         if diff_options:
@@ -128,6 +122,23 @@ class Role(generic.Role):
 
         for remove_name in diff.remove_roles:
             result.append(f"REVOKE {remove_name} FROM {role_name};")
+
+        if self.use_role:
+            result.append("RESET ROLE")
+        return result
+
+    def to_sql_drop(self) -> list[str]:
+        return [f'DROP ROLE "{self.name}";']
+
+    def to_sql_use(self, undo: bool) -> list[str]:
+        result = []
+        if undo:
+            result.append(
+                "SELECT set_config('role', current_setting('role.original'), false);"
+            )
+        else:
+            result.append("SELECT set_config('role.original', current_role, false);")
+            result.append(f"SELECT set_config('role', '{self.name}', false);")
 
         return result
 

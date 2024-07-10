@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialects import postgresql
+from sqlalchemy_declarative_extensions.dialects import postgresql, snowflake
 from sqlalchemy_declarative_extensions.dialects.mysql.query import (
     check_schema_exists_mysql,
     get_views_mysql,
@@ -23,6 +23,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
 )
 from sqlalchemy_declarative_extensions.dialects.snowflake.query import (
     check_schema_exists_snowflake,
+    get_roles_snowflake,
     get_schemas_snowflake,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
@@ -30,6 +31,7 @@ from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     get_schemas_sqlite,
     get_views_sqlite,
 )
+from sqlalchemy_declarative_extensions.role import Role
 from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch, select
 from sqlalchemy_declarative_extensions.view import View
 
@@ -64,10 +66,13 @@ get_roles = dialect_dispatch(
 
 get_roles = dialect_dispatch(
     postgresql=get_roles_postgresql,
+    snowflake=get_roles_snowflake,
 )
 
 get_role_cls = dialect_dispatch(
     postgresql=lambda _: postgresql.Role,
+    snowflake=lambda _: snowflake.Role,
+    sqlite=lambda _: Role,
 )
 
 get_views = dialect_dispatch(

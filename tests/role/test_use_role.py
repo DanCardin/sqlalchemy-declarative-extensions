@@ -9,7 +9,11 @@ from sqlalchemy_declarative_extensions.api import (
     register_sqlalchemy_events,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import Role
-from sqlalchemy_declarative_extensions.role.compare import CreateRoleOp, compare_roles
+from sqlalchemy_declarative_extensions.role.compare import (
+    CreateRoleOp,
+    UseRoleOp,
+    compare_roles,
+)
 
 pg = create_postgres_fixture(scope="function")
 
@@ -29,9 +33,12 @@ def test_no_attempt_to_create(pg):
     with pg.connect() as conn:
         ops = compare_roles(conn, roles)
 
-    assert len(ops) == 2
+    assert len(ops) == 3
     assert isinstance(ops[1], CreateRoleOp)
     assert ops[1].role.use_role == "used"
+
+    assert isinstance(ops[2], UseRoleOp)
+    assert ops[2].undo is True
 
     with pytest.raises(sqlalchemy.exc.ProgrammingError) as e:
         metadata.create_all(bind=pg)
