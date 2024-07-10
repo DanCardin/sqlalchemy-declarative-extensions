@@ -6,44 +6,45 @@ from fnmatch import fnmatch
 from typing import Union
 
 from sqlalchemy import MetaData
-from sqlalchemy.engine import Connection, Dialect
+from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
+from sqlalchemy_declarative_extensions.op import Op
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 
 @dataclass
-class CreateViewOp:
+class CreateViewOp(Op):
     view: View
 
     def reverse(self):
         return DropViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
-        return self.view.to_sql_create(dialect)
+    def to_sql(self) -> list[str]:
+        return self.view.to_sql_create()
 
 
 @dataclass
-class UpdateViewOp:
+class UpdateViewOp(Op):
     from_view: View
     view: View
 
     def reverse(self):
         return UpdateViewOp(from_view=self.view, view=self.from_view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
-        return self.view.to_sql_update(self.from_view, dialect)
+    def to_sql(self) -> list[str]:
+        return self.view.to_sql_update(self.from_view)
 
 
 @dataclass
-class DropViewOp:
+class DropViewOp(Op):
     view: View
 
     def reverse(self):
         return CreateViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
-        return self.view.to_sql_drop(dialect)
+    def to_sql(self) -> list[str]:
+        return self.view.to_sql_drop()
 
 
 Operation = Union[CreateViewOp, UpdateViewOp, DropViewOp]

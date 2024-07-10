@@ -7,11 +7,12 @@ from sqlalchemy.engine.base import Connection
 from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 from sqlalchemy_declarative_extensions.dialects import get_schemas
+from sqlalchemy_declarative_extensions.op import Op
 from sqlalchemy_declarative_extensions.schema.base import Schema, Schemas
 
 
 @dataclass
-class CreateSchemaOp:
+class CreateSchemaOp(Op):
     schema: Schema
 
     @classmethod
@@ -27,7 +28,7 @@ class CreateSchemaOp:
 
 
 @dataclass
-class DropSchemaOp:
+class DropSchemaOp(Op):
     schema: Schema
 
     @classmethod
