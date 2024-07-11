@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from sqlalchemy_declarative_extensions.context import context
 
 
-@dataclass
+@dataclass(order=True)
 class Role:
     """Represent a role.
 
@@ -43,6 +43,15 @@ class Role:
 
         return cls(unknown)
 
+    @classmethod
+    def from_unknown_role(cls, r: Role) -> Role:
+        return cls(
+            r.name,
+            in_roles=r.in_roles,
+            external=r.external,
+            use_role=r.use_role,
+        )
+
     @property
     def has_option(self):
         return False
@@ -70,8 +79,11 @@ class Role:
             "When using the generic role, there should never exist any cause to update a role."
         )
 
-    def to_sql_drop(self) -> str:
-        return f'DROP ROLE "{self.name}";'
+    def to_sql_drop(self) -> list[str]:
+        return [f'DROP ROLE "{self.name}";']
+
+    def to_sql_use(self, undo: bool) -> list[str]:
+        raise NotImplementedError()
 
     def __enter__(self):
         context.enter_role(self)

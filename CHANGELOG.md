@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11
+
+### 0.11.0
+
+- feat: Add support for declarative database.
+- feat: Add support for snowflake roles.
+
 ## 0.10
 
 ### 0.10.0

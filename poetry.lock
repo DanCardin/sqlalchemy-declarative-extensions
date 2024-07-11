@@ -1828,4 +1828,4 @@ parse = ["sqlglot"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4"
-content-hash = "f766eb432861c4e7dd43fe5a17e6e96c362e35a0cf326c2aa08b541d00fa88c6"
+content-hash = "f63f22540e74f4be13744380866b38b84def4f11ff22e2bb1b3ef8889a944664"

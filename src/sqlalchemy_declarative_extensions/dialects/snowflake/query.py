@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy.engine.base import Connection
-from sqlalchemy.sql.expression import text
+from sqlalchemy import text
+from sqlalchemy.engine import Connection
+
+from sqlalchemy_declarative_extensions.dialects.snowflake import Role
 
 
 def get_schemas_snowflake(connection: Connection):
@@ -26,3 +28,35 @@ def check_schema_exists_snowflake(connection: Connection, name: str) -> bool:
     )
     row = connection.execute(schema_exists_query, {"schema": name}).scalar()
     return bool(row)
+
+
+def get_roles_snowflake(connection: Connection, exclude=None):
+    roles_query = text("SHOW ROLES")
+    raw_roles = connection.execute(roles_query).fetchall()
+
+    role_members_query = text(
+        "select name, grantee_name from snowflake.account_usage.grants_to_roles where granted_on = 'ROLE' and deleted_on is null and privilege = 'USAGE';"
+    )
+    role_members = connection.execute(role_members_query).fetchall()
+    role_members_by_grantee: dict[str, list[str]] = {}
+    for role, grantee in role_members:
+        role_members_by_grantee.setdefault(grantee, []).append(role)
+
+    roles = [
+        Role.from_snowflake_role(r, role_members_by_grantee.get(r.name))
+        for r in raw_roles
+        if exclude and r not in exclude
+    ]
+
+    return [*roles]
+
+
+def get_databases_snowflake(connection: Connection):
+    from sqlalchemy_declarative_extensions.database.base import Database
+
+    databases_query = text("SELECT database_name" " FROM information_schema.databases")
+
+    return {
+        database: Database(database)
+        for database, *_ in connection.execute(databases_query).fetchall()
+    }
