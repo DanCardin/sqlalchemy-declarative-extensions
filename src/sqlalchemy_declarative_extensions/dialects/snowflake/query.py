@@ -16,7 +16,8 @@ def get_schemas_snowflake(connection: Connection):
     )
 
     return {
-        Schema(schema) for schema, *_ in connection.execute(schemas_query).fetchall()
+        schema: Schema(schema)
+        for schema, *_ in connection.execute(schemas_query).fetchall()
     }
 
 
