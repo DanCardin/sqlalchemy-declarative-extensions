@@ -1,4 +1,6 @@
 def register_alembic_events(
+    *,
+    databases: bool = True,
     schemas: bool = True,
     views: bool = True,
     roles: bool = True,
@@ -15,6 +17,9 @@ def register_alembic_events(
     Note this is the opposite of the defaults when registering against SQLAlchemy's
     event system.
     """
+    if databases:
+        import sqlalchemy_declarative_extensions.alembic.database
+
     if schemas:
         import sqlalchemy_declarative_extensions.alembic.schema
 

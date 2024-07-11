@@ -33,6 +33,12 @@ pg_class = table(
     column("relowner"),
 )
 
+pg_database = table(
+    "pg_database",
+    column("oid"),
+    column("datname"),
+)
+
 pg_namespace = table(
     "pg_namespace",
     column("oid"),
@@ -146,6 +152,12 @@ schemas_query = (
     select(pg_namespace.c.nspname).where(_schema_not_pg()).where(_schema_not_public)
 )
 
+
+databases_query = (
+    select(pg_database.c.datname)
+    .where(pg_database.c.datname.notin_(["template0", "template1"]))
+    .where(_schema_not_public)
+)
 
 schema_exists_query = text(
     "SELECT schema_name FROM information_schema.schemata WHERE schema_name = :schema"

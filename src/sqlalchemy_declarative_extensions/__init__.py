@@ -5,6 +5,7 @@ from sqlalchemy_declarative_extensions.api import (
     declare_database,
     register_sqlalchemy_events,
 )
+from sqlalchemy_declarative_extensions.database import Database, Databases
 from sqlalchemy_declarative_extensions.function import (
     Function,
     Functions,
@@ -39,6 +40,19 @@ __all__ = [
     "Grants",
     "Procedure",
     "Procedures",
+    "Database",
+    "Databases",
+    "declarative_database",
+    "declare_database",
+    "dialects",
+    "Function",
+    "Functions",
+    "Grants",
+    "register_alembic_events",
+    "register_function",
+    "register_sqlalchemy_events",
+    "register_trigger",
+    "register_view",
     "Role",
     "Role",
     "Roles",

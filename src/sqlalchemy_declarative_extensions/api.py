@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Iterable, TypeVar
 from sqlalchemy import event
 from sqlalchemy.sql.schema import MetaData
 
+from sqlalchemy_declarative_extensions.database.base import Databases
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.procedure.base import Procedure, Procedures
@@ -16,6 +17,7 @@ from sqlalchemy_declarative_extensions.trigger.base import Trigger, Triggers
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 if TYPE_CHECKING:
+    from sqlalchemy_declarative_extensions.database.base import Database
     from sqlalchemy_declarative_extensions.dialects import postgresql
     from sqlalchemy_declarative_extensions.grant.base import G
     from sqlalchemy_declarative_extensions.role import generic
@@ -31,7 +33,7 @@ def declarative_database(base: T) -> T:
     See also :func:`sqlalchemy_declarative_extensions.declare_database`, of which this decorator is syntactic sugar.
 
     By decorating your declarative base with this decorator, the attributes
-    "schemas", "roles", and "grants" are read and will register with SQLAlchemy
+    "schemas", "roles", "grants", etc are read and will register with SQLAlchemy
     and/or Alembic to ensure they're created during a ``metadata.create_createall``
     call or ``alembic --autogenerate``.
 
@@ -63,6 +65,7 @@ def declarative_database(base: T) -> T:
     raw_procedures = getattr(base, "procedures", None)
     raw_functions = getattr(base, "functions", None)
     raw_triggers = getattr(base, "triggers", None)
+    raw_databases = getattr(base, "databases", None)
     raw_rows = getattr(base, "rows", None)
 
     metadata = getattr(base, "metadata", None)
@@ -78,6 +81,7 @@ def declarative_database(base: T) -> T:
         procedures=raw_procedures,
         functions=raw_functions,
         triggers=raw_triggers,
+        databases=raw_databases,
         rows=raw_rows,
     )
     return base
@@ -93,6 +97,7 @@ def declare_database(
     procedures: None | Iterable[Procedure] | Procedures = None,
     functions: None | Iterable[Function] | Functions = None,
     triggers: None | Iterable[Trigger] | Triggers = None,
+    databases: None | Iterable[Database] | Databases = None,
     rows: None | Iterable[Row] | Rows = None,
 ):
     """Register declaratively specified database extension handlers.
@@ -123,6 +128,7 @@ def declare_database(
         procedures: The set of procedures to ensure exist.
         functions: The set of functions to ensure exist.
         triggers: The set of triggers to ensure exist.
+        databases: The set of databases to ensure exist.
         rows: The set of rows to ensure are applied to the roles/schemas/tables.
     """
     metadata.info["schemas"] = Schemas.coerce_from_unknown(schemas)
@@ -132,11 +138,14 @@ def declare_database(
     metadata.info["procedures"] = Procedures.coerce_from_unknown(procedures)
     metadata.info["functions"] = Functions.coerce_from_unknown(functions)
     metadata.info["triggers"] = Triggers.coerce_from_unknown(triggers)
+    metadata.info["databases"] = Databases.coerce_from_unknown(databases)
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
 
 
 def register_sqlalchemy_events(
     maybe_metadata: MetaData | HasMetaData,
+    *,
+    databases: bool | list[str] = False,
     schemas: bool | list[str] = False,
     roles: bool | list[str] = False,
     grants: bool = False,
@@ -162,6 +171,7 @@ def register_sqlalchemy_events(
         - list[str]: Performs a glob-match of each item by its unique identifier (typically name),
                      and ignores all non-matching objects.
     """
+    from sqlalchemy_declarative_extensions.database.ddl import database_ddl
     from sqlalchemy_declarative_extensions.function.ddl import function_ddl
     from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
     from sqlalchemy_declarative_extensions.procedure.ddl import procedure_ddl
@@ -183,7 +193,16 @@ def register_sqlalchemy_events(
     concrete_procedures = metadata.info.get("procedures")
     concrete_functions = metadata.info.get("functions")
     concrete_triggers = metadata.info.get("triggers")
+    concrete_databases = metadata.info.get("databases")
     concrete_rows = metadata.info.get("rows")
+
+    if concrete_databases and databases:
+        database_filter = databases if isinstance(databases, list) else None
+        event.listen(
+            metadata,
+            "before_create",
+            database_ddl(concrete_databases, database_filter),
+        )
 
     if concrete_schemas and schemas:
         schema_filter = schemas if isinstance(schemas, list) else None
