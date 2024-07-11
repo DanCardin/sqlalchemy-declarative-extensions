@@ -175,9 +175,9 @@ suffer or lack implementation.
 | ------------- | -------- | ----- | ------ | --------- |
 | Schema        | ✓        | N/A   | ✓      | ✓         |
 | View          | ✓        | ✓     | ✓      |           |
-| Role          | ✓        |       | N/A    |           |
 | Grant         | ✓        |       | N/A    |           |
 | Default Grant | ✓        |       | N/A    |           |
+| Role          | ✓        |       | N/A    | ✓         |
 | Function      | ✓        | *     |        |           |
 | Trigger       | ✓        | *     |        |           |
 | Row (data)    | ✓        | ✓     | ✓      | ✓         |
