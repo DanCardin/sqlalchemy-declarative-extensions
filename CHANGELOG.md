@@ -4,6 +4,8 @@
 
 ### 0.11.0
 
+- feat: Add "use role" with schema.
+- feat: Add snowflake-specific schema support.
 - feat: Add support for declarative database.
 - feat: Add support for snowflake roles.
 

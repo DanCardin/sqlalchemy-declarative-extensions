@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Iterable, Sequence
+from typing import TYPE_CHECKING, Iterable, Sequence
+
+from sqlalchemy.sql.base import Executable
+from sqlalchemy.sql.ddl import CreateSchema, DropSchema
+from typing_extensions import Self
+
+from sqlalchemy_declarative_extensions.context import context
+
+if TYPE_CHECKING:
+    from sqlalchemy_declarative_extensions.role import Role
 
 
 @dataclass(frozen=True)
@@ -54,15 +63,27 @@ class Schemas:
         )
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(order=True)
 class Schema:
     """Represents a schema."""
 
     name: str
 
+    use_role: Role | str | None = None
+
+    def __post_init__(self):
+        if not self.use_role:
+            self.use_role = context.role
+
     @classmethod
-    def coerce_from_unknown(cls, unknown: Schema | str) -> Schema:
-        if isinstance(unknown, Schema):
+    def coerce_from_unknown(cls, unknown: Self | str) -> Self:
+        if isinstance(unknown, cls):
             return unknown
 
-        return cls(unknown)
+        return cls(unknown)  # type: ignore
+
+    def to_sql_create(self) -> Executable | str:
+        return CreateSchema(self.name)
+
+    def to_sql_drop(self) -> Executable | str:
+        return DropSchema(self.name)

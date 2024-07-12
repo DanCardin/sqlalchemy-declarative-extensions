@@ -4,6 +4,7 @@ from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 from alembic.operations import Operations
+from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 
 from sqlalchemy_declarative_extensions import schema
 from sqlalchemy_declarative_extensions.schema.base import Schemas
@@ -31,13 +32,26 @@ def compare_schemas(autogen_context: AutogenContext, upgrade_ops, _):
 @renderers.dispatch_for(CreateSchemaOp)
 @renderers.dispatch_for(DropSchemaOp)
 def render_create_schema(autogen_context: AutogenContext, op: CreateSchemaOp):
-    statement = op.to_sql()
-    cls_name = statement.__class__.__name__
-    autogen_context.imports.add(f"from sqlalchemy.sql.ddl import {cls_name}")
-    return f'op.execute({cls_name}("{statement.element}"))'
+    statements = op.to_sql()
+    cls_names = {
+        s.__class__.__name__
+        for s in statements
+        if isinstance(s, (CreateSchema, DropSchema))
+    }
+    autogen_context.imports.add(
+        f"from sqlalchemy.sql.ddl import {', '.join(cls_names)}"
+    )
+
+    return [
+        f'op.execute({command.__class__.__name__}("{command.element}"))'
+        if isinstance(command, (CreateSchema, DropSchema))
+        else f'op.execute("{command}")'
+        for command in statements
+    ]
 
 
 @Operations.implementation_for(CreateSchemaOp)
 @Operations.implementation_for(DropSchemaOp)
 def create_schema(operations, operation: CreateSchemaOp):
-    operations.execute(operation.to_sql())
+    for command in operation.to_sql():
+        operations.execute(command)

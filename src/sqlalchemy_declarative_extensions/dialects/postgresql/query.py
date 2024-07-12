@@ -49,7 +49,8 @@ def get_schemas_postgresql(connection: Connection):
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
     return {
-        Schema(schema) for schema, *_ in connection.execute(schemas_query).fetchall()
+        schema: Schema(schema)
+        for schema, *_ in connection.execute(schemas_query).fetchall()
     }
 
 

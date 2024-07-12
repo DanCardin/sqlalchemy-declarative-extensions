@@ -9,7 +9,9 @@ def get_schemas_sqlite(connection: Connection):
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
     schemas = connection.execute(text("PRAGMA database_list")).fetchall()
-    return {Schema(schema) for _, schema, *_ in schemas if schema not in {"main"}}
+    return {
+        schema: Schema(schema) for _, schema, *_ in schemas if schema not in {"main"}
+    }
 
 
 def check_schema_exists_sqlite(connection: Connection, name: str) -> bool:
@@ -30,5 +32,5 @@ def get_views_sqlite(connection: Connection):
     return [
         View(v.name, v.definition, schema=v.schema)
         for schema in [*schemas, None]
-        for v in connection.execute(views_query(schema and schema.name)).fetchall()
+        for v in connection.execute(views_query(schema and schema)).fetchall()
     ]
