@@ -174,12 +174,12 @@ suffer or lack implementation.
 |               | Postgres | MySQL | SQLite | Snowflake |
 | ------------- | -------- | ----- | ------ | --------- |
 | Schema        | ✓        | N/A   | ✓      | ✓         |
-| View          | ✓        | ✓     | ✓      |           |
+| View          | ✓        | ✓     | ✓      | ✓         |
 | Role          | ✓        |       | N/A    | ✓         |
 | Grant         | ✓        |       | N/A    |           |
 | Default Grant | ✓        |       | N/A    |           |
-| Function      | ✓        | *     |        |           |
-| Trigger       | ✓        | *     |        |           |
+| Function      | ✓        | \*    |        |           |
+| Trigger       | ✓        | \*    |        |           |
 | Database      | ✓        |       |        | ✓         |
 | Row (data)    | ✓        | ✓     | ✓      | ✓         |
 | "Audit Table" | ✓        |       |        |           |
@@ -187,7 +187,7 @@ suffer or lack implementation.
 **note** "Row" is implemented with pure SQLAlchemy concepts, so should work for
 any dialect that you can use SQLAlchemy to connect to.
 
-The astrisks above note pending or provisional support through basic test cases.
+The asterisks above note pending or provisional support through basic test cases.
 The level of expertise in each dialects' particular behaviors is not uniform,
 and deciding on the correct behavior for those dialects will require users to
 submit issues/fixes!

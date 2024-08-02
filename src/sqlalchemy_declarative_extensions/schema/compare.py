@@ -6,7 +6,7 @@ from typing import Union
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.sql.base import Executable
 
-from sqlalchemy_declarative_extensions.dialects import get_schemas
+from sqlalchemy_declarative_extensions.dialects import get_schema_cls, get_schemas
 from sqlalchemy_declarative_extensions.role.compare import UseRoleOp
 from sqlalchemy_declarative_extensions.role.state import RoleState
 from sqlalchemy_declarative_extensions.schema.base import Schema, Schemas
@@ -55,7 +55,12 @@ def compare_schemas(connection: Connection, schemas: Schemas) -> list[SchemaOp]:
     existing_schemas = get_schemas(connection)
     role_state = RoleState.from_connection(connection)
 
-    expected_schemas = {s.name: s for s in schemas.schemas}
+    schema_cls: type[Schema] = get_schema_cls(connection)
+    expected_schemas = {}
+    for schema in schemas.schemas:
+        normalized_schema = schema_cls.coerce_from_unknown(schema)
+        expected_schemas[normalized_schema.name] = normalized_schema
+
     new_schemas = expected_schemas.keys() - existing_schemas.keys()
     removed_schemas = existing_schemas.keys() - expected_schemas.keys()
 

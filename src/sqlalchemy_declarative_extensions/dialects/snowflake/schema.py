@@ -19,12 +19,12 @@ class Schema(base.Schema):
             return unknown
 
         if isinstance(unknown, base.Schema):
-            return cls(unknown.name)
+            return cls(unknown.name.upper())
 
         return cls(unknown)
 
     def to_sql_create(self) -> str:
-        statement = super().to_sql_create()
+        statement = str(super().to_sql_create())
         if self.managed_access:
             statement += " WITH MANAGED ACCESS"
         return statement

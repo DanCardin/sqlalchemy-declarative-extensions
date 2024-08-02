@@ -79,7 +79,9 @@ def compare_views(
     removed_view_names = existing_view_names - expected_view_names
 
     for view in concrete_defined_views:
-        view_name = view.qualified_name
+        normalized_view = view.normalize(connection, metadata, using_connection=False)
+
+        view_name = normalized_view.qualified_name
 
         ignore_matches = any(
             fnmatch(view_name, view_pattern) for view_pattern in views.ignore
@@ -90,12 +92,9 @@ def compare_views(
         view_created = view_name in new_view_names
 
         if view_created:
-            normalized_view = view.normalize(
-                connection, metadata, using_connection=False
-            )
             result.append(CreateViewOp(normalized_view))
         else:
-            normalized_view = view.normalize(
+            normalized_view = normalized_view.normalize(
                 connection, metadata, using_connection=normalize_with_connection
             )
 

@@ -18,11 +18,11 @@ test:
 	coverage xml
 
 lint:
-	ruff --fix src tests || exit 1
+	ruff check --fix src tests || exit 1
 	ruff format -q src tests || exit 1
 	mypy src tests || exit 1
 	ruff format --check src tests
 
 format:
-	ruff src tests --fix
+	ruff check src tests --fix
 	ruff format src tests

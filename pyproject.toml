@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.10.0"
+version = "0.11.0"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
@@ -54,13 +54,13 @@ pytest = ">=7"
 pytest-alembic = "*"
 pytest-mock-resources = { version = ">=2.6.13", extras = ["docker"] }
 pytest-xdist = "*"
-ruff = "0.1.15"
+ruff = "^0.5.0"
 sqlalchemy = {version = ">=1.4", extras = ["mypy"]}
 psycopg = "*"
 psycopg2-binary = "*"
 
 # snowflake
-fakesnow = {version = "~0.9.13", python = ">=3.9"}
+fakesnow = {version = "~0.9.21", python = ">=3.9"}
 snowflake-connector-python = {version = ">=3.7", python = ">=3.9"}
 snowflake-sqlalchemy = {version = ">=1.6.0", python = ">=3.9"}
 filelock = {version = "*", python = ">=3.9"}
@@ -103,7 +103,8 @@ filterwarnings = [
   'ignore:distutils Version classes are deprecated. Use packaging.version instead.:DeprecationWarning',
   'ignore:_SixMetaPathImporter.find_spec.*:ImportWarning',
   'ignore:`ignore_views` is deprecated, use `ignore` instead:DeprecationWarning',
-  'ignore:The GenericFunction.*:sqlalchemy.exc.SAWarning'
+  'ignore:The GenericFunction.*:sqlalchemy.exc.SAWarning',
+  'ignore:Did not recognize type.*:sqlalchemy.exc.SAWarning',
 ]
 pytester_example_dir = "tests/examples"
 markers = [
@@ -119,8 +120,9 @@ log_cli_level = 'WARNING'
 
 [tool.ruff]
 src = ["src", "tests"]
-
 target-version = "py37"
+
+[tool.ruff.lint]
 select = ["C", "D", "E", "F", "I", "N", "Q", "RET", "RUF", "S", "T", "UP", "YTT"]
 ignore = ["C901", "E501", "S101"]
 extend-select = ["D"]
@@ -140,10 +142,10 @@ extend-ignore = [
     "D413",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["sqlalchemy_declarative_extensions", "tests"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["D", "S", 'RUF012']
 
 [build-system]

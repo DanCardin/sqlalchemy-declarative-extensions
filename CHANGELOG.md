@@ -8,6 +8,8 @@
 - feat: Add snowflake-specific schema support.
 - feat: Add support for declarative database.
 - feat: Add support for snowflake roles.
+- feat: Add support for snowflake views.
+- fix: Snowflake schema name comparison casing.
 
 ## 0.10
 
@@ -27,7 +29,7 @@
 
 ### 0.9.1
 
-- feat: Allow __view__ to be a callable.
+- feat: Allow **view** to be a callable.
 - feat: Add concept of "external" role that is ignored during comparisons.
 
 ### 0.9.0

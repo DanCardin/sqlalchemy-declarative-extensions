@@ -49,8 +49,10 @@ def snowflake():
     try:
         import fakesnow
         import snowflake.sqlalchemy  # noqa
+        from snowflake.sqlalchemy import URL
     except ImportError:
         pytest.skip("Snowflake not installed")
+        return
 
     from sqlalchemy.engine.create import create_engine
 
@@ -58,7 +60,10 @@ def snowflake():
         create_database_on_connect=True,
         create_schema_on_connect=False,
     ):
-        yield create_engine("snowflake://test/test/information_schema")
+        engine = create_engine(
+            URL(account="test", database="test", schema="information_schema")
+        )
+        yield engine
 
 
 @pytest.fixture(autouse=True)
