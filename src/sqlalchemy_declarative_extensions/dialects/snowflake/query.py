@@ -1,4 +1,7 @@
 from __future__ import annotations
+from sqlalchemy_declarative_extensions.sql import qualify_name
+
+from typing import Container
 
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
@@ -61,3 +64,80 @@ def get_databases_snowflake(connection: Connection):
         database: Database(database)
         for database, *_ in connection.execute(databases_query).fetchall()
     }
+
+
+def get_objects_snowflake(connection: Connection):
+    return sorted(
+        [
+            (r.schema, qualify_name(r.schema, r.object_name), r.relkind)
+            for r in connection.execute(objects_query).fetchall()
+        ]
+    )
+
+
+def get_default_grants_snowflake(
+    connection: Connection,
+    roles: Container[str] | None = None,
+    expanded: bool = False,
+):
+    default_permissions = connection.execute(
+        text("SHOW FUTURE GRANTS IN DATABASE CURRENT_DATABASE;")
+    ).fetchall()
+
+    assert connection.engine.url.username
+    current_role: str = connection.engine.url.username
+
+    result = []
+    for permission in default_permissions:
+        for acl_item in permission.acl:
+            default_grants = parse_default_acl(
+                acl_item,
+                permission.object_type,
+                permission.schema_name,
+                current_role=current_role,
+                expanded=expanded,
+            )
+            for default_grant in default_grants:
+                if roles is None or default_grant.grant.target_role in roles:
+                    result.append(default_grant)
+
+    return result
+
+
+def get_grants_snowflake(
+    connection: Connection,
+    roles: Container[str] | None = None,
+    expanded=False,
+):
+    existing_permissions = connection.execute(
+        text(
+            """
+            SELECT * FROM skeptic.information_schema.object_privileges
+            WHERE
+              (
+                OBJECT_CATALOG = 'SKEPTIC'
+                OR OBJECT_TYPE = 'DATABASE' AND OBJECT_NAME = 'SKEPTIC'
+              );
+            """
+        )
+    ).fetchall()
+
+    result = []
+    for permission in existing_permissions:
+        acl = permission.acl
+        if acl is None:
+            acl = [acl]
+
+        for acl_item in acl:
+            grants = parse_acl(
+                acl_item,
+                permission.relkind,
+                qualify_name(permission.schema, permission.name),
+                owner=permission.owner,
+                expanded=expanded,
+            )
+            for grant in grants:
+                if roles is None or grant.grant.target_role in roles:
+                    result.append(grant)
+
+    return result

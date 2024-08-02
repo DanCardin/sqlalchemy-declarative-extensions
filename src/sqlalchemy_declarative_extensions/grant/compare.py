@@ -7,17 +7,23 @@ from typing import Container, Union
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import (
+    get_default_grant_cls,
     get_default_grants,
+    get_grant_cls,
     get_grants,
     get_objects,
+    get_role_cls,
 )
-from sqlalchemy_declarative_extensions.dialects.postgresql import (
+
+# GrantTypes,
+from sqlalchemy_declarative_extensions.grant.base import (
     DefaultGrantStatement,
+    Grants,
     GrantStatement,
-    GrantTypes,
 )
-from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.role.base import Roles
+from sqlalchemy_declarative_extensions.role.compare import UseRoleOp
+from sqlalchemy_declarative_extensions.role.state import RoleState
 
 
 @dataclass
@@ -27,7 +33,7 @@ class GrantPrivilegesOp:
     def reverse(self):
         return RevokePrivilegesOp(self.grant)
 
-    def to_sql(self):
+    def to_sql(self) -> list[str]:
         return self.grant.to_sql()
 
 
@@ -38,11 +44,11 @@ class RevokePrivilegesOp:
     def reverse(self):
         return GrantPrivilegesOp(self.grant)
 
-    def to_sql(self):
+    def to_sql(self) -> list[str]:
         return self.grant.invert().to_sql()
 
 
-Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp]
+Operation = Union[GrantPrivilegesOp, RevokePrivilegesOp, UseRoleOp]
 
 
 def compare_grants(
@@ -57,14 +63,25 @@ def compare_grants(
     if grants.only_defined_roles:
         filtered_roles = {r.name for r in (roles or [])}
 
-    default_grant_ops = compare_default_grants(connection, grants, roles=filtered_roles)
+    role_cls = get_role_cls(connection)
+    role_state = RoleState(role_cls)
+
+    default_grant_ops = compare_default_grants(
+        connection, grants, role_state, roles=filtered_roles
+    )
     result.extend(default_grant_ops)
 
     if grants.default_grants_imply_grants:
         grant_ops = compare_object_grants(
-            connection, grants, username=current_role, roles=filtered_roles
+            connection,
+            grants,
+            role_state=role_state,
+            username=current_role,
+            roles=filtered_roles,
         )
         result.extend(grant_ops)
+
+    result.extend(role_state.reset())
 
     return result
 
@@ -72,6 +89,7 @@ def compare_grants(
 def compare_default_grants(
     connection: Connection,
     grants: Grants,
+    role_state: RoleState,
     roles: Container[str] | None = None,
 ):
     result: list[Operation] = []
@@ -88,11 +106,15 @@ def compare_default_grants(
     missing_grants = set(expected_grants) - set(existing_default_grants)
     extra_grants = set(existing_default_grants) - set(expected_grants)
 
+    default_grant_cls: type[DefaultGrantStatement] = get_default_grant_cls(connection)
+
     if not grants.ignore_unspecified:
-        for grant in DefaultGrantStatement.combine(list(extra_grants)):
+        for grant in default_grant_cls.combine(list(extra_grants)):
+            result.extend(role_state.use_role(grant.use_role))
             result.append(RevokePrivilegesOp(grant))
 
-    for grant in DefaultGrantStatement.combine(list(missing_grants)):
+    for grant in default_grant_cls.combine(list(missing_grants)):
+        result.extend(role_state.use_role(grant.use_role))
         result.append(GrantPrivilegesOp(grant))
 
     return result
@@ -101,6 +123,7 @@ def compare_default_grants(
 def compare_object_grants(
     connection: Connection,
     grants: Grants,
+    role_state: RoleState,
     username: str,
     roles: Container[str] | None = None,
 ):
@@ -122,6 +145,7 @@ def compare_object_grants(
             continue
 
         grant_type = grant.default_grant.grant_type.to_grant_type()
+        grant_types_cls = grant_type.__class__
 
         for schema in grant.default_grant.in_schemas:
             existing_tables_in_schema = existing_tables_by_schema.get(schema)
@@ -129,7 +153,7 @@ def compare_object_grants(
                 continue
 
             for _, table, relkind in existing_tables_in_schema:
-                object_type = GrantTypes.from_relkind(relkind)
+                object_type = grant_types_cls.from_relkind(relkind)
 
                 if object_type == grant_type:
                     expected_grants.extend(
@@ -146,11 +170,15 @@ def compare_object_grants(
     missing_grants = set(expected_grants) - set(existing_grants)
     extra_grants = set(existing_grants) - set(expected_grants)
 
+    grant_cls: type[GrantStatement] = get_grant_cls(connection)
+
     if not grants.ignore_unspecified:
-        for grant in GrantStatement.combine(list(extra_grants)):
+        for grant in grant_cls.combine(list(extra_grants)):
+            result.extend(role_state.use_role(grant.use_role))
             result.append(RevokePrivilegesOp(grant))
 
-    for grant in GrantStatement.combine(list(missing_grants)):
+    for grant in grant_cls.combine(list(missing_grants)):
+        result.extend(role_state.use_role(grant.use_role))
         result.append(GrantPrivilegesOp(grant))
 
     return result

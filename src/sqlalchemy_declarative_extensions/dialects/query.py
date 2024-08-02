@@ -27,6 +27,9 @@ from sqlalchemy_declarative_extensions.dialects.snowflake.query import (
     get_databases_snowflake,
     get_roles_snowflake,
     get_schemas_snowflake,
+    get_objects_snowflake,
+    get_default_grants_snowflake,
+    get_grants_snowflake,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     check_schema_exists_sqlite,
@@ -52,6 +55,7 @@ check_schema_exists = dialect_dispatch(
 
 get_objects = dialect_dispatch(
     postgresql=get_objects_postgresql,
+    snowflake=get_objects_snowflake,
 )
 
 get_databases = dialect_dispatch(
@@ -61,14 +65,22 @@ get_databases = dialect_dispatch(
 
 get_default_grants = dialect_dispatch(
     postgresql=get_default_grants_postgresql,
+    snowflake=get_default_grants_snowflake,
 )
 
 get_grants = dialect_dispatch(
     postgresql=get_grants_postgresql,
+    snowflake=get_grants_snowflake,
 )
 
-get_roles = dialect_dispatch(
-    postgresql=get_roles_postgresql,
+get_grant_cls = dialect_dispatch(
+    postgresql=lambda _: postgresql.GrantStatement,
+    snowflake=lambda _: snowflake.GrantStatement,
+)
+
+get_default_grant_cls = dialect_dispatch(
+    postgresql=lambda _: postgresql.DefaultGrantStatement,
+    snowflake=lambda _: snowflake.DefaultGrantStatement,
 )
 
 get_roles = dialect_dispatch(

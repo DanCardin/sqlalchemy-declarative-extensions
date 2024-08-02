@@ -176,8 +176,8 @@ suffer or lack implementation.
 | Schema        | ✓        | N/A   | ✓      | ✓         |
 | View          | ✓        | ✓     | ✓      |           |
 | Role          | ✓        |       | N/A    | ✓         |
-| Grant         | ✓        |       | N/A    |           |
-| Default Grant | ✓        |       | N/A    |           |
+| Grant         | ✓        |       | N/A    | ✓         |
+| Default Grant | ✓        |       | N/A    | ✓         |
 | Function      | ✓        | *     |        |           |
 | Trigger       | ✓        | *     |        |           |
 | Database      | ✓        |       |        | ✓         |

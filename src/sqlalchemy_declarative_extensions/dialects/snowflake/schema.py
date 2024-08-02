@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sqlalchemy.sql.base import Executable
+from sqlalchemy.sql.ddl import CreateSchema
 from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.schema import base
@@ -23,8 +25,11 @@ class Schema(base.Schema):
 
         return cls(unknown)
 
-    def to_sql_create(self) -> str:
+    def to_sql_create(self) -> Executable | str:
         statement = super().to_sql_create()
+        assert isinstance(statement, CreateSchema)
+
+        result = statement.element
         if self.managed_access:
-            statement += " WITH MANAGED ACCESS"
-        return statement
+            result += " WITH MANAGED ACCESS"
+        return result

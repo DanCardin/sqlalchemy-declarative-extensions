@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.grant.base import Grants
@@ -13,6 +13,7 @@ def grant_ddl(grants: Grants, after: bool):
         roles: Optional[Roles] = metadata.info.get("roles")
         result = compare_grants(connection, grants, roles=roles)
         for op in result:
-            connection.execute(op.to_sql())
+            for statement in op.to_sql():
+                connection.execute(text(statement))
 
     return receive_event
