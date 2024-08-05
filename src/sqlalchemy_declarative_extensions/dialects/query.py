@@ -27,6 +27,7 @@ from sqlalchemy_declarative_extensions.dialects.snowflake.query import (
     get_databases_snowflake,
     get_roles_snowflake,
     get_schemas_snowflake,
+    get_views_snowflake,
 )
 from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     check_schema_exists_sqlite,
@@ -34,6 +35,7 @@ from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     get_views_sqlite,
 )
 from sqlalchemy_declarative_extensions.role import Role
+from sqlalchemy_declarative_extensions.schema.base import Schema
 from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch, select
 from sqlalchemy_declarative_extensions.view import View
 
@@ -41,6 +43,11 @@ get_schemas = dialect_dispatch(
     postgresql=get_schemas_postgresql,
     sqlite=get_schemas_sqlite,
     snowflake=get_schemas_snowflake,
+)
+
+get_schema_cls = dialect_dispatch(
+    default=lambda _: Schema,
+    snowflake=lambda _: snowflake.Schema,
 )
 
 check_schema_exists = dialect_dispatch(
@@ -86,11 +93,13 @@ get_views = dialect_dispatch(
     postgresql=get_views_postgresql,
     sqlite=get_views_sqlite,
     mysql=get_views_mysql,
+    snowflake=get_views_snowflake,
 )
 
 get_view_cls = dialect_dispatch(
     postgresql=lambda _: postgresql.View,
     default=lambda _: View,
+    snowflake=lambda _: snowflake.View,
 )
 
 get_view = dialect_dispatch(

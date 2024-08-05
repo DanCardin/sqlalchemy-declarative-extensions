@@ -1,10 +1,11 @@
 """empty message
 
 Revision ID: db72aad6c888
-Revises: 
+Revises:
 Create Date: 2023-02-27 17:37:09.314649
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 

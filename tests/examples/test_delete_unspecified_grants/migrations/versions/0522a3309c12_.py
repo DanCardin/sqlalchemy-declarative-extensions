@@ -1,10 +1,11 @@
 """empty message
 
 Revision ID: 0522a3309c12
-Revises: 
+Revises:
 Create Date: 2022-11-22 07:49:21.709903
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.

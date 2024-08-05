@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialects.snowflake import Role
+from sqlalchemy_declarative_extensions.dialects.snowflake import Role, View
 
 
 def get_schemas_snowflake(connection: Connection):
@@ -61,3 +61,35 @@ def get_databases_snowflake(connection: Connection):
         database: Database(database)
         for database, *_ in connection.execute(databases_query).fetchall()
     }
+
+
+def get_views_snowflake(connection: Connection):
+    compound_database = connection.engine.url.database
+    assert compound_database
+    database, *_ = compound_database.split("/", 1)
+    database = database.upper()
+
+    views_query = text(
+        """
+            SELECT table_schema AS schema, table_name AS name, view_definition AS definition
+            FROM information_schema.views
+            WHERE table_schema != 'INFORMATION_SCHEMA'
+            AND table_catalog = :database
+        """
+    )
+
+    views = []
+    for v in connection.execute(views_query, {"database": database}).fetchall():
+        schema = v.schema if v.schema != "public" else None
+
+        assert v.definition.startswith("CREATE VIEW")
+        *_, definition = v.definition.split(" ", 4)
+        assert definition.startswith("SELECT")
+
+        view = View(
+            v.name,
+            definition,
+            schema=schema,
+        )
+        views.append(view)
+    return views
