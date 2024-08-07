@@ -38,14 +38,16 @@ def render_create_schema(autogen_context: AutogenContext, op: CreateSchemaOp):
         for s in statements
         if isinstance(s, (CreateSchema, DropSchema))
     }
-    autogen_context.imports.add(
-        f"from sqlalchemy.sql.ddl import {', '.join(cls_names)}"
-    )
+
+    if cls_names:
+        autogen_context.imports.add(
+            f"from sqlalchemy.sql.ddl import {', '.join(cls_names)}"
+        )
 
     return [
         f'op.execute({command.__class__.__name__}("{command.element}"))'
         if isinstance(command, (CreateSchema, DropSchema))
-        else f'op.execute("{command}")'
+        else f'op.execute("""{command}""")'
         for command in statements
     ]
 

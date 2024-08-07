@@ -2,6 +2,10 @@
 
 ## 0.11
 
+### 0.11.1
+
+- fix: Snowflake create schema emitting invalid syntax due to double string wrapping.
+
 ### 0.11.0
 
 - feat: Add "use role" with schema.
