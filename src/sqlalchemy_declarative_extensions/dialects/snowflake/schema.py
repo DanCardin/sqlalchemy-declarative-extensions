@@ -27,4 +27,4 @@ class Schema(base.Schema):
         statement = str(super().to_sql_create())
         if self.managed_access:
             statement += " WITH MANAGED ACCESS"
-        return statement
+        return statement + ";"
