@@ -2,6 +2,9 @@
 
 ## 0.11
 
+### 0.11.4
+- fix: Incorrect when condition paren stripping.
+
 ### 0.11.3
 
 - fix: Use different mechanism to get WHEN clause in trigger definitions to avoid
