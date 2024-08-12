@@ -310,10 +310,11 @@ triggers_query = (
     select(
         pg_trigger.c.tgname.label("name"),
         pg_trigger.c.tgtype.label("type"),
-        func.pg_get_expr(
-            pg_trigger.c.tgqual,
-            pg_class.c.oid,
-        ).label("when"),
+        func.regexp_match(
+            func.pg_get_triggerdef(pg_trigger.c.oid),
+            literal(r" WHEN \((.+)\) EXECUTE "),
+            type_=ARRAY(String),
+        )[1].label("when"),
         pg_class.c.relname.label("on_name"),
         rel_nsp.c.nspname.label("on_schema"),
         pg_proc.c.proname.label("execute_name"),
