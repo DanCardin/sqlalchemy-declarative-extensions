@@ -227,7 +227,8 @@ def get_triggers_postgresql(connection: Connection):
 
         condition: str | None = None
         if t.when is not None:
-            condition = t.when.lstrip("(").rstrip(")")
+            condition = t.when[1:-1]
+
         trigger = Trigger(
             name=t.name,
             on=on,
