@@ -2,6 +2,15 @@
 
 ## 0.11
 
+### 0.11.3
+
+- fix: Use different mechanism to get WHEN clause in trigger definitions to avoid
+  postgres internal error.
+
+### 0.11.2
+
+- fix: Add trailing semicolon to avoid syntax issue with snowflake schema ....create
+
 ### 0.11.1
 
 - fix: Snowflake create schema emitting invalid syntax due to double string wrapping.
