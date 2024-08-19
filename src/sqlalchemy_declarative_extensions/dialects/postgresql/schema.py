@@ -100,6 +100,7 @@ pg_trigger = table(
     column("tgtype"),
     column("tgrelid"),
     column("tgfoid"),
+    column("tgargs"),
     column("tgqual"),
     column("tgisinternal"),
 )
@@ -315,6 +316,10 @@ triggers_query = (
             literal(r" WHEN \((.+)\) EXECUTE "),
             type_=ARRAY(String),
         )[1].label("when"),
+        func.encode(
+            func.btrim(pg_trigger.c.tgargs, "\\000"),  # trim 0-byte terminator
+            "escape",
+        ).label("args"),
         pg_class.c.relname.label("on_name"),
         rel_nsp.c.nspname.label("on_schema"),
         pg_proc.c.proname.label("execute_name"),
