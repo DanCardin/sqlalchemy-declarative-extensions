@@ -237,7 +237,7 @@ def get_triggers_postgresql(connection: Connection):
             time=TriggerTimes.from_bit_string(t.type),
             for_each=TriggerForEach.from_bit_string(t.type),
             condition=condition,
-            arguments=f"'{t.args}'" if t.args else None,
+            arguments=t.args if t.args else None,
         )
         triggers.append(trigger)
 
