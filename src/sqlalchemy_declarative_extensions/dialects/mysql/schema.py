@@ -17,6 +17,16 @@ tables = table(
     schema="information_schema",
 )
 
+triggers = table(
+    "triggers",
+    column("trigger_name"),
+    column("action_timing"),
+    column("event_manipulation"),
+    column("event_object_table"),
+    column("action_statement"),
+    schema="INFORMATION_SCHEMA",
+)
+
 schemata = table(
     "schemata",
     column("schema_name"),
@@ -31,6 +41,14 @@ views_query = (
     )
     .where(views.c.view_definition.isnot(None))
     .where(views.c.table_schema.notin_(["sys"]))
+)
+
+triggers_query = select(
+    triggers.c.trigger_name.label("name"),
+    triggers.c.action_timing.label("time"),
+    triggers.c.event_manipulation.label("event"),
+    triggers.c.event_object_table.label("on_name"),
+    triggers.c.action_statement.label("statement"),
 )
 
 schema_exists_query = select(schemata).where(

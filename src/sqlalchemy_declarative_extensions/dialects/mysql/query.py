@@ -5,6 +5,12 @@ from sqlalchemy_declarative_extensions.dialects.mysql.schema import (
     views_query,
 )
 from sqlalchemy_declarative_extensions.view.base import View
+from sqlalchemy_declarative_extensions.dialects.mysql.trigger import (
+    Trigger,
+    TriggerEvents,
+    TriggerTimes,
+)
+from sqlalchemy_declarative_extensions.dialects.mysql.schema import triggers_query
 
 
 def get_views_mysql(connection: Connection):
@@ -17,6 +23,21 @@ def get_views_mysql(connection: Connection):
         )
         for v in connection.execute(views_query).fetchall()
     ]
+
+
+def get_triggers_mysql(connection: Connection) -> list[Trigger]:
+    triggers = []
+    for t in connection.execute(triggers_query).fetchall():
+        triggers.append(
+            Trigger(
+                name=t.name,
+                time=TriggerTimes(t.time),
+                event=TriggerEvents(t.event),
+                on=t.on_name,
+                execute=t.statement,
+            )
+        )
+    return triggers
 
 
 def check_schema_exists_mysql(connection: Connection, name: str) -> bool:
