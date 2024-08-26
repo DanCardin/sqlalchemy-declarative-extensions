@@ -1,8 +1,13 @@
 # Changelog
 
+## 0.12
+
+- feat: Add basic support for triggers to MySQL.
+
 ## 0.11
 
 ### 0.11.4
+
 - fix: Incorrect when condition paren stripping.
 
 ### 0.11.3
