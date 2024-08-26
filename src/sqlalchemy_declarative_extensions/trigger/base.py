@@ -20,7 +20,7 @@ class Trigger:
     def named(self, name: str):
         return replace(self, name=name)
 
-    def to_sql_create(self, replace=False):
+    def to_sql_create(self):
         raise NotImplementedError()
 
     def to_sql_update(self, connection: Connection):
