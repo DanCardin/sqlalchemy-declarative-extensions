@@ -88,7 +88,7 @@ class Trigger(base.Trigger):
             self, order=TriggerOrder(TriggerOrders.precedes, other_trigger_name)
         )
 
-    def to_sql_create(self, replace=False) -> str:
+    def to_sql_create(self) -> str:
         """Return a trigger CREATE statement.
 
         CREATE
@@ -98,9 +98,6 @@ class Trigger(base.Trigger):
         [{ FOLLOWS | PRECEDES } other_trigger_name]
         trigger_body
         """
-        if replace:
-            self.to_sql_drop()
-
         components = ["CREATE"]
         components.append("TRIGGER")
         components.append(self.name)
