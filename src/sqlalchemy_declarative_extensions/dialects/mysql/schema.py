@@ -19,6 +19,7 @@ tables = table(
 
 triggers = table(
     "triggers",
+    column("trigger_schema"),
     column("trigger_name"),
     column("action_timing"),
     column("event_manipulation"),
@@ -44,12 +45,13 @@ views_query = (
 )
 
 triggers_query = select(
+    triggers.c.trigger_schema.label("schema"),
     triggers.c.trigger_name.label("name"),
     triggers.c.action_timing.label("time"),
     triggers.c.event_manipulation.label("event"),
     triggers.c.event_object_table.label("on_name"),
     triggers.c.action_statement.label("statement"),
-)
+).where(triggers.c.trigger_schema != "sys")
 
 schema_exists_query = select(schemata).where(
     schemata.c.schema_name == bindparam("schema")

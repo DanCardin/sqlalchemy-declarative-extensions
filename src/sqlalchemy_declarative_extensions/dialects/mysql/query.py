@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.mysql.schema import (
     schema_exists_query,
+    triggers_query,
     views_query,
 )
-from sqlalchemy_declarative_extensions.view.base import View
 from sqlalchemy_declarative_extensions.dialects.mysql.trigger import (
     Trigger,
     TriggerEvents,
     TriggerTimes,
 )
-from sqlalchemy_declarative_extensions.dialects.mysql.schema import triggers_query
+from sqlalchemy_declarative_extensions.view.base import View
 
 
 def get_views_mysql(connection: Connection):

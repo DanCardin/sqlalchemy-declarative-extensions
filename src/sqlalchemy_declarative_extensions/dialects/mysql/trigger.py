@@ -23,6 +23,12 @@ class TriggerOrders(FromStrings):
 
 
 @dataclass
+class TriggerOrder:
+    order: TriggerOrders
+    other_trigger_name: str
+
+
+@dataclass
 class Trigger(base.Trigger):
     """Describes a MySQL trigger.
 
@@ -31,8 +37,7 @@ class Trigger(base.Trigger):
 
     time: TriggerTimes
     event: TriggerEvents
-    order: TriggerOrders | None = None
-    other_trigger_name: str | None = None
+    order: TriggerOrder | None = None
 
     @classmethod
     def before(
@@ -40,8 +45,6 @@ class Trigger(base.Trigger):
         event: TriggerEvents | str,
         on: str,
         execute: str,
-        order: TriggerOrders | str | None = None,
-        other_trigger_name: str | None = None,
         name: str = "",
     ):
         return cls(
@@ -49,8 +52,6 @@ class Trigger(base.Trigger):
             time=TriggerTimes.before,
             event=TriggerEvents.from_string(event),
             on=on,
-            order=order,
-            other_trigger_name=other_trigger_name,
             execute=execute,
         )
 
@@ -60,8 +61,6 @@ class Trigger(base.Trigger):
         event: TriggerEvents | str,
         on: str,
         execute: str,
-        order: TriggerOrders | str | None = None,
-        other_trigger_name: str | None = None,
         name: str = "",
     ):
         return cls(
@@ -69,9 +68,19 @@ class Trigger(base.Trigger):
             time=TriggerTimes.after,
             event=TriggerEvents.from_string(event),
             on=on,
-            order=order,
-            other_trigger_name=other_trigger_name,
             execute=execute,
+        )
+
+    def follows(self, other_trigger_name: str):
+        """Set the trigger to be ordered **after** the provided trigger name."""
+        return replace(
+            self, order=TriggerOrder(TriggerOrders.follows, other_trigger_name)
+        )
+
+    def precedes(self, other_trigger_name: str):
+        """Set the trigger to be ordered **before** the provided trigger name."""
+        return replace(
+            self, order=TriggerOrder(TriggerOrders.precedes, other_trigger_name)
         )
 
     def to_sql_create(self, replace=False) -> str:
@@ -84,7 +93,6 @@ class Trigger(base.Trigger):
         [{ FOLLOWS | PRECEDES } other_trigger_name]
         trigger_body
         """
-
         if replace:
             self.to_sql_drop()
 
@@ -97,8 +105,8 @@ class Trigger(base.Trigger):
         components.append(self.on)
         components.append("FOR EACH ROW")
         if self.order:
-            components.append(self.order.value)
-            components.append(self.other_trigger_name)
+            components.append(self.order.order.value)
+            components.append(self.order.other_trigger_name)
         components.append(self.execute)
 
         return " ".join(components) + ";"

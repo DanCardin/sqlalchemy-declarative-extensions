@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from sqlalchemy.engine import Connection
+
 from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.trigger import base
 
@@ -164,3 +166,10 @@ class Trigger(base.Trigger):
         components.append("EXECUTE PROCEDURE")
         components.append(self.execute + "()")
         return " ".join(components) + ";"
+
+    def to_sql_update(self, connection: Connection):
+        assert connection.dialect.server_version_info
+        if connection.dialect.server_version_info >= (14, 0):
+            return [self.to_sql_create(replace=True)]
+
+        return super().to_sql_update(connection)

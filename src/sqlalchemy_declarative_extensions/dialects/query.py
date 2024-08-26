@@ -6,6 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy_declarative_extensions.dialects import postgresql, snowflake
 from sqlalchemy_declarative_extensions.dialects.mysql.query import (
     check_schema_exists_mysql,
+    get_triggers_mysql,
     get_views_mysql,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.query import (
@@ -124,6 +125,7 @@ get_function_cls = dialect_dispatch(
 
 get_triggers = dialect_dispatch(
     postgresql=get_triggers_postgresql,
+    mysql=get_triggers_mysql,
 )
 
 
