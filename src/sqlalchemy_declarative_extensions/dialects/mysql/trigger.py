@@ -24,6 +24,11 @@ class TriggerOrders(FromStrings):
 
 @dataclass
 class TriggerOrder:
+    """Encodes the trigger order.
+
+    MySQL triggers can be (optionally) made to execute before/after a related trigger.
+    """
+
     order: TriggerOrders
     other_trigger_name: str
 

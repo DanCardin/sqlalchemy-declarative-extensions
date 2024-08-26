@@ -11,17 +11,6 @@ Adds extensions to SQLAlchemy (and/or Alembic) which allows declaratively
 stating the existence of additional kinds of objects about your database not
 natively supported by SQLAlchemy/Alembic.
 
-This includes:
-
-- Schemas
-- Views
-- Roles
-- Privileges (Grants/Default Grants)
-- Functions
-- Triggers
-- Rows (i.e. data)
-- "audit tables" (i.e. triggers which record data changes to some source table)
-
 The primary function(s) of this library include:
 
 - Registering onto the SQLAlchemy event system such that `metadata.create_all`
@@ -29,6 +18,36 @@ The primary function(s) of this library include:
 - (Optionally) Registers into Alembic such that
   `alembic revision --autogenerate` automatically creates/updates/deletes
   declared objects.
+
+Object support includes:
+
+|                | Postgres | MySQL | SQLite | Snowflake |
+| -------------- | -------- | ----- | ------ | --------- |
+| Schemas        | ✓        | N/A   | ✓      | ✓         |
+| Views          | ✓        | ✓     | ✓      | ✓         |
+| Roles          | ✓        |       | N/A    | ✓         |
+| Grants         | ✓        |       | N/A    |           |
+| Default Grants | ✓        |       | N/A    |           |
+| Functions      | ✓        |       |        |           |
+| Triggers       | ✓        | ✓     |        |           |
+| Databases      | ✓        |       | N/A    | ✓         |
+| Rows (data)    | ✓        | ✓     | ✓      | ✓         |
+| "Audit Tables" | ✓        |       |        |           |
+
+Notes:
+
+- "Row" is implemented with pure SQLAlchemy concepts, so should work for any
+  dialect that you can use SQLAlchemy to connect to.
+- "Audit Tables" are a higher-level set of functions/triggers which record data
+  changes against some source table.
+
+In principle, this library **can** absolutely support any database supported by
+SQLAlchemy, and capable of being introspected enough to support detection of
+different kinds of objects. In reality, the existence of implementations are going to
+be purely driven by actual usage/contributions/requests.
+
+See [docs on dialect support](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/contributing/dialect-support.html)
+for information on how to improve support for a given dialect. Also feel free to submit an issue!
 
 ## Kitchen Sink Example (using all available features)
 
@@ -160,50 +179,6 @@ All object types are opt out but can be excluded.
 In contrast to `register_sqlalchemy_events`, it's much more likely that you're
 declaring most of these object types in order to have alembic track them
 
-## Database support
-
-In principle, this library **can** absolutely support any database supported by
-SQLAlchemy, and capable of being introspected enough to support detection of
-different kinds of objects.
-
-As you can see below, in reality the existence of implementations are going to
-be purely driven by actual usage. The current maintainer(s) primarily use
-PostgreSQL and as such individual features for other databases will either
-suffer or lack implementation.
-
-|               | Postgres | MySQL | SQLite | Snowflake |
-| ------------- | -------- | ----- | ------ | --------- |
-| Schema        | ✓        | N/A   | ✓      | ✓         |
-| View          | ✓        | ✓     | ✓      | ✓         |
-| Role          | ✓        |       | N/A    | ✓         |
-| Grant         | ✓        |       | N/A    |           |
-| Default Grant | ✓        |       | N/A    |           |
-| Function      | ✓        | \*    |        |           |
-| Trigger       | ✓        | \*    |        |           |
-| Database      | ✓        |       |        | ✓         |
-| Row (data)    | ✓        | ✓     | ✓      | ✓         |
-| "Audit Table" | ✓        |       |        |           |
-
-**note** "Row" is implemented with pure SQLAlchemy concepts, so should work for
-any dialect that you can use SQLAlchemy to connect to.
-
-The asterisks above note pending or provisional support through basic test cases.
-The level of expertise in each dialects' particular behaviors is not uniform,
-and deciding on the correct behavior for those dialects will require users to
-submit issues/fixes!
-
-Supporting a new dialect **can** be as simple as providing the
-dialect-dispatched implementations for detecting existing objects of the given
-type. Very much the intent is that once a given object type is supported at all,
-the comparison infrastructure for that type should make it straightforward to
-support other dialects. At the end of the day, this library is primarily
-producing SQL statements, so in theory any dialect supporting a given object
-type should be able to be supported.
-
-In such cases (like Grants/Roles) that different dialects support wildly
-different options/syntax, there are also patterns for defining dialect-specific
-objects, to mediate any additional differences.
-
 ## Alembic-utils
 
 [Alembic Utils](https://github.com/olirice/alembic_utils) is the primary library
@@ -222,7 +197,8 @@ use both.
 
   - This library is designed to support any dialect (in theory). Certainly
     PostgreSQL is **best** supported, but there does exist support for specific
-    kinds of objects to varying levels of support for SQLite and MySQL, so far.
+    kinds of objects to varying levels of support for Snowflake, SQLite, and MySQL,
+    so far.
 
 - Architecture
 
@@ -243,7 +219,7 @@ use both.
     want that object to be created. It cannot drop objects it is not already
     aware of.
 
-  - This library declares ths objects the system as a whole expects to exist.
+  - This library declares the objects the system as a whole expects to exist.
     Similar to Alembic's behavior on tables, it will (by default) detect any
     **undeclared** objects that should not exist and drop them. That means, you
     can rely on this object to ensure the state of your migrations matches the

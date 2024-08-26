@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-declarative-extensions"
-version = "0.11.4"
+version = "0.12.0"
 authors = ["Dan Cardin <ddcardin@gmail.com>"]
 
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
