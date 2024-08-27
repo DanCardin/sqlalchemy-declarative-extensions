@@ -26,19 +26,7 @@ class Procedure(base.Procedure):
 
     security: ProcedureSecurity = ProcedureSecurity.invoker
 
-    @classmethod
-    def from_unknown_procedure(cls, f: base.Procedure) -> Self:
-        if isinstance(f, cls):
-            return f
-
-        return cls(
-            name=f.name,
-            definition=f.definition,
-            language=f.language,
-            schema=f.schema,
-        )
-
-    def to_sql_create(self, replace=False):
+    def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
         if replace:
@@ -53,7 +41,10 @@ class Procedure(base.Procedure):
         components.append(f"LANGUAGE {self.language}")
         components.append(f"AS $${self.definition}$$")
 
-        return " ".join(components) + ";"
+        return [" ".join(components) + ";"]
+
+    def to_sql_update(self) -> list[str]:
+        return self.to_sql_create(replace=True)
 
     def normalize(self) -> Self:
         definition = textwrap.dedent(self.definition)

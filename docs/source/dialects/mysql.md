@@ -1,5 +1,30 @@
 # MySQL
 
+## Functions/Procedures
+
+```python
+from sqlalchemy_declarative_extensions import Functions, Procedures, Function, Procedure
+
+functions = Functions().are(
+     Function("some_function", "INSERT INTO foo"),
+     ...
+)
+procedures = Procedures().are(
+     Procedure("some_proc", "INSERT INTO foo"),
+     ...
+)
+```
+
+```{note}
+Neither functions nor procedures currently support arguments!
+```
+
+While function/procedure **detailed** options do vary across dialects, it is possible to define
+functions/procedures with all default options such that a generic implementation can be useful.
+
+As such, the above example **does** use the generic instances, but a dialect-specific variant
+subclass exists at `sqlalchemy_declarative_extensions.dialects.mysql`.
+
 ## Triggers
 
 ```python
@@ -20,5 +45,5 @@ them, which is the reason for the dialect-scoped `dialects.mysql` import above.
 
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.dialects.mysql
-   :members: Trigger, TriggerTimes, TriggerForEach, TriggerEvents, TriggerOrders, TriggerOrder
+   :members: Function, FunctionSecurity, Procedure, ProcedureSecurity, FunctionSecurity, Trigger, TriggerTimes, TriggerForEach, TriggerEvents, TriggerOrders, TriggerOrder
 ```

@@ -23,6 +23,18 @@ class Procedure:
     language: str = "sql"
     schema: str | None = None
 
+    @classmethod
+    def from_unknown_procedure(cls, f: Procedure) -> Self:
+        if isinstance(f, cls):
+            return f
+
+        return cls(
+            name=f.name,
+            definition=f.definition,
+            language=f.language,
+            schema=f.schema,
+        )
+
     @property
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
@@ -30,14 +42,17 @@ class Procedure:
     def normalize(self) -> Self:
         raise NotImplementedError()  # pragma: no cover
 
-    def to_sql_create(self, replace=False):
+    def to_sql_create(self) -> list[str]:
         raise NotImplementedError()
 
-    def to_sql_update(self):
-        return self.to_sql_create(replace=True)
+    def to_sql_update(self) -> list[str]:
+        return [
+            *self.to_sql_drop(),
+            *self.to_sql_create(),
+        ]
 
-    def to_sql_drop(self):
-        return f"DROP PROCEDURE {self.qualified_name}();"
+    def to_sql_drop(self) -> list[str]:
+        return [f"DROP PROCEDURE {self.qualified_name}();"]
 
     def with_name(self, name: str):
         return replace(self, name=name)

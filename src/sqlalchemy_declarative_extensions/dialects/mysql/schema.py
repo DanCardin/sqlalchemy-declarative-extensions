@@ -28,6 +28,20 @@ triggers = table(
     schema="INFORMATION_SCHEMA",
 )
 
+routine_table = table(
+    "routines",
+    column("routine_name"),
+    column("routine_definition"),
+    column("routine_schema"),
+    column("routine_type"),
+    column("data_type"),
+    column("security_type"),
+    column("dtd_identifier"),
+    column("is_deterministic"),
+    column("sql_data_access"),
+    schema="INFORMATION_SCHEMA",
+)
+
 schemata = table(
     "schemata",
     column("schema_name"),
@@ -51,8 +65,31 @@ triggers_query = select(
     triggers.c.event_manipulation.label("event"),
     triggers.c.event_object_table.label("on_name"),
     triggers.c.action_statement.label("statement"),
-).where(triggers.c.trigger_schema != "sys")
+).where(triggers.c.trigger_schema == bindparam("schema"))
 
 schema_exists_query = select(schemata).where(
     schemata.c.schema_name == bindparam("schema")
+)
+
+procedures_query = (
+    select(
+        routine_table.c.routine_name.label("name"),
+        routine_table.c.routine_definition.label("definition"),
+        routine_table.c.security_type.label("security"),
+    )
+    .where(routine_table.c.routine_schema == bindparam("schema"))
+    .where(routine_table.c.routine_type == "PROCEDURE")
+)
+
+functions_query = (
+    select(
+        routine_table.c.routine_name.label("name"),
+        routine_table.c.routine_definition.label("definition"),
+        routine_table.c.security_type.label("security"),
+        routine_table.c.dtd_identifier.label("return_type"),
+        routine_table.c.is_deterministic.label("deterministic"),
+        routine_table.c.sql_data_access.label("data_access"),
+    )
+    .where(routine_table.c.routine_schema == bindparam("schema"))
+    .where(routine_table.c.routine_type == "FUNCTION")
 )

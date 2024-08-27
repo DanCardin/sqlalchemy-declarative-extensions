@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13
+
+- feat: Add support for MetaData.drop_all.
+- feat: Add basic support for functions and procedures to MySQL.
+
 ## 0.12
 
 - feat: Add basic support for triggers to MySQL.
