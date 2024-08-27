@@ -171,6 +171,49 @@ def register_sqlalchemy_events(
         - list[str]: Performs a glob-match of each item by its unique identifier (typically name),
                      and ignores all non-matching objects.
     """
+    if isinstance(maybe_metadata, MetaData):
+        metadata = maybe_metadata
+    else:
+        metadata = maybe_metadata.metadata
+
+    register_create_events(
+        metadata,
+        databases=databases,
+        schemas=schemas,
+        roles=roles,
+        grants=grants,
+        views=views,
+        procedures=procedures,
+        functions=functions,
+        triggers=triggers,
+        rows=rows,
+    )
+
+    register_drop_events(
+        metadata,
+        databases=databases,
+        schemas=schemas,
+        roles=roles,
+        views=views,
+        procedures=procedures,
+        functions=functions,
+        triggers=triggers,
+    )
+
+
+def register_create_events(
+    metadata: MetaData,
+    *,
+    databases: bool | list[str] = False,
+    schemas: bool | list[str] = False,
+    roles: bool | list[str] = False,
+    grants: bool = False,
+    views: bool | list[str] = False,
+    procedures: bool | list[str] = False,
+    functions: bool | list[str] = False,
+    triggers: bool | list[str] = False,
+    rows: bool | list[str] = False,
+):
     from sqlalchemy_declarative_extensions.database.ddl import database_ddl
     from sqlalchemy_declarative_extensions.function.ddl import function_ddl
     from sqlalchemy_declarative_extensions.grant.ddl import grant_ddl
@@ -180,11 +223,6 @@ def register_sqlalchemy_events(
     from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
     from sqlalchemy_declarative_extensions.trigger.ddl import trigger_ddl
     from sqlalchemy_declarative_extensions.view.ddl import view_ddl
-
-    if isinstance(maybe_metadata, MetaData):
-        metadata = maybe_metadata
-    else:
-        metadata = maybe_metadata.metadata
 
     concrete_schemas = metadata.info.get("schemas")
     concrete_roles = metadata.info.get("roles")
@@ -224,14 +262,10 @@ def register_sqlalchemy_events(
         event.listen(
             metadata,
             "before_create",
-            grant_ddl(concrete_grants, after=False),
+            grant_ddl(concrete_grants, concrete_roles),
         )
-
-        event.listen(
-            metadata,
-            "after_create",
-            grant_ddl(concrete_grants, after=True),
-        )
+        # There should(?) be no need to handle dropping for grants,
+        # they will be handled directly by table handling.
 
     if concrete_views and views:
         view_filter = views if isinstance(views, list) else None
@@ -271,4 +305,90 @@ def register_sqlalchemy_events(
             metadata,
             "after_create",
             rows_query(concrete_rows, row_filter),
+        )
+
+
+def register_drop_events(
+    metadata: MetaData,
+    *,
+    databases: bool | list[str] = False,
+    schemas: bool | list[str] = False,
+    roles: bool | list[str] = False,
+    views: bool | list[str] = False,
+    procedures: bool | list[str] = False,
+    functions: bool | list[str] = False,
+    triggers: bool | list[str] = False,
+):
+    # Note grants and rows are (currently) omitted. Rows should handled by tables being dropped.
+    # Grants should be handled by everything else being dropped.
+    from sqlalchemy_declarative_extensions.database.ddl import database_ddl
+    from sqlalchemy_declarative_extensions.function.ddl import function_ddl
+    from sqlalchemy_declarative_extensions.procedure.ddl import procedure_ddl
+    from sqlalchemy_declarative_extensions.role.ddl import role_ddl
+    from sqlalchemy_declarative_extensions.schema.ddl import schema_ddl
+    from sqlalchemy_declarative_extensions.trigger.ddl import trigger_ddl
+    from sqlalchemy_declarative_extensions.view.ddl import view_ddl
+
+    concrete_schemas = metadata.info.get("schemas")
+    concrete_roles = metadata.info.get("roles")
+    concrete_views = metadata.info.get("views")
+    concrete_procedures = metadata.info.get("procedures")
+    concrete_functions = metadata.info.get("functions")
+    concrete_triggers = metadata.info.get("triggers")
+    concrete_databases = metadata.info.get("databases")
+
+    if concrete_procedures and procedures:
+        procedure_filter = procedures if isinstance(procedures, list) else None
+        event.listen(
+            metadata,
+            "before_drop",
+            procedure_ddl(concrete_procedures.are(), procedure_filter),
+        )
+
+    if concrete_triggers and triggers:
+        trigger_filter = triggers if isinstance(triggers, list) else None
+        event.listen(
+            metadata,
+            "before_drop",
+            trigger_ddl(concrete_triggers.are(), trigger_filter),
+        )
+
+    if concrete_functions and functions:
+        function_filter = functions if isinstance(functions, list) else None
+        event.listen(
+            metadata,
+            "before_drop",
+            function_ddl(concrete_functions.are(), function_filter),
+        )
+
+    if concrete_views and views:
+        view_filter = views if isinstance(views, list) else None
+        event.listen(
+            metadata,
+            "before_drop",
+            view_ddl(concrete_views.are(), view_filter),
+        )
+
+    if concrete_schemas and schemas:
+        schema_filter = schemas if isinstance(schemas, list) else None
+        event.listen(
+            metadata,
+            "after_drop",
+            schema_ddl(concrete_schemas.are(), schema_filter),
+        )
+
+    if concrete_roles and roles:
+        role_filter = roles if isinstance(roles, list) else None
+        event.listen(
+            metadata,
+            "after_drop",
+            role_ddl(concrete_roles.are(), role_filter),
+        )
+
+    if concrete_databases and databases:
+        database_filter = databases if isinstance(databases, list) else None
+        event.listen(
+            metadata,
+            "after_drop",
+            database_ddl(concrete_databases.are(), database_filter),
         )
