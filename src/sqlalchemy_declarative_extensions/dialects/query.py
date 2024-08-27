@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Type, TypeVar, cast
+
 from sqlalchemy import func
 from sqlalchemy.engine import Connection
 
-from sqlalchemy_declarative_extensions.dialects import postgresql, snowflake
+from sqlalchemy_declarative_extensions.dialects import mysql, postgresql, snowflake
 from sqlalchemy_declarative_extensions.dialects.mysql.query import (
     check_schema_exists_mysql,
+    get_functions_mysql,
+    get_procedures_mysql,
     get_triggers_mysql,
     get_views_mysql,
 )
@@ -35,10 +40,23 @@ from sqlalchemy_declarative_extensions.dialects.sqlite.query import (
     get_schemas_sqlite,
     get_views_sqlite,
 )
+from sqlalchemy_declarative_extensions.function.base import Function
+from sqlalchemy_declarative_extensions.procedure import Procedure
 from sqlalchemy_declarative_extensions.role import Role
 from sqlalchemy_declarative_extensions.schema.base import Schema
 from sqlalchemy_declarative_extensions.sqlalchemy import dialect_dispatch, select
 from sqlalchemy_declarative_extensions.view import View
+
+A = TypeVar("A")
+T = TypeVar("T")
+
+
+def get_cls(t: type[T], _: type[A]) -> Callable[[Connection], type[A]]:
+    def wrapper(_: Connection) -> type[A]:
+        return cast(Type[A], t)
+
+    return wrapper
+
 
 get_schemas = dialect_dispatch(
     postgresql=get_schemas_postgresql,
@@ -47,8 +65,8 @@ get_schemas = dialect_dispatch(
 )
 
 get_schema_cls = dialect_dispatch(
-    default=lambda _: Schema,
-    snowflake=lambda _: snowflake.Schema,
+    default=get_cls(Schema, Schema),
+    snowflake=get_cls(snowflake.Schema, Schema),
 )
 
 check_schema_exists = dialect_dispatch(
@@ -85,9 +103,9 @@ get_roles = dialect_dispatch(
 )
 
 get_role_cls = dialect_dispatch(
-    postgresql=lambda _: postgresql.Role,
-    snowflake=lambda _: snowflake.Role,
-    sqlite=lambda _: Role,
+    postgresql=get_cls(postgresql.Role, Role),
+    snowflake=get_cls(snowflake.Role, Role),
+    sqlite=get_cls(Role, Role),
 )
 
 get_views = dialect_dispatch(
@@ -98,9 +116,9 @@ get_views = dialect_dispatch(
 )
 
 get_view_cls = dialect_dispatch(
-    postgresql=lambda _: postgresql.View,
-    default=lambda _: View,
-    snowflake=lambda _: snowflake.View,
+    postgresql=get_cls(postgresql.View, View),
+    snowflake=get_cls(snowflake.View, View),
+    default=get_cls(View, View),
 )
 
 get_view = dialect_dispatch(
@@ -109,18 +127,22 @@ get_view = dialect_dispatch(
 
 get_procedures = dialect_dispatch(
     postgresql=get_procedures_postgresql,
+    mysql=get_procedures_mysql,
 )
 
 get_procedure_cls = dialect_dispatch(
-    postgresql=lambda _: postgresql.Procedure,
+    postgresql=get_cls(postgresql.Procedure, Procedure),
+    mysql=get_cls(mysql.Procedure, Procedure),
 )
 
 get_functions = dialect_dispatch(
     postgresql=get_functions_postgresql,
+    mysql=get_functions_mysql,
 )
 
 get_function_cls = dialect_dispatch(
-    postgresql=lambda _: postgresql.Function,
+    postgresql=get_cls(postgresql.Function, Function),
+    mysql=get_cls(mysql.Function, Function),
 )
 
 get_triggers = dialect_dispatch(

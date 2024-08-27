@@ -4,8 +4,6 @@ import enum
 import textwrap
 from dataclasses import dataclass, replace
 
-from typing_extensions import Self
-
 from sqlalchemy_declarative_extensions.function import base
 
 
@@ -26,20 +24,7 @@ class Function(base.Function):
 
     security: FunctionSecurity = FunctionSecurity.invoker
 
-    @classmethod
-    def from_unknown_function(cls, f: base.Function) -> Self:
-        if isinstance(f, cls):
-            return f
-
-        return cls(
-            name=f.name,
-            definition=f.definition,
-            language=f.language,
-            schema=f.schema,
-            returns=f.returns,
-        )
-
-    def to_sql_create(self, replace=False):
+    def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
         if replace:
@@ -55,7 +40,10 @@ class Function(base.Function):
         components.append(f"LANGUAGE {self.language}")
         components.append(f"AS $${self.definition}$$")
 
-        return " ".join(components) + ";"
+        return [" ".join(components) + ";"]
+
+    def to_sql_update(self) -> list[str]:
+        return self.to_sql_create(replace=True)
 
     def with_security(self, security: FunctionSecurity):
         return replace(self, security=security)

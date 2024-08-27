@@ -27,5 +27,5 @@ def _compare_procedures(autogen_context, upgrade_ops, _):
 @renderers.dispatch_for(DropProcedureOp)
 def render_create_procedure(autogen_context: AutogenContext, op: Operation):
     assert autogen_context.connection
-    command = op.to_sql()
-    return f'op.execute("""{command}""")'
+    commands = op.to_sql()
+    return [f'op.execute("""{command}""")' for command in commands]

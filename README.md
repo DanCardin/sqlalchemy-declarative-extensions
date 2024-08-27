@@ -28,7 +28,8 @@ Object support includes:
 | Roles          | ✓        |       | N/A    | ✓         |
 | Grants         | ✓        |       | N/A    |           |
 | Default Grants | ✓        |       | N/A    |           |
-| Functions      | ✓        |       |        |           |
+| Functions      | ✓        | ✓     |        |           |
+| Procedures     | ✓        | ✓     |        |           |
 | Triggers       | ✓        | ✓     |        |           |
 | Databases      | ✓        |       | N/A    | ✓         |
 | Rows (data)    | ✓        | ✓     | ✓      | ✓         |

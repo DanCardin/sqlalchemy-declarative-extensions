@@ -1,3 +1,12 @@
+from sqlalchemy_declarative_extensions.dialects.mysql.function import (
+    Function,
+    FunctionDataAccess,
+    FunctionSecurity,
+)
+from sqlalchemy_declarative_extensions.dialects.mysql.procedure import (
+    Procedure,
+    ProcedureSecurity,
+)
 from sqlalchemy_declarative_extensions.dialects.mysql.trigger import (
     Trigger,
     TriggerEvents,
@@ -7,6 +16,11 @@ from sqlalchemy_declarative_extensions.dialects.mysql.trigger import (
 )
 
 __all__ = [
+    "Function",
+    "FunctionDataAccess",
+    "FunctionSecurity",
+    "Procedure",
+    "ProcedureSecurity",
     "Trigger",
     "TriggerEvents",
     "TriggerOrder",
