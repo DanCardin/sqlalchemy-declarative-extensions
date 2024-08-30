@@ -18,7 +18,7 @@ class CreateProcedureOp:
     def reverse(self):
         return DropProcedureOp(self.procedure)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.procedure.to_sql_create()
 
 
@@ -30,7 +30,7 @@ class UpdateProcedureOp:
     def reverse(self):
         return UpdateProcedureOp(self.procedure, self.from_procedure)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.procedure.to_sql_update()
 
 
@@ -41,7 +41,7 @@ class DropProcedureOp:
     def reverse(self):
         return CreateProcedureOp(self.procedure)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.procedure.to_sql_drop()
 
 

@@ -15,7 +15,8 @@ def procedure_ddl(procedures: Procedures, procedure_filter: list[str] | None = N
             if not match_name(op.procedure.qualified_name, procedure_filter):
                 continue
 
-            command = op.to_sql()
-            connection.execute(text(command))
+            commands = op.to_sql()
+            for command in commands:
+                connection.execute(text(command))
 
     return after_create

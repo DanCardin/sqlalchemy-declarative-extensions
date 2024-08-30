@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Container, List, cast
 
 from sqlalchemy import Index, UniqueConstraint
@@ -42,6 +43,8 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import (
 from sqlalchemy_declarative_extensions.dialects.postgresql.view import (
     MaterializedOptions,
 )
+from sqlalchemy_declarative_extensions.function import Function as BaseFunction
+from sqlalchemy_declarative_extensions.procedure import Procedure as BaseProcedure
 from sqlalchemy_declarative_extensions.sql import qualify_name
 
 
@@ -166,7 +169,7 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
     )
 
 
-def get_procedures_postgresql(connection: Connection) -> list[Procedure]:
+def get_procedures_postgresql(connection: Connection) -> Sequence[BaseProcedure]:
     procedures = []
     for f in connection.execute(procedures_query).fetchall():
         name = f.name
@@ -190,7 +193,7 @@ def get_procedures_postgresql(connection: Connection) -> list[Procedure]:
     return procedures
 
 
-def get_functions_postgresql(connection: Connection) -> list[Function]:
+def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
     functions = []
     for f in connection.execute(functions_query).fetchall():
         name = f.name

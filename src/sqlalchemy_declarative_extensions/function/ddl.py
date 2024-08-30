@@ -15,7 +15,8 @@ def function_ddl(functions: Functions, function_filter: list[str] | None = None)
             if not match_name(op.function.qualified_name, function_filter):
                 continue
 
-            command = op.to_sql()
-            connection.execute(text(command))
+            commands = op.to_sql()
+            for command in commands:
+                connection.execute(text(command))
 
     return after_create

@@ -18,7 +18,7 @@ class CreateFunctionOp:
     def reverse(self):
         return DropFunctionOp(self.function)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.function.to_sql_create()
 
 
@@ -30,7 +30,7 @@ class UpdateFunctionOp:
     def reverse(self):
         return UpdateFunctionOp(self.function, self.from_function)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.function.to_sql_update()
 
 
@@ -41,7 +41,7 @@ class DropFunctionOp:
     def reverse(self):
         return CreateFunctionOp(self.function)
 
-    def to_sql(self) -> str:
+    def to_sql(self) -> list[str]:
         return self.function.to_sql_drop()
 
 
@@ -58,7 +58,8 @@ def compare_functions(
     functions_by_name = {f.qualified_name: f for f in functions.functions}
     expected_function_names = set(functions_by_name)
 
-    existing_functions = filter_functions(get_functions(connection), functions.ignore)
+    raw_existing_functions = get_functions(connection)
+    existing_functions = filter_functions(raw_existing_functions, functions.ignore)
     existing_functions_by_name = {r.qualified_name: r for r in existing_functions}
     existing_function_names = set(existing_functions_by_name)
 

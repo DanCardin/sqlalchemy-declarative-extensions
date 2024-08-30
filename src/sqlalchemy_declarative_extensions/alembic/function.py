@@ -27,5 +27,5 @@ def _compare_functions(autogen_context, upgrade_ops, _):
 @renderers.dispatch_for(DropFunctionOp)
 def render_create_function(autogen_context: AutogenContext, op: Operation):
     assert autogen_context.connection
-    command = op.to_sql()
-    return f'op.execute("""{command}""")'
+    commands = op.to_sql()
+    return [f'op.execute("""{command}""")' for command in commands]
