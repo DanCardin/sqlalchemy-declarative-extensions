@@ -30,7 +30,7 @@ Define postgres grants. Note there is not currently a generic grant option, due
 to wild differences in details/semantics across dialects.
 
 Note, [DefaultGrant](DefaultGrant) is most likely the intended object to make
-use of when declarting most grants. A vanilla [Grant](Grant) **may** encounter
+use of when declaring most grants. A vanilla [Grant](Grant) **may** encounter
 problems with the provenance of the objects it references (i.e. a defined
 `Grant` may be evaluated before the objects the grant references exist).
 
@@ -60,7 +60,8 @@ triggers = Triggers().are(
      Trigger.after("insert", on="foo", execute="gimme")
      .named("on_insert_foo")
      .when("pg_trigger_depth() < 1")
-     .for_each_row(),
+     .for_each_row()
+     .with_arguments(["arg1", "arg2"]),
 )
 ```
 
@@ -71,7 +72,8 @@ all Postgres-specific.
 
 Additionally, not all trigger options are currently supported for Postgres. At
 current moment, only the options required to support the
-[Audit Table](../audit_tables.md) feature have been implemented.
+[Audit Table](../audit_tables.md) feature as well as basic support for arguments
+have been implemented.
 
 ## API
 
