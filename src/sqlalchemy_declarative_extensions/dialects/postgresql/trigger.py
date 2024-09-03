@@ -134,7 +134,7 @@ class Trigger(base.Trigger):
     def when(self, condition: str):
         return replace(self, condition=condition)
 
-    def with_arguments(self, arguments: list[str]):
+    def with_arguments(self, *arguments: str):
         return replace(self, arguments=arguments)
 
     def to_sql_create(self, replace=False):
