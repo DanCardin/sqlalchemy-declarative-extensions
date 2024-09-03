@@ -41,11 +41,11 @@ class Base(_Base):  # type: ignore
         Trigger.after("insert", on="foo", execute="count_arguments")
         .named("on_insert_foo_single")
         .for_each_row()
-        .with_arguments(["single"]),
+        .with_arguments("single"),
         Trigger.after("insert", on="foo", execute="count_arguments")
         .named("on_insert_foo_multi")
         .for_each_row()
-        .with_arguments(["multi1", "multi2"]),
+        .with_arguments("multi1", "multi2"),
     )
 
 
