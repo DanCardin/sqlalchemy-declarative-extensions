@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.14
+- feat: Add basic support for triggers with arguments to Postgres.
+
 ## 0.13
 
 - feat: Add support for MetaData.drop_all.

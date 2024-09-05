@@ -89,6 +89,7 @@ class Trigger(base.Trigger):
     time: TriggerTimes
     for_each: TriggerForEach = TriggerForEach.statement
     condition: str | None = None
+    arguments: tuple[str, ...] | None = None
 
     @classmethod
     def before(
@@ -133,6 +134,9 @@ class Trigger(base.Trigger):
     def when(self, condition: str):
         return replace(self, condition=condition)
 
+    def with_arguments(self, *arguments: str):
+        return replace(self, arguments=arguments)
+
     def to_sql_create(self, replace=False):
         """Return a trigger CREATE statement.
 
@@ -164,7 +168,10 @@ class Trigger(base.Trigger):
             components.append(f"({self.condition})")
 
         components.append("EXECUTE PROCEDURE")
-        components.append(self.execute + "()")
+        args_quoted = (
+            tuple(f"'{arg}'" for arg in self.arguments) if self.arguments else ()
+        )
+        components.append(self.execute + f"({','.join(args_quoted)})")
         return " ".join(components) + ";"
 
     def to_sql_update(self, connection: Connection):
