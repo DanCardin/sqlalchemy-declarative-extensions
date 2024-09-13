@@ -15,7 +15,7 @@ def role_ddl(roles: Roles, role_filter: list[str] | None = None):
             if not match_name(op.role.name, role_filter):
                 continue
 
-            statements = op.to_sql()
+            statements = op.to_sql(raw=True)
             if isinstance(statements, list):
                 for statement in statements:
                     connection.execute(text(statement))

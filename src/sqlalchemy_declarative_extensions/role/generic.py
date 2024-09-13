@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, replace
 
 from sqlalchemy_declarative_extensions.context import context
+
+__all__ = [
+    "Role",
+    "Env",
+]
 
 
 @dataclass(order=True)
@@ -57,6 +63,10 @@ class Role:
         return False
 
     @property
+    def is_dynamic(self) -> bool:
+        return False
+
+    @property
     def options(self):
         yield from []
 
@@ -67,19 +77,19 @@ class Role:
             use_role=role_name(self.use_role) if self.use_role else None,
         )
 
-    def to_sql_create(self) -> list[str]:
+    def to_sql_create(self, raw: bool = True) -> list[str]:
         statement = f'CREATE ROLE "{self.name}"'
         if self.in_roles is not None:
             in_roles = ", ".join(role_names(self.in_roles))
             statement += f"IN ROLE {in_roles}"
         return [statement + ";"]
 
-    def to_sql_update(self, to_role) -> list[str]:
+    def to_sql_update(self, to_role, raw: bool = True) -> list[str]:
         raise NotImplementedError(
             "When using the generic role, there should never exist any cause to update a role."
         )
 
-    def to_sql_drop(self) -> list[str]:
+    def to_sql_drop(self, raw: bool = True) -> list[str]:
         return [f'DROP ROLE "{self.name}";']
 
     def to_sql_use(self, undo: bool) -> list[str]:
@@ -90,6 +100,24 @@ class Role:
 
     def __exit__(self, *_):
         context.exit_role()
+
+
+@dataclass
+class Env:
+    """Provide a way to supply dynamic password variables through the environment at migration time."""
+
+    name: str
+    default: str | None = None
+
+    def resolve(self, raw: bool = False):
+        if raw:
+            if self.default is not None:
+                return os.environ.get(self.name, self.default)
+            return os.environ[self.name]
+
+        if self.default is not None:
+            return f'{{os.environ.get("{self.name}", "{self.default}")}}'
+        return f'{{os.environ["{self.name}"]}}'
 
 
 def by_name(r: Role | str) -> str:

@@ -1,14 +1,28 @@
 # Changelog
 
+## 0.15
+
+### 0.15.0
+
+- fix: Add role name coercion to postgres default grant `to` argument.
+- feat: Add ability to supply environment deferred password value to postgres role.
+
 ## 0.14
+
+### 0.14.0
+
 - feat: Add basic support for triggers with arguments to Postgres.
 
 ## 0.13
+
+### 0.13.0
 
 - feat: Add support for MetaData.drop_all.
 - feat: Add basic support for functions and procedures to MySQL.
 
 ## 0.12
+
+### 0.12.0
 
 - feat: Add basic support for triggers to MySQL.
 

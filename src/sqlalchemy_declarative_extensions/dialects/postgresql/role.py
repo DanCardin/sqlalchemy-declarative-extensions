@@ -40,7 +40,7 @@ class Role(generic.Role):
     connection_limit: int | None = None
     valid_until: datetime | None = None
 
-    password: str | None = field(default=None, compare=False)
+    password: generic.Env | str | None = field(default=None, compare=False)
 
     @classmethod
     def from_pg_role(cls, r) -> Role:
@@ -81,15 +81,19 @@ class Role(generic.Role):
 
             yield f.name, value
 
+    @property
+    def is_dynamic(self) -> bool:
+        return isinstance(self.password, generic.Env)
+
     def __repr__(self):
         cls_name = self.__class__.__name__
         options = ", ".join([f"{key}={value!r}" for key, value in self.options])
         return f'{cls_name}("{self.name}", {options})'
 
-    def to_sql_create(self) -> list[str]:
+    def to_sql_create(self, raw: bool = True) -> list[str]:
         segments = ["CREATE ROLE", self.name]
 
-        options = postgres_render_role_options(self)
+        options = postgres_render_role_options(self, raw=raw)
         if options:
             segments.append("WITH")
         segments.extend(options)
@@ -102,7 +106,7 @@ class Role(generic.Role):
         command = " ".join(segments) + ";"
         return [command]
 
-    def to_sql_update(self, to_role: Role) -> list[str]:
+    def to_sql_update(self, to_role: Role, raw: bool = True) -> list[str]:
         role_name = to_role.name
         diff = RoleDiff.diff(self, to_role)
 
@@ -111,7 +115,7 @@ class Role(generic.Role):
         if self.use_role:
             result.append(f"SET ROLE {self.use_role};")
 
-        diff_options = postgres_render_role_options(diff)
+        diff_options = postgres_render_role_options(diff, raw=raw)
         if diff_options:
             segments = ["ALTER ROLE", role_name, "WITH", *diff_options]
             alter_role = " ".join(segments) + ";"
@@ -127,7 +131,7 @@ class Role(generic.Role):
             result.append("RESET ROLE")
         return result
 
-    def to_sql_drop(self) -> list[str]:
+    def to_sql_drop(self, raw: bool = True) -> list[str]:
         return [f'DROP ROLE "{self.name}";']
 
     def to_sql_use(self, undo: bool) -> list[str]:
@@ -231,7 +235,7 @@ def conditional_option(option, condition):
     return option
 
 
-def postgres_render_role_options(role: Role | RoleDiff) -> list[str]:
+def postgres_render_role_options(role: Role | RoleDiff, raw: bool = False) -> list[str]:
     segments = []
 
     if role.superuser is not None:
@@ -267,7 +271,12 @@ def postgres_render_role_options(role: Role | RoleDiff) -> list[str]:
         segments.append(segment)
 
     if isinstance(role, Role) and role.password is not None:
-        segment = f"PASSWORD {role.password}"
+        password = (
+            role.password.resolve(raw=raw)
+            if isinstance(role.password, generic.Env)
+            else role.password
+        )
+        segment = f"PASSWORD '{password}'"
         segments.append(segment)
 
     if role.valid_until is not None:

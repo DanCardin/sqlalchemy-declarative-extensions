@@ -29,7 +29,14 @@ def _compare_roles(autogen_context, upgrade_ops, _):
 @renderers.dispatch_for(DropRoleOp)
 @renderers.dispatch_for(UpdateRoleOp)
 def render_role(autogen_context: AutogenContext, op: CreateRoleOp):
-    return [f'op.execute("""{command}""")' for command in op.to_sql()]
+    is_dynamic = op.role.is_dynamic
+    if is_dynamic:
+        autogen_context.imports.add("import os")
+
+    return [
+        f'op.execute({"f" if is_dynamic else ""}"""{command}""")'
+        for command in op.to_sql(raw=False)
+    ]
 
 
 @Operations.implementation_for(CreateRoleOp)
