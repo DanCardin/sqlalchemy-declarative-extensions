@@ -107,7 +107,7 @@ class DefaultGrant:
 
     @classmethod
     def on_tables_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+        cls, *in_schemas: str | HasName, for_role: HasName | str | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -118,7 +118,7 @@ class DefaultGrant:
 
     @classmethod
     def on_sequences_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+        cls, *in_schemas: str | HasName, for_role: HasName | str | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -129,7 +129,7 @@ class DefaultGrant:
 
     @classmethod
     def on_types_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+        cls, *in_schemas: str | HasName, for_role: HasName | str | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -140,7 +140,7 @@ class DefaultGrant:
 
     @classmethod
     def on_functions_in_schema(
-        cls, *in_schemas: str | HasName, for_role: HasName | None = None
+        cls, *in_schemas: str | HasName, for_role: HasName | str | None = None
     ) -> DefaultGrant:
         schemas = _map_schema_names(*in_schemas)
         return cls(
@@ -149,14 +149,14 @@ class DefaultGrant:
             target_role=_coerce_name(for_role) if for_role is not None else None,
         )
 
-    def for_role(self, role: str):
-        return replace(self, target_role=role)
+    def for_role(self, role: HasName | str):
+        return replace(self, target_role=_coerce_name(role))
 
     def grant(
         self,
         grant: str | G | Grant,
         *grants: str | G,
-        to,
+        to: HasName | str,
         grant_option=False,
     ):
         if not isinstance(grant, Grant):
@@ -164,7 +164,7 @@ class DefaultGrant:
                 grants=tuple(
                     _map_grant_names(self.grant_type.to_variants(), grant, *grants)
                 ),
-                target_role=to,
+                target_role=_coerce_name(to),
                 grant_option=grant_option,
             )
         return DefaultGrantStatement(self, grant)

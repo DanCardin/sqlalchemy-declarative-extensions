@@ -32,9 +32,9 @@ class CreateRoleOp(RoleOp):
     def reverse(self):
         return DropRoleOp(self.role)
 
-    def to_sql(self) -> list[str]:
+    def to_sql(self, raw: bool = True) -> list[str]:
         role_sql = UseRoleOp.to_sql_from_use_role_ops(self.use_role_ops)
-        return [*role_sql, *self.role.to_sql_create()]
+        return [*role_sql, *self.role.to_sql_create(raw=raw)]
 
 
 @dataclass
@@ -58,9 +58,9 @@ class UpdateRoleOp(RoleOp):
     def reverse(self):
         return UpdateRoleOp(from_role=self.role, role=self.from_role)
 
-    def to_sql(self):
+    def to_sql(self, raw: bool = True):
         role_sql = UseRoleOp.to_sql_from_use_role_ops(self.use_role_ops)
-        return [*role_sql, *self.from_role.to_sql_update(self.role)]
+        return [*role_sql, *self.from_role.to_sql_update(self.role, raw=raw)]
 
 
 @dataclass
@@ -76,9 +76,9 @@ class DropRoleOp(RoleOp):
     def reverse(self):
         return CreateRoleOp(self.role)
 
-    def to_sql(self) -> list[str]:
+    def to_sql(self, raw: bool = True) -> list[str]:
         role_sql = UseRoleOp.to_sql_from_use_role_ops(self.use_role_ops)
-        return [*role_sql, *self.role.to_sql_drop()]
+        return [*role_sql, *self.role.to_sql_drop(raw=raw)]
 
 
 @dataclass
@@ -102,7 +102,7 @@ class UseRoleOp(RoleOp):
     def reverse(self):
         return self
 
-    def to_sql(self) -> list[str]:
+    def to_sql(self, raw: bool = True) -> list[str]:
         return self.role.to_sql_use(undo=self.undo)
 
 

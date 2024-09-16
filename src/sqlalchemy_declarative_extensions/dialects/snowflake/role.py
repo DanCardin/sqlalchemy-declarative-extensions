@@ -125,7 +125,7 @@ class Role(generic.Role):
             )
         return "USER" if is_user else "ROLE"
 
-    def to_sql_create(self) -> list[str]:
+    def to_sql_create(self, raw: bool = True) -> list[str]:
         segments = [f"CREATE {self.kind}", self.name]
 
         options = render_role_options(self)
@@ -143,7 +143,7 @@ class Role(generic.Role):
 
         return result
 
-    def to_sql_update(self, to_role: Role) -> list[str]:
+    def to_sql_update(self, to_role: Role, raw: bool = True) -> list[str]:
         role_name = to_role.name
         diff = RoleDiff.diff(self, to_role)
 
