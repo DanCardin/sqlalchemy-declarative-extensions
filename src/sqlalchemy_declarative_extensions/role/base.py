@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Sequence
 
 from sqlalchemy_declarative_extensions.dialects import postgresql
 from sqlalchemy_declarative_extensions.role import generic
@@ -9,7 +9,7 @@ from sqlalchemy_declarative_extensions.role import generic
 
 @dataclass
 class Roles:
-    roles: list[postgresql.Role | generic.Role] = field(default_factory=list)
+    roles: Sequence[postgresql.Role | generic.Role] = field(default_factory=list)
     ignore_unspecified: bool = False
     ignore_roles: list[str] = field(default_factory=list)
 
