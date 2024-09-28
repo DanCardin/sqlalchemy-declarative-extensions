@@ -55,5 +55,5 @@ def test_create_with_complex_function_requiring_normalization(pg):
     assert result == 1
 
     connection = pg.connection()
-    diff = compare_functions(connection, Base.metadata.info["functions"], Base.metadata)
+    diff = compare_functions(connection, Base.metadata.info["functions"])
     assert diff == []

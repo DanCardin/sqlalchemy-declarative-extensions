@@ -4,7 +4,6 @@ import fnmatch
 from dataclasses import dataclass
 from typing import Sequence, Union
 
-from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_function_cls, get_functions
@@ -48,11 +47,7 @@ class DropFunctionOp:
 Operation = Union[CreateFunctionOp, UpdateFunctionOp, DropFunctionOp]
 
 
-def compare_functions(
-    connection: Connection,
-    functions: Functions,
-    metadata: MetaData,
-) -> list[Operation]:
+def compare_functions(connection: Connection, functions: Functions) -> list[Operation]:
     result: list[Operation] = []
 
     functions_by_name = {f.qualified_name: f for f in functions.functions}
