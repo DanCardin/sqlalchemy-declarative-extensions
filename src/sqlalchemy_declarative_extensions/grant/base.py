@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, Union
+from typing import Iterable, Sequence, Union
+
+from sqlalchemy import MetaData
+from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.dialects import postgresql
 
@@ -59,6 +62,49 @@ class Grants:
             return Grants().are(*unknown)
 
         return None
+
+    @classmethod
+    def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+        if not isinstance(metadata, Sequence):
+            metadata = [metadata]
+
+        instances: list[Self] = [
+            m.info["grants"] for m in metadata if m and m.info.get("grants")
+        ]
+
+        instance_count = len(instances)
+        if instance_count == 0:
+            return None
+
+        if instance_count == 1:
+            return instances[0]
+
+        if not all(
+            x.ignore_unspecified == instances[0].ignore_unspecified
+            and x.ignore_self_grants == instances[0].ignore_self_grants
+            and x.only_defined_roles == instances[0].only_defined_roles
+            and x.default_grants_imply_grants
+            == instances[0].default_grants_imply_grants
+            for x in instances
+        ):
+            raise ValueError(
+                "All combined `Grants` instances must agree on the set of settings: "
+                "ignore_unspecified, ignore_self_grants, only_defined_roles, default_grants_imply_grants"
+            )
+
+        grants = [s for instance in instances for s in instance.grants]
+
+        ignore_unspecified = instances[0].ignore_unspecified
+        ignore_self_grants = instances[0].ignore_self_grants
+        only_defined_roles = instances[0].only_defined_roles
+        default_grants_imply_grants = instances[0].default_grants_imply_grants
+        return cls(
+            grants=grants,
+            ignore_unspecified=ignore_unspecified,
+            ignore_self_grants=ignore_self_grants,
+            only_defined_roles=only_defined_roles,
+            default_grants_imply_grants=default_grants_imply_grants,
+        )
 
     def __iter__(self):
         yield from self.grants
