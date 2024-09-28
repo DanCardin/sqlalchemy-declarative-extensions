@@ -62,5 +62,5 @@ def test_create(pg):
     assert result == [5, 6]
 
     connection = pg.connection()
-    diff = compare_triggers(connection, Base.metadata.info["triggers"], Base.metadata)
+    diff = compare_triggers(connection, Base.metadata.info["triggers"])
     assert diff == []

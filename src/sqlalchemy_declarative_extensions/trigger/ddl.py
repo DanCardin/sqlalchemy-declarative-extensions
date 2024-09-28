@@ -10,7 +10,7 @@ from sqlalchemy_declarative_extensions.trigger.compare import compare_triggers
 
 def trigger_ddl(triggers: Triggers, trigger_filter: list[str] | None = None):
     def after_create(metadata: MetaData, connection: Connection, **_):
-        result = compare_triggers(connection, triggers, metadata)
+        result = compare_triggers(connection, triggers)
         for op in result:
             if not match_name(op.trigger.name, trigger_filter):
                 continue

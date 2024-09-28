@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 
+from sqlalchemy_declarative_extensions.trigger.base import Triggers
 from sqlalchemy_declarative_extensions.trigger.compare import (
     CreateTriggerOp,
     DropTriggerOp,
@@ -11,13 +14,13 @@ from sqlalchemy_declarative_extensions.trigger.compare import (
 
 
 @comparators.dispatch_for("schema")
-def _compare_triggers(autogen_context, upgrade_ops, _):
-    metadata = autogen_context.metadata
-    triggers = metadata.info.get("triggers")
+def _compare_triggers(autogen_context: AutogenContext, upgrade_ops, _):
+    triggers: Triggers | None = Triggers.extract(autogen_context.metadata)
     if not triggers:
         return
 
-    result = compare_triggers(autogen_context.connection, triggers, metadata)
+    assert autogen_context.connection
+    result = compare_triggers(autogen_context.connection, triggers)
     upgrade_ops.ops.extend(result)
 
 

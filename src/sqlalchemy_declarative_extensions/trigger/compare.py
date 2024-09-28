@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Union
 
-from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_triggers
@@ -47,9 +46,7 @@ class DropTriggerOp:
 Operation = Union[CreateTriggerOp, UpdateTriggerOp, DropTriggerOp]
 
 
-def compare_triggers(
-    connection: Connection, triggers: Triggers, metadata: MetaData
-) -> list[Operation]:
+def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operation]:
     result: list[Operation] = []
 
     triggers_by_name = {r.name: r for r in triggers.triggers}
