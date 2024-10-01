@@ -19,8 +19,7 @@ Operations.register_operation("drop_schema")(DropSchemaOp)
 
 @comparators.dispatch_for("schema")
 def compare_schemas(autogen_context: AutogenContext, upgrade_ops, _):
-    assert autogen_context.metadata
-    schemas: Schemas | None = autogen_context.metadata.info.get("schemas")
+    schemas: Schemas | None = Schemas.extract(autogen_context.metadata)
     if not schemas:
         return
 

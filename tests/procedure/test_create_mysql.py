@@ -70,7 +70,5 @@ def test_create(db):
     assert result == 6
 
     connection = db.connection()
-    diff = compare_procedures(
-        connection, Base.metadata.info["procedures"], Base.metadata
-    )
+    diff = compare_procedures(connection, Base.metadata.info["procedures"])
     assert diff == []

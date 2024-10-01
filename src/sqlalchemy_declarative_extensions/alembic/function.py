@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 
+from sqlalchemy_declarative_extensions.function.base import Functions
 from sqlalchemy_declarative_extensions.function.compare import (
     CreateFunctionOp,
     DropFunctionOp,
@@ -12,13 +15,13 @@ from sqlalchemy_declarative_extensions.function.compare import (
 
 
 @comparators.dispatch_for("schema")
-def _compare_functions(autogen_context, upgrade_ops, _):
-    metadata = autogen_context.metadata
-    functions = metadata.info.get("functions")
+def _compare_functions(autogen_context: AutogenContext, upgrade_ops, _):
+    functions: Functions | None = Functions.extract(autogen_context.metadata)
     if not functions:
         return
 
-    result = compare_functions(autogen_context.connection, functions, metadata)
+    assert autogen_context.connection
+    result = compare_functions(autogen_context.connection, functions)
     upgrade_ops.ops.extend(result)
 
 

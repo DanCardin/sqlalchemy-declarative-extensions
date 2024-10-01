@@ -2,6 +2,19 @@
 
 ## 0.15
 
+### 0.15.2
+
+fix: Handle trigger metadata sequence.
+fix: Handle procedure metadata sequence.
+fix: Handle function metadata sequence.
+fix: Handle grant metadata sequence.
+fix: Handle role metadata sequence.
+fix: Handle schema metadata sequence.
+
+### 0.15.1
+
+- fix: Accept more generic sequence to roles.
+
 ### 0.15.0
 
 - fix: Add role name coercion to postgres default grant `to` argument.

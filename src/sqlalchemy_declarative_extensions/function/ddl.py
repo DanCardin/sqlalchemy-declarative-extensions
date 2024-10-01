@@ -10,7 +10,7 @@ from sqlalchemy_declarative_extensions.sql import match_name
 
 def function_ddl(functions: Functions, function_filter: list[str] | None = None):
     def after_create(metadata: MetaData, connection: Connection, **_):
-        result = compare_functions(connection, functions, metadata)
+        result = compare_functions(connection, functions)
         for op in result:
             if not match_name(op.function.qualified_name, function_filter):
                 continue

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from alembic.autogenerate.api import AutogenContext
 from alembic.autogenerate.compare import comparators
 from alembic.autogenerate.render import renderers
 
+from sqlalchemy_declarative_extensions.procedure.base import Procedures
 from sqlalchemy_declarative_extensions.procedure.compare import (
     CreateProcedureOp,
     DropProcedureOp,
@@ -12,13 +15,13 @@ from sqlalchemy_declarative_extensions.procedure.compare import (
 
 
 @comparators.dispatch_for("schema")
-def _compare_procedures(autogen_context, upgrade_ops, _):
-    metadata = autogen_context.metadata
-    procedures = metadata.info.get("procedures")
+def _compare_procedures(autogen_context: AutogenContext, upgrade_ops, _):
+    procedures: Procedures | None = Procedures.extract(autogen_context.metadata)
     if not procedures:
         return
 
-    result = compare_procedures(autogen_context.connection, procedures, metadata)
+    assert autogen_context.connection
+    result = compare_procedures(autogen_context.connection, procedures)
     upgrade_ops.ops.extend(result)
 
 

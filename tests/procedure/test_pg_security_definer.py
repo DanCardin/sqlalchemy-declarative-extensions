@@ -101,7 +101,5 @@ def test_procedure_security(pg):
     assert result == 3
 
     connection = pg.connection()
-    diff = compare_procedures(
-        connection, Base.metadata.info["procedures"], Base.metadata
-    )
+    diff = compare_procedures(connection, Base.metadata.info["procedures"])
     assert diff == []

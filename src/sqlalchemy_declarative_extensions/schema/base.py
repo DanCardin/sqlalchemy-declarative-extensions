@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Iterable, Sequence
 
+from sqlalchemy import MetaData
 from sqlalchemy.sql.base import Executable
 from sqlalchemy.sql.ddl import CreateSchema, DropSchema
 from typing_extensions import Self
@@ -51,6 +52,33 @@ class Schemas:
             return cls().are(*unknown)
 
         return None
+
+    @classmethod
+    def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+        if not isinstance(metadata, Sequence):
+            metadata = [metadata]
+
+        instances: list[Self] = [
+            m.info["schemas"] for m in metadata if m and m.info.get("schemas")
+        ]
+
+        instance_count = len(instances)
+        if instance_count == 0:
+            return None
+
+        if instance_count == 1:
+            return instances[0]
+
+        if not all(
+            x.ignore_unspecified == instances[0].ignore_unspecified for x in instances
+        ):
+            raise ValueError(
+                "All combined `Schemas` instances must agree on the set of settings: ignore_unspecified"
+            )
+
+        schemas = tuple(s for instance in instances for s in instance.schemas)
+        ignore_unspecified = instances[0].ignore_unspecified
+        return cls(schemas=schemas, ignore_unspecified=ignore_unspecified)
 
     def __iter__(self):
         yield from self.schemas

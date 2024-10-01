@@ -80,5 +80,5 @@ def test_update(pg):
     assert result == [5, 6, 10, 11]
 
     connection = pg.connection()
-    diff = compare_triggers(connection, Base.metadata.info["triggers"], Base.metadata)
+    diff = compare_triggers(connection, Base.metadata.info["triggers"])
     assert diff == []

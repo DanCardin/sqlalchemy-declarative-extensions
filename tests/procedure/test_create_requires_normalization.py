@@ -50,7 +50,5 @@ def test_create_with_complex_procedure_requiring_normalization(pg):
     assert result == 1
 
     connection = pg.connection()
-    diff = compare_procedures(
-        connection, Base.metadata.info["procedures"], Base.metadata
-    )
+    diff = compare_procedures(connection, Base.metadata.info["procedures"])
     assert diff == []

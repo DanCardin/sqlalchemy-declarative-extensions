@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from sqlalchemy import MetaData
 from typing_extensions import Self
@@ -91,6 +91,36 @@ class Functions:
             return cls().are(*unknown)
 
         return None
+
+    @classmethod
+    def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+        if not isinstance(metadata, Sequence):
+            metadata = [metadata]
+
+        instances: list[Self] = [
+            m.info["functions"] for m in metadata if m and m.info.get("functions")
+        ]
+
+        instance_count = len(instances)
+        if instance_count == 0:
+            return None
+
+        if instance_count == 1:
+            return instances[0]
+
+        if not all(
+            x.ignore_unspecified == instances[0].ignore_unspecified for x in instances
+        ):
+            raise ValueError(
+                "All combined `Functions` instances must agree on the set of settings: ignore_unspecified"
+            )
+
+        functions = [s for instance in instances for s in instance.functions]
+        ignore = [s for instance in instances for s in instance.ignore]
+        ignore_unspecified = instances[0].ignore_unspecified
+        return cls(
+            functions=functions, ignore_unspecified=ignore_unspecified, ignore=ignore
+        )
 
     def append(self, function: Function):
         self.functions.append(function)

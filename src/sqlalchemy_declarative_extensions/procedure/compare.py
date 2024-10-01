@@ -4,7 +4,6 @@ import fnmatch
 from dataclasses import dataclass
 from typing import Sequence, Union
 
-from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_procedure_cls, get_procedures
@@ -49,9 +48,7 @@ Operation = Union[CreateProcedureOp, UpdateProcedureOp, DropProcedureOp]
 
 
 def compare_procedures(
-    connection: Connection,
-    procedures: Procedures,
-    metadata: MetaData,
+    connection: Connection, procedures: Procedures
 ) -> list[Operation]:
     result: list[Operation] = []
 

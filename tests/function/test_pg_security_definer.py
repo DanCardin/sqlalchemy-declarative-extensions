@@ -101,5 +101,5 @@ def test_function_security(pg):
     assert result == 3
 
     connection = pg.connection()
-    diff = compare_functions(connection, Base.metadata.info["functions"], Base.metadata)
+    diff = compare_functions(connection, Base.metadata.info["functions"])
     assert diff == []

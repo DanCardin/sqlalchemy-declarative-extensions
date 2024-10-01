@@ -47,7 +47,5 @@ def test_create(pg):
     assert result == 2
 
     connection = pg.connection()
-    diff = compare_procedures(
-        connection, Base.metadata.info["procedures"], Base.metadata
-    )
+    diff = compare_procedures(connection, Base.metadata.info["procedures"])
     assert diff == []
