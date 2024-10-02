@@ -4,7 +4,18 @@ import inspect
 import uuid
 import warnings
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    cast,
+)
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
 from sqlalchemy.engine import Connection, Dialect
@@ -29,6 +40,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ViewType = TypeVar("ViewType", "View", "DeclarativeView")
+NamingConvention = Dict[str, Any]
 
 
 def view(
@@ -288,12 +300,15 @@ class View:
         return result
 
     def normalize(
-        self, conn: Connection, metadata: MetaData, using_connection: bool = True
+        self,
+        conn: Connection,
+        naming_convention: NamingConvention | None,
+        using_connection: bool = True,
     ) -> Self:
         constraints = None
         if self.constraints:
             constraints = [
-                ViewIndex.from_unknown(c, self, conn.dialect, metadata)
+                ViewIndex.from_unknown(c, self, conn.dialect, naming_convention)
                 for c in self.constraints
             ]
 
@@ -365,7 +380,7 @@ class ViewIndex:
         index: ViewIndex | Index | UniqueConstraint,
         source_view: View,
         dialect: Dialect,
-        metadata: MetaData,
+        naming_convention: NamingConvention | None,
     ):
         if isinstance(index, ViewIndex):
             convention = "uq" if index.unique else "ix"
@@ -390,13 +405,13 @@ class ViewIndex:
         if instance.name:
             return instance
 
-        naming_convention = metadata.naming_convention or DEFAULT_NAMING_CONVENTION
+        naming_convention = naming_convention or DEFAULT_NAMING_CONVENTION  # type: ignore
+        assert naming_convention
+        assert "ix" in naming_convention
         template = cast(
             str, naming_convention.get(convention) or naming_convention["ix"]
         )
-        cd = ConventionDict(
-            _ViewIndexAdapter(instance), source_view, metadata.naming_convention
-        )
+        cd = ConventionDict(_ViewIndexAdapter(instance), source_view, naming_convention)
         conventionalized_name = conv(template % cd)
 
         try:
@@ -504,6 +519,7 @@ class Views:
 
     ignore: Iterable[str] = field(default_factory=set)
     ignore_views: Iterable[str] = field(default_factory=set)
+    naming_convention: NamingConvention | None = None
 
     @classmethod
     def coerce_from_unknown(
@@ -516,6 +532,53 @@ class Views:
             return cls().are(*unknown)
 
         return None
+
+    @classmethod
+    def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+        if not isinstance(metadata, Sequence):
+            metadata = [metadata]
+
+        naming_conventions = [m.naming_convention for m in metadata if m]
+        instances: list[Self] = [
+            m.info["views"] for m in metadata if m and m.info.get("views")
+        ]
+
+        instance_count = len(instances)
+        if instance_count == 0:
+            return None
+
+        if instance_count == 1:
+            return instances[0]
+
+        if not all(
+            x.ignore_unspecified == instances[0].ignore_unspecified
+            and x.naming_convention == instances[0].naming_convention
+            for x in instances
+        ):
+            raise ValueError(
+                "All combined `Views` instances must agree on the set of settings: ignore_unspecified, naming_convention"
+            )
+
+        views = [s for instance in instances for s in instance.views]
+        ignore = [s for instance in instances for s in instance.ignore]
+        ignore_views = [s for instance in instances for s in instance.ignore_views]
+
+        ignore_unspecified = instances[0].ignore_unspecified
+        naming_convention = instances[0].naming_convention
+
+        if not naming_convention:
+            if not all(n == naming_conventions[0] for n in naming_conventions):
+                raise ValueError("All MetaData `naming_convention`s must agree")
+
+            naming_convention = naming_conventions[0]  # type: ignore
+
+        return cls(
+            views=views,
+            ignore_unspecified=ignore_unspecified,
+            ignore=ignore,
+            ignore_views=ignore_views,
+            naming_convention=naming_convention,
+        )
 
     def append(self, view: View | DeclarativeView):
         self.views.append(view)
