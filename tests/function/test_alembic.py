@@ -21,3 +21,8 @@ def test_function_drop(pytester):
 @pytest.mark.alembic
 def test_function_leading_whitespace(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_function_rewriter(pytester):
+    successful_test_run(pytester, count=1)

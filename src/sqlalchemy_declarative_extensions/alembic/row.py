@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from alembic.autogenerate.api import AutogenContext
-from alembic.autogenerate.compare import comparators
-from alembic.autogenerate.render import renderers
 from alembic.operations import Operations
 from alembic.operations.ops import UpgradeOps
 
 from sqlalchemy_declarative_extensions import row
+from sqlalchemy_declarative_extensions.alembic.base import (
+    register_comparator_dispatcher,
+    register_operation_dispatcher,
+    register_renderer_dispatcher,
+    register_rewriter_dispatcher,
+)
 from sqlalchemy_declarative_extensions.row.base import Rows
 from sqlalchemy_declarative_extensions.row.compare import (
     DeleteRowOp,
@@ -14,12 +18,7 @@ from sqlalchemy_declarative_extensions.row.compare import (
     UpdateRowOp,
 )
 
-Operations.register_operation("insert_table_row")(InsertRowOp)
-Operations.register_operation("update_table_row")(UpdateRowOp)
-Operations.register_operation("delete_table_row")(DeleteRowOp)
 
-
-@comparators.dispatch_for("schema")
 def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     if (
         autogen_context.metadata is None or autogen_context.connection is None
@@ -36,10 +35,7 @@ def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     upgrade_ops.ops.extend(result)  # type: ignore
 
 
-@renderers.dispatch_for(InsertRowOp)
-@renderers.dispatch_for(UpdateRowOp)
-@renderers.dispatch_for(DeleteRowOp)
-def render_insert_table_row(
+def render_row(
     autogen_context: AutogenContext, op: InsertRowOp | UpdateRowOp | DeleteRowOp
 ):
     metadata = autogen_context.metadata
@@ -57,12 +53,20 @@ def render_insert_table_row(
     return result
 
 
-@Operations.implementation_for(InsertRowOp)
-@Operations.implementation_for(UpdateRowOp)
-@Operations.implementation_for(DeleteRowOp)
 def execute_row(
     operations: Operations,
     operation: InsertRowOp | UpdateRowOp | DeleteRowOp,
 ):
     conn = operations.get_bind()
     operation.execute(conn)
+
+
+register_comparator_dispatcher(compare_rows, target="schema")
+register_renderer_dispatcher(InsertRowOp, UpdateRowOp, DeleteRowOp, fn=render_row)
+register_rewriter_dispatcher(InsertRowOp, UpdateRowOp, DeleteRowOp)
+register_operation_dispatcher(
+    insert_table_row=InsertRowOp,
+    update_table_row=UpdateRowOp,
+    delete_table_row=DeleteRowOp,
+    fn=execute_row,
+)

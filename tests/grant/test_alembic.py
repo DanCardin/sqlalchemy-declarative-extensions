@@ -35,3 +35,9 @@ def test_grant_after_schema(pytester):
     PMR auto-creates schemas itself, before the create-all statement.)
     """
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.grant
+@pytest.mark.alembic
+def test_grant_rewriter(pytester):
+    successful_test_run(pytester, count=1)

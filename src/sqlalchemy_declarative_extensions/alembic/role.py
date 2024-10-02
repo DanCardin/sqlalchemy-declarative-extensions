@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from alembic.autogenerate.api import AutogenContext
-from alembic.autogenerate.compare import comparators
-from alembic.autogenerate.render import renderers
-from alembic.operations import Operations
 
+from sqlalchemy_declarative_extensions.alembic.base import (
+    register_comparator_dispatcher,
+    register_operation_dispatcher,
+    register_renderer_dispatcher,
+    register_rewriter_dispatcher,
+)
 from sqlalchemy_declarative_extensions.role.compare import (
     CreateRoleOp,
     DropRoleOp,
@@ -13,12 +16,7 @@ from sqlalchemy_declarative_extensions.role.compare import (
     compare_roles,
 )
 
-Operations.register_operation("create_role")(CreateRoleOp)
-Operations.register_operation("update_role")(UpdateRoleOp)
-Operations.register_operation("drop_role")(DropRoleOp)
 
-
-@comparators.dispatch_for("schema")
 def _compare_roles(autogen_context: AutogenContext, upgrade_ops, _):
     roles: Roles | None = Roles.extract(autogen_context.metadata)
     if not roles:
@@ -29,9 +27,6 @@ def _compare_roles(autogen_context: AutogenContext, upgrade_ops, _):
     upgrade_ops.ops[0:0] = result
 
 
-@renderers.dispatch_for(CreateRoleOp)
-@renderers.dispatch_for(DropRoleOp)
-@renderers.dispatch_for(UpdateRoleOp)
 def render_role(autogen_context: AutogenContext, op: CreateRoleOp):
     is_dynamic = op.role.is_dynamic
     if is_dynamic:
@@ -43,10 +38,18 @@ def render_role(autogen_context: AutogenContext, op: CreateRoleOp):
     ]
 
 
-@Operations.implementation_for(CreateRoleOp)
-@Operations.implementation_for(UpdateRoleOp)
-@Operations.implementation_for(DropRoleOp)
-def create_role(operations, op):
+def execute_op(operations, op):
     commands = op.to_sql()
     for command in commands:
         operations.execute(command)
+
+
+register_comparator_dispatcher(_compare_roles, target="schema")
+register_renderer_dispatcher(CreateRoleOp, UpdateRoleOp, DropRoleOp, fn=render_role)
+register_rewriter_dispatcher(CreateRoleOp, UpdateRoleOp, DropRoleOp)
+register_operation_dispatcher(
+    create_role=CreateRoleOp,
+    update_role=UpdateRoleOp,
+    drop_role=DropRoleOp,
+    fn=execute_op,
+)

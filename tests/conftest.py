@@ -90,8 +90,11 @@ def clear_registry():
     is executing tests serially, so we can assume it's safe to mutate global state
     in between tests.
     """
+    import sys
+
     from alembic.autogenerate.compare import comparators
     from alembic.autogenerate.render import renderers
+    from alembic.autogenerate.rewriter import Rewriter
     from alembic.operations import Operations
 
     reg = comparators._registry
@@ -103,24 +106,24 @@ def clear_registry():
 
     reg[("schema", "default")] = clean_registry
 
-    renderers._registry = {
-        (op, k): v
-        for (op, k), v in renderers._registry.items()
-        if not op.__module__.startswith("sqlalchemy_declarative_extensions")
-    }
-    Operations._to_impl._registry = {
-        (op, k): v
-        for (op, k), v in Operations._to_impl._registry.items()
-        if not op.__module__.startswith("sqlalchemy_declarative_extensions")
-    }
+    containers = [renderers, Operations._to_impl, Rewriter._traverse]
+    for container in containers:
+        container._registry = {
+            (op, k): v
+            for (op, k), v in container._registry.items()
+            if not op.__module__.startswith("sqlalchemy_declarative_extensions")
+        }
 
-    import sys
-
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.schema", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.role", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.grant", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.row", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.view", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.procedure", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.function", None)
-    sys.modules.pop("sqlalchemy_declarative_extensions.alembic.trigger", None)
+    objects = [
+        "database",
+        "function",
+        "grant",
+        "procedure",
+        "role",
+        "row",
+        "schema",
+        "trigger",
+        "view",
+    ]
+    for obj in objects:
+        sys.modules.pop(f"sqlalchemy_declarative_extensions.alembic.{obj}", None)

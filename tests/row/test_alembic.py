@@ -36,3 +36,8 @@ def test_rows_drop_table(pytester):
 @pytest.mark.alembic
 def test_single_row_ops(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_row_rewriter(pytester):
+    successful_test_run(pytester, count=1)

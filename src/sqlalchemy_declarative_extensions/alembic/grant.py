@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from alembic.autogenerate.api import AutogenContext
-from alembic.autogenerate.compare import comparators
-from alembic.autogenerate.render import renderers
 from alembic.operations.ops import UpgradeOps
 
+from sqlalchemy_declarative_extensions.alembic.base import (
+    register_comparator_dispatcher,
+    register_renderer_dispatcher,
+    register_rewriter_dispatcher,
+)
 from sqlalchemy_declarative_extensions.grant import compare
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.grant.compare import (
@@ -17,7 +20,6 @@ from sqlalchemy_declarative_extensions.role.compare import RoleOp
 from sqlalchemy_declarative_extensions.schema.compare import CreateSchemaOp
 
 
-@comparators.dispatch_for("schema")
 def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     if autogen_context.connection is None:
         return  # pragma: no cover
@@ -43,7 +45,10 @@ def compare_grants(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
     upgrade_ops.ops[after_last_role_index:after_last_role_index] = result  # type: ignore
 
 
-@renderers.dispatch_for(GrantPrivilegesOp)
-@renderers.dispatch_for(RevokePrivilegesOp)
 def render_grant(_, op: Operation):
     return f'op.execute(sa.text("""{op.to_sql()}"""))'
+
+
+register_comparator_dispatcher(compare_grants, target="schema")
+register_renderer_dispatcher(GrantPrivilegesOp, RevokePrivilegesOp, fn=render_grant)
+register_rewriter_dispatcher(GrantPrivilegesOp, RevokePrivilegesOp)

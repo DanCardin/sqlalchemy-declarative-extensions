@@ -1,3 +1,4 @@
+import alembic.autogenerate
 from alembic import context
 
 # isort: split
@@ -20,7 +21,11 @@ if connectable is None:
     )
 
 with connectable.connect() as connection:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        process_revision_directives=alembic.autogenerate.rewriter.Rewriter(),
+    )
 
     with context.begin_transaction():
         context.run_migrations()
