@@ -3,6 +3,7 @@ from __future__ import annotations
 from alembic.autogenerate.api import AutogenContext
 from alembic.operations import Operations
 from alembic.operations.ops import UpgradeOps
+from sqlalchemy import MetaData
 
 from sqlalchemy_declarative_extensions import row
 from sqlalchemy_declarative_extensions.alembic.base import (
@@ -20,18 +21,14 @@ from sqlalchemy_declarative_extensions.row.compare import (
 
 
 def compare_rows(autogen_context: AutogenContext, upgrade_ops: UpgradeOps, _):
-    if (
-        autogen_context.metadata is None or autogen_context.connection is None
-    ):  # pragma: no cover
+    optional_rows: tuple[Rows, MetaData] | None = Rows.extract(autogen_context.metadata)
+    if not optional_rows:
         return
 
-    rows: Rows | None = autogen_context.metadata.info.get("rows")
-    if not rows:
-        return
+    rows, metadata = optional_rows
 
-    result = row.compare.compare_rows(
-        autogen_context.connection, autogen_context.metadata, rows
-    )
+    assert autogen_context.connection
+    result = row.compare.compare_rows(autogen_context.connection, metadata, rows)
     upgrade_ops.ops.extend(result)  # type: ignore
 
 

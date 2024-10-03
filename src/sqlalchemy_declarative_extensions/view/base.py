@@ -564,7 +564,7 @@ class Views:
         ignore_views = [s for instance in instances for s in instance.ignore_views]
 
         ignore_unspecified = instances[0].ignore_unspecified
-        naming_convention = instances[0].naming_convention
+        naming_convention: NamingConvention = instances[0].naming_convention  # type: ignore
 
         if not naming_convention:
             if not all(n == naming_conventions[0] for n in naming_conventions):
