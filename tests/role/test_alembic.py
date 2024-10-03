@@ -21,3 +21,8 @@ def test_role_disabled(pytester):
 @pytest.mark.alembic
 def test_role_operations(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_role_rewriter(pytester):
+    successful_test_run(pytester, count=1)

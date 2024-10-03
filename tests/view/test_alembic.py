@@ -44,3 +44,8 @@ def test_view_materialized_constraint(pytester):
 @pytest.mark.alembic
 def test_view_complex_comparison_pg(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_view_rewriter(pytester):
+    successful_test_run(pytester, count=1)
