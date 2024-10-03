@@ -5,7 +5,6 @@ from dataclasses import dataclass, replace
 from fnmatch import fnmatch
 from typing import Union
 
-from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection, Dialect
 
 from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
@@ -52,7 +51,6 @@ Operation = Union[CreateViewOp, UpdateViewOp, DropViewOp]
 def compare_views(
     connection: Connection,
     views: Views,
-    metadata: MetaData,
     normalize_with_connection: bool = True,
 ) -> list[Operation]:
     if views.ignore_views:
@@ -79,7 +77,9 @@ def compare_views(
     removed_view_names = existing_view_names - expected_view_names
 
     for view in concrete_defined_views:
-        normalized_view = view.normalize(connection, metadata, using_connection=False)
+        normalized_view = view.normalize(
+            connection, views.naming_convention, using_connection=False
+        )
 
         view_name = normalized_view.qualified_name
 
@@ -95,12 +95,16 @@ def compare_views(
             result.append(CreateViewOp(normalized_view))
         else:
             normalized_view = normalized_view.normalize(
-                connection, metadata, using_connection=normalize_with_connection
+                connection,
+                views.naming_convention,
+                using_connection=normalize_with_connection,
             )
 
             existing_view = existing_views_by_name[view_name]
             normalized_existing_view = existing_view.normalize(
-                connection, metadata, using_connection=normalize_with_connection
+                connection,
+                views.naming_convention,
+                using_connection=normalize_with_connection,
             )
 
             if normalized_existing_view != normalized_view:

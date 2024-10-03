@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal
 
-from sqlalchemy import MetaData
 from sqlalchemy.engine import Connection, Dialect
 from typing_extensions import override
 
@@ -121,9 +120,12 @@ class View(base.View):
         return result
 
     def normalize(
-        self, conn: Connection, metadata: MetaData, using_connection: bool = True
+        self,
+        conn: Connection,
+        naming_convention: base.NamingConvention | None,
+        using_connection: bool = True,
     ) -> View:
-        instance = super().normalize(conn, metadata, using_connection)
+        instance = super().normalize(conn, naming_convention, using_connection)
         return replace(
             instance,
             materialized=MaterializedOptions.from_value(self.materialized),

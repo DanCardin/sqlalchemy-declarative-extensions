@@ -70,7 +70,7 @@ def test_constraint_changes(pg):
 
     views = Base.metadata.info["views"]
     connection = pg.connection()
-    result = compare_views(connection, views, Base.metadata)
+    result = compare_views(connection, views)
     assert len(result) == 1
 
     sql_statements = result[0].to_sql(connection.dialect)

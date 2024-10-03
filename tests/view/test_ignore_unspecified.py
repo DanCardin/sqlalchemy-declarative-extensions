@@ -42,5 +42,5 @@ def test_ignore_views(pg):
 
     # Verify this no longer sees changes to make! Failing here would imply the autogenerate
     # is not fully normalizing the difference.
-    result = compare_views(pg.connection(), views=Base.views, metadata=Base.metadata)
+    result = compare_views(pg.connection(), views=Base.views)
     assert result == []

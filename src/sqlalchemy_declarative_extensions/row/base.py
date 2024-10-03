@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
+
+from sqlalchemy import MetaData
+from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.sql import split_schema
 
@@ -21,6 +24,30 @@ class Rows:
             return Rows().are(*unknown)
 
         return None
+
+    @classmethod
+    def extract(
+        cls, metadata: MetaData | list[MetaData | None] | None
+    ) -> tuple[Self, MetaData] | None:
+        if not isinstance(metadata, Sequence):
+            metadata = [metadata]
+
+        instances: list[Self] = [
+            m.info["rows"] for m in metadata if m and m.info.get("rows")
+        ]
+
+        instance_count = len(instances)
+        if instance_count == 0:
+            return None
+
+        if instance_count == 1:
+            metadata = metadata[0]
+            assert metadata
+            return instances[0], metadata
+
+        raise NotImplementedError(
+            "Rows is currently only supported on a single instance of MetaData. File an issue if this affects you!"
+        )
 
     def __iter__(self):
         yield from self.rows

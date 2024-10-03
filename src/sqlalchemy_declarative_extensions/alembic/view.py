@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from alembic.autogenerate.api import AutogenContext
 
 from sqlalchemy_declarative_extensions.alembic.base import (
@@ -5,6 +7,7 @@ from sqlalchemy_declarative_extensions.alembic.base import (
     register_renderer_dispatcher,
     register_rewriter_dispatcher,
 )
+from sqlalchemy_declarative_extensions.view.base import Views
 from sqlalchemy_declarative_extensions.view.compare import (
     CreateViewOp,
     DropViewOp,
@@ -14,13 +17,13 @@ from sqlalchemy_declarative_extensions.view.compare import (
 )
 
 
-def _compare_views(autogen_context, upgrade_ops, _):
-    metadata = autogen_context.metadata
-    views = metadata.info.get("views")
+def _compare_views(autogen_context: AutogenContext, upgrade_ops, _):
+    views: Views | None = Views.extract(autogen_context.metadata)
     if not views:
         return
 
-    result = compare_views(autogen_context.connection, views, metadata)
+    assert autogen_context.connection
+    result = compare_views(autogen_context.connection, views)
     upgrade_ops.ops.extend(result)
 
 
