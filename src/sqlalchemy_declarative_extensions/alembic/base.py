@@ -1,17 +1,5 @@
 from __future__ import annotations
 
-import typing
-
-from alembic.autogenerate.compare import comparators
-from alembic.autogenerate.render import renderers
-from alembic.autogenerate.rewriter import Rewriter
-from alembic.operations import Operations
-
-if typing.TYPE_CHECKING:
-    from alembic.operations.ops import MigrateOperation
-    from alembic.runtime.migration import MigrationContext
-    from alembic.script.revision import _GetRevArg
-
 
 def register_alembic_events(
     *,
@@ -60,33 +48,36 @@ def register_alembic_events(
         import sqlalchemy_declarative_extensions.alembic.row  # noqa
 
 
-def _traverse_any_directive(
-    self,
-    context: MigrationContext,
-    revision: _GetRevArg,
-    directive: MigrateOperation,
-) -> None:
+def _traverse_any_directive(self, context, revision, directive) -> None:
     pass
 
 
 def register_comparator_dispatcher(fn, target: str):
+    from alembic.autogenerate.compare import comparators
+
     dispatcher = comparators.dispatch_for(target)
     dispatcher(fn)
 
 
 def register_renderer_dispatcher(*ops, fn):
+    from alembic.autogenerate.render import renderers
+
     for op in ops:
         dispatcher = renderers.dispatch_for(op)
         dispatcher(fn)
 
 
 def register_rewriter_dispatcher(*ops):
+    from alembic.autogenerate.rewriter import Rewriter
+
     for op in ops:
         dispatcher = Rewriter._traverse.dispatch_for(op)
         dispatcher(_traverse_any_directive)
 
 
 def register_operation_dispatcher(*, fn, **ops):
+    from alembic.operations import Operations
+
     for operation_name, op in ops.items():
         operation_dispatcher = Operations.register_operation(operation_name)
         operation_dispatcher(op)

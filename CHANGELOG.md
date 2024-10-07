@@ -2,14 +2,22 @@
 
 ## 0.15
 
+### 0.15.4
+
+- fix: Undo accidental inclusion of alembic as required dependencies.
+
+### 0.15.3
+
+- fix: Handle row/view metadata sequence.
+
 ### 0.15.2
 
-fix: Handle trigger metadata sequence.
-fix: Handle procedure metadata sequence.
-fix: Handle function metadata sequence.
-fix: Handle grant metadata sequence.
-fix: Handle role metadata sequence.
-fix: Handle schema metadata sequence.
+- fix: Handle trigger metadata sequence.
+- fix: Handle procedure metadata sequence.
+- fix: Handle function metadata sequence.
+- fix: Handle grant metadata sequence.
+- fix: Handle role metadata sequence.
+- fix: Handle schema metadata sequence.
 
 ### 0.15.1
 
