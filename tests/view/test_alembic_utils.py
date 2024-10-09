@@ -34,8 +34,8 @@ if alembic_utils:
             Row("fooschema.foo", id=13),
         )
         views = Views().are(
-            PGView("fooschema", "bar", "select id from fooschema.foo where id > 10"),
-            PGMaterializedView(
+            PGView("fooschema", "bar", "select id from fooschema.foo where id > 10"),  # type: ignore
+            PGMaterializedView(  # type: ignore
                 "fooschema", "baz", "select id from fooschema.foo where id < 10"
             ),
         )

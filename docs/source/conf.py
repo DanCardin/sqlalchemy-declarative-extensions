@@ -1,6 +1,6 @@
 from sphinx_pyproject import SphinxConfig
 
-config = SphinxConfig("../../pyproject.toml", style="poetry")
+config = SphinxConfig("../../pyproject.toml")
 
 project = "SQLAlechemy Declarative Extensions"
 copyright = "2022, Dan Cardin"
