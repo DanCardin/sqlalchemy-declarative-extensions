@@ -2,6 +2,10 @@
 
 ## 0.15
 
+### 0.15.5
+
+- fix: Dont set `None` audit "context values".
+
 ### 0.15.4
 
 - fix: Undo accidental inclusion of alembic as required dependencies.
