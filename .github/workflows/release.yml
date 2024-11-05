@@ -16,12 +16,19 @@ jobs:
         with:
           generate_release_notes: true
 
-  publish-pypi:
+  pypi-publish:
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cappa
+    permissions:
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v4
       - name: Set up uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Build dist
         run: uvx --from build pyproject-build --installer uv
       - name: Publish package distributions to PyPI
