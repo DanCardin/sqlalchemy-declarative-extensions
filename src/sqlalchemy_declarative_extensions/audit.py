@@ -296,6 +296,9 @@ def create_audit_triggers(
 def set_context_values(connectable, **values):
     """Set transaction-local context values, to be included on audit-tables."""
     for name, value in values.items():
+        if value is None:
+            continue
+
         statement = f"SET LOCAL audit.{name} = '{value}'"
         connectable.execute(text(statement))
 

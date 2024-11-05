@@ -19,7 +19,10 @@ class Base(_Base):  # type: ignore  # type: ignore
     __abstract__ = True
 
 
-context_columns = [Column("username", types.Unicode(), nullable=False)]
+context_columns = [
+    Column("username", types.Unicode(), nullable=False),
+    Column("nickname", types.Unicode(), nullable=True),
+]
 
 
 @audit(context_columns=context_columns)
@@ -46,6 +49,19 @@ def test_sets_session_values(pg):
 
     audit_row = pg.execute(Foo.__audit_table__.select()).fetchone()
     assert audit_row.audit_username == "foo@foo.com"
+
+
+def test_sets_session_value_to_none(pg):
+    Base.metadata.create_all(bind=pg.connection())
+    pg.commit()
+
+    set_context_values(pg, username="foo@foo.com", nickname=None)
+    pg.add(Foo(id=1, name=None, json=None))
+    pg.commit()
+
+    audit_row = pg.execute(Foo.__audit_table__.select()).fetchone()
+    assert audit_row.audit_username == "foo@foo.com"
+    assert audit_row.audit_nickname is None
 
 
 def test_fails_to_set_session_values(pg):
