@@ -227,7 +227,7 @@ def register_create_events(
     concrete_schemas = metadata.info.get("schemas")
     concrete_roles = metadata.info.get("roles")
     concrete_grants = metadata.info.get("grants")
-    concrete_views = metadata.info.get("views")
+    concrete_views = Views.extract(metadata)
     concrete_procedures = metadata.info.get("procedures")
     concrete_functions = metadata.info.get("functions")
     concrete_triggers = metadata.info.get("triggers")

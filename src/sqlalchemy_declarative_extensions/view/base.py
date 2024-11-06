@@ -15,6 +15,7 @@ from typing import (
     Sequence,
     TypeVar,
     cast,
+    overload,
 )
 
 from sqlalchemy import Index, MetaData, UniqueConstraint, text
@@ -533,8 +534,26 @@ class Views:
 
         return None
 
+    @overload
     @classmethod
-    def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+    def extract(cls, metadata: MetaData) -> Self: ...
+
+    @overload
+    @classmethod
+    def extract(cls, metadata: list[MetaData]) -> Self: ...
+
+    @overload
+    @classmethod
+    def extract(cls, metadata: list[MetaData | None]) -> Self | None: ...
+
+    @overload
+    @classmethod
+    def extract(cls, metadata: None) -> None: ...
+
+    @classmethod
+    def extract(
+        cls, metadata: MetaData | list[MetaData] | list[MetaData | None] | None
+    ) -> Self | None:
         if not isinstance(metadata, Sequence):
             metadata = [metadata]
 
@@ -546,9 +565,6 @@ class Views:
         instance_count = len(instances)
         if instance_count == 0:
             return None
-
-        if instance_count == 1:
-            return instances[0]
 
         if not all(
             x.ignore_unspecified == instances[0].ignore_unspecified
