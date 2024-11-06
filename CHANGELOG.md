@@ -2,6 +2,10 @@
 
 ## 0.15
 
+### 0.15.6
+
+- fix: Metadata naming_convention registration in combination with register_sqlalchemy_events.
+
 ### 0.15.5
 
 - fix: Dont set `None` audit "context values".

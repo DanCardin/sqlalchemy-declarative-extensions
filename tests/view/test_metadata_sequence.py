@@ -48,8 +48,7 @@ def test_valid_combination():
 def test_single():
     views = Views.extract(metadata5)
     assert views
-    assert views is metadata5.info["views"]
-    assert views.naming_convention is None
+    assert views.naming_convention == {"ix": "asdf"}
 
 
 def test_naming_convention_fallback():
