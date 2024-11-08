@@ -84,7 +84,7 @@ def get_views_snowflake(connection: Connection):
 
         assert v.definition.startswith("CREATE VIEW")
         *_, definition = v.definition.split(" ", 4)
-        assert definition.startswith("SELECT")
+        assert definition.strip().startswith("SELECT")
 
         view = View(
             v.name,
