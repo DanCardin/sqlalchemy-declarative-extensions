@@ -2,6 +2,8 @@
 
 ## 0.15
 
+- fix: Snowflake - Strip whitespace from SQL def before asserting starts with SELECT
+
 ### 0.15.6
 
 - fix: Metadata naming_convention registration in combination with register_sqlalchemy_events.
