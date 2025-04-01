@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import textwrap
 from dataclasses import dataclass, replace
+from typing import List, Optional
 
 from sqlalchemy_declarative_extensions.function import base
 
@@ -11,6 +12,13 @@ from sqlalchemy_declarative_extensions.function import base
 class FunctionSecurity(enum.Enum):
     invoker = "INVOKER"
     definer = "DEFINER"
+
+
+@enum.unique
+class FunctionVolatility(enum.Enum):
+    VOLATILE = "VOLATILE"
+    STABLE = "STABLE"
+    IMMUTABLE = "IMMUTABLE"
 
 
 @dataclass
@@ -24,18 +32,31 @@ class Function(base.Function):
 
     security: FunctionSecurity = FunctionSecurity.invoker
 
+    #: Defines the parameters for the function, e.g. ["param1 int", "param2 varchar"]
+    parameters: Optional[List[str]] = None
+
+    #: Defines the volatility of the function.
+    volatility: FunctionVolatility = FunctionVolatility.VOLATILE
+
     def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
         if replace:
             components.append("OR REPLACE")
 
+        parameter_str = ""
+        if self.parameters:
+            parameter_str = ", ".join(self.parameters)
+
         components.append("FUNCTION")
-        components.append(self.qualified_name + "()")
+        components.append(f"{self.qualified_name}({parameter_str})")
         components.append(f"RETURNS {self.returns}")
 
         if self.security == FunctionSecurity.definer:
             components.append("SECURITY DEFINER")
+
+        if self.volatility != FunctionVolatility.VOLATILE:
+            components.append(self.volatility.value)
 
         components.append(f"LANGUAGE {self.language}")
         components.append(f"AS $${self.definition}$$")
