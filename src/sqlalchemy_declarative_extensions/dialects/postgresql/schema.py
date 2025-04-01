@@ -113,6 +113,7 @@ pg_proc = table(
     column("prorettype"),
     column("prosecdef"),
     column("prokind"),
+    column("provolatile"),
 )
 
 pg_language = table(
@@ -322,6 +323,9 @@ functions_query = (
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
         pg_proc.c.prokind.label("kind"),
+        func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
+        pg_proc.c.provolatile.label("volatility"),
+
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)

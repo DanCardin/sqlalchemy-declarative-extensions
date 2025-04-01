@@ -14,6 +14,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
     FunctionSecurity,
+    FunctionVolatility,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.procedure import (
     Procedure,
@@ -216,6 +217,12 @@ def get_procedures_postgresql(connection: Connection) -> Sequence[BaseProcedure]
 
 def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
     functions = []
+    volatility_map = {
+        "v": FunctionVolatility.VOLATILE,
+        "s": FunctionVolatility.STABLE,
+        "i": FunctionVolatility.IMMUTABLE,
+    }
+
     for f in connection.execute(functions_query).fetchall():
         name = f.name
         definition = f.source
@@ -223,6 +230,10 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
         schema = f.schema if f.schema != "public" else None
 
         function = Function(
+            parameters=(
+                [p.strip() for p in f.parameters.split(",")] if f.parameters else None
+            ),
+            volatility=volatility_map[f.volatility],
             name=name,
             definition=definition,
             language=language,
