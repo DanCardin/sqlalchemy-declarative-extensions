@@ -67,6 +67,20 @@ class Function(base.Function):
     def to_sql_update(self) -> list[str]:
         return self.to_sql_create(replace=True)
 
+    def to_sql_drop(self) -> list[str]:
+        param_types = []
+        if self.parameters:
+            for param in self.parameters:
+                # Naive split, assumes 'name type' or just 'type' format
+                parts = param.split(maxsplit=1)
+                if len(parts) == 2:
+                    param_types.append(parts[1])
+                else:
+                    param_types.append(param) # Assume it's just the type if no space
+
+        param_str = ", ".join(param_types)
+        return [f"DROP FUNCTION {self.qualified_name}({param_str});"]
+
     def with_security(self, security: FunctionSecurity):
         return replace(self, security=security)
 
