@@ -42,12 +42,17 @@ class Function(base.Function):
             language=f.language,
             schema=f.schema,
             returns=f.returns,
+            parameters=f.parameters,
         )
 
     def to_sql_create(self) -> list[str]:
         components = ["CREATE FUNCTION"]
 
-        components.append(self.qualified_name + "()")
+        parameter_str = ""
+        if self.parameters:
+            parameter_str = ", ".join(self.parameters)
+
+        components.append(f"{self.qualified_name}({parameter_str})")
         components.append(f"RETURNS {self.returns}")
 
         if self.deterministic:
@@ -85,9 +90,32 @@ class Function(base.Function):
 
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition).strip()
+
+        # Remove optional trailing semicolon for comparison robustness
+        if definition.endswith(";"):
+            definition = definition[:-1]
+
         returns = self.returns.lower()
+        normalized_returns = type_map.get(returns, returns)
+
+        normalized_parameters = None
+        if self.parameters:
+            normalized_parameters = []
+            for param in self.parameters:
+                # Naive split, assumes 'name type' format
+                parts = param.split(maxsplit=1)
+                if len(parts) == 2:
+                    name, type_str = parts
+                    norm_type = type_map.get(type_str.lower(), type_str.lower())
+                    normalized_parameters.append(f"{name} {norm_type}")
+                else:
+                    normalized_parameters.append(param) # Keep as is if format unexpected
+
         return replace(
-            self, definition=definition, returns=type_map.get(returns, returns)
+            self,
+            definition=definition,
+            returns=normalized_returns,
+            parameters=normalized_parameters,
         )
 
 

@@ -1,4 +1,5 @@
 from sqlalchemy import bindparam, column, table
+from sqlalchemy.sql import func, text
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
@@ -81,6 +82,21 @@ procedures_query = (
     .where(routine_table.c.routine_type == "PROCEDURE")
 )
 
+# Need to query PARAMETERS separately to reconstruct the parameter list
+parameters_subquery = (
+    select(
+        column("SPECIFIC_NAME").label("routine_name"),
+        func.group_concat(
+            text("concat(PARAMETER_NAME, ' ', DTD_IDENTIFIER) ORDER BY ORDINAL_POSITION SEPARATOR ', '"),
+        ).label("parameters"),
+    )
+    .select_from(table("PARAMETERS", schema="INFORMATION_SCHEMA"))
+    .where(column("SPECIFIC_SCHEMA") == bindparam("schema"))
+    .where(column("ROUTINE_TYPE") == "FUNCTION")
+    .group_by(column("SPECIFIC_NAME"))
+    .alias("parameters_sq")
+)
+
 functions_query = (
     select(
         routine_table.c.routine_name.label("name"),
@@ -89,6 +105,13 @@ functions_query = (
         routine_table.c.dtd_identifier.label("return_type"),
         routine_table.c.is_deterministic.label("deterministic"),
         routine_table.c.sql_data_access.label("data_access"),
+        parameters_subquery.c.parameters.label("parameters"),
+    )
+    .select_from( # Join routines with the parameter subquery
+        routine_table.outerjoin(
+            parameters_subquery,
+            routine_table.c.routine_name == parameters_subquery.c.routine_name,
+        )
     )
     .where(routine_table.c.routine_schema == bindparam("schema"))
     .where(routine_table.c.routine_type == "FUNCTION")
