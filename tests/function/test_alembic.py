@@ -36,3 +36,9 @@ def test_function_rewriter(pytester):
 @pytest.mark.alembic
 def test_function_create_with_params_postgresql(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+@pytest.mark.mysql
+def test_function_create_with_params_mysql(pytester):
+    successful_test_run(pytester, count=1)
