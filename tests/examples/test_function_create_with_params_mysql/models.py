@@ -22,6 +22,15 @@ class Base(_Base): # type: ignore
             returns="INTEGER",
             deterministic=True,
             data_access=FunctionDataAccess.no_sql,
+        ),
+        # NEW FUNCTION: Multiple params
+        Function(
+            "add_two_numbers",
+            "RETURN a + b;",
+            parameters=["a integer", "b integer"],
+            returns="INTEGER",
+            deterministic=True,
+            data_access=FunctionDataAccess.no_sql,
         )
     )
 
