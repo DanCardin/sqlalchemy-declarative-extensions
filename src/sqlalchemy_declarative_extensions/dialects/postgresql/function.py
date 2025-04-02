@@ -114,7 +114,7 @@ class Function(base.Function):
         definition = textwrap.dedent(self.definition)
 
         # Handle RETURNS TABLE(...) normalization
-        returns_lower = self.returns.lower()
+        returns_lower = self.returns.lower().strip()
         if returns_lower.startswith("table("):
             # Basic normalization: lowercase and remove extra spaces
             # This might need refinement for complex TABLE definitions
