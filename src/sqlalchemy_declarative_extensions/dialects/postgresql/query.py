@@ -243,7 +243,7 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
                 if f.security_definer
                 else FunctionSecurity.invoker
             ),
-            returns=f.result_string or f.base_return_type,
+            returns=f.return_type_string or f.base_return_type,
         )
         functions.append(function)
 
