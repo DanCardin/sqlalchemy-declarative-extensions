@@ -18,7 +18,21 @@ class Base(_Base): # type: ignore
             parameters=["i integer"],
             returns="INTEGER",
             volatility=FunctionVolatility.STABLE,
-        )
+        ),
+        # NEW FUNCTION: Multiple params, RETURNS TABLE, plpgsql
+        Function(
+            "get_users_by_group",
+            """
+            BEGIN
+                -- Dummy implementation for testing definition
+                RETURN QUERY SELECT dt.id, dt.id::text as name FROM dummy_table dt WHERE dt.id = any(group_ids);
+            END;
+            """,
+            parameters=["group_ids integer[]"],
+            returns="TABLE(id integer, name text)",
+            language="plpgsql", # Requires plpgsql
+            volatility=FunctionVolatility.STABLE,
+        ),
     )
 
 
