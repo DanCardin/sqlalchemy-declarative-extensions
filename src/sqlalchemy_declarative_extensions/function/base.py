@@ -26,6 +26,9 @@ class Function:
 
     #: Defines the parameters for the function, e.g. ["param1 int", "param2 varchar"]
     parameters: Optional[List[str]] = None
+    """List of parameter definitions as strings, e.g., `['param1 int', 'param2 varchar']`.
+    The comparison logic parses these strings to compare parameter names and types.
+    """
 
     @classmethod
     def from_unknown_function(cls, f: Function) -> Self:
