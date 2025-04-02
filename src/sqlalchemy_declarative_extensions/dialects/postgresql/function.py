@@ -21,6 +21,17 @@ class FunctionVolatility(enum.Enum):
     STABLE = "STABLE"
     IMMUTABLE = "IMMUTABLE"
 
+    @classmethod
+    def from_provolatile(cls, provolatile: str) -> FunctionVolatility:
+        """Convert a `pg_proc.provolatile` value to a `FunctionVolatility` enum."""
+        if provolatile == "v":
+            return cls.VOLATILE
+        if provolatile == "s":
+            return cls.STABLE
+        if provolatile == "i":
+            return cls.IMMUTABLE
+        raise ValueError(f"Invalid volatility: {provolatile}")
+
 
 def normalize_arg(arg: str) -> str:
     parts = arg.strip().split(maxsplit=1)
