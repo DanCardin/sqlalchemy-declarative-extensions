@@ -9,6 +9,7 @@ from sqlalchemy_declarative_extensions import (
 from sqlalchemy_declarative_extensions.dialects.mysql import (
     Function,
     FunctionDataAccess,
+    FunctionSecurity,
 )
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
@@ -45,6 +46,16 @@ class Base(_Base):  # type: ignore
             deterministic=True,
             data_access=FunctionDataAccess.no_sql, # No SQL access
         ),
+        # Complex function with multiple parameters and specific characteristics
+        Function(
+            "complex_processor",
+            "RETURN CONCAT(label, ': ', CAST(val AS CHAR));",
+            parameters=["val INT", "label VARCHAR(50)"],
+            returns="VARCHAR(100)",
+            deterministic=True,
+            data_access=FunctionDataAccess.no_sql,
+            security=FunctionSecurity.invoker, # Explicitly set security
+        ),
     )
 
 
@@ -78,6 +89,13 @@ def test_create_mysql(mysql):
 
     result_add_2 = mysql.execute(text("SELECT add_deterministic(1)")).scalar()
     assert result_add_2 == 2
+
+    # Test complex_processor
+    result_complex = mysql.execute(text("SELECT complex_processor(123, 'Test')")).scalar()
+    assert result_complex == "Test: 123"
+
+    result_complex_2 = mysql.execute(text("SELECT complex_processor(45, 'Another')")).scalar()
+    assert result_complex_2 == "Another: 45"
 
     # Verify comparison
     connection = mysql.connection()
