@@ -5,6 +5,7 @@ from sqlalchemy_declarative_extensions import Functions, declarative_database
 from sqlalchemy_declarative_extensions.dialects.mysql import (
     Function,
     FunctionDataAccess,
+    FunctionSecurity,
 )
 
 _Base = declarative_base()
@@ -31,7 +32,17 @@ class Base(_Base): # type: ignore
             returns="INTEGER",
             deterministic=True,
             data_access=FunctionDataAccess.no_sql,
-        )
+        ),
+        # Complex function for Alembic test
+        Function(
+            "complex_processor",
+            "RETURN CONCAT(label, ': ', CAST(val AS CHAR));",
+            parameters=["val INT", "label VARCHAR(50)"],
+            returns="VARCHAR(100)",
+            deterministic=True,
+            data_access=FunctionDataAccess.no_sql,
+            security=FunctionSecurity.invoker,
+        ),
     )
 
 
