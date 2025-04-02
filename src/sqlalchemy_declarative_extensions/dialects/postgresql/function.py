@@ -120,7 +120,7 @@ class Function(base.Function):
             # This might need refinement for complex TABLE definitions
             inner_content = returns_lower[len("table("):-1].strip()
             cols = [normalize_arg(c) for c in inner_content.split(',')]
-            normalized_returns = f"table({", ".join(cols)})"
+            normalized_returns = f"table({', '.join(cols)})"
         else:
             # Normalize base return type (including array types)
             norm_type = type_map.get(returns_lower, returns_lower)
