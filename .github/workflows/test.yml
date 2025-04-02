@@ -68,27 +68,21 @@ jobs:
         run: make test
 
       - name: Store test result artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          path: coverage.xml
+          path: ${{ matrix.python-version }}-${{ matrix.sqlalchemy-version }}-${{ matrix.postgres-drivername }}-coverage.xml
 
-      - name: Coveralls
-        env:
-          COVERALLS_FLAG_NAME: run-${{ inputs.working-directory }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_PARALLEL: true
-        run: |
-          pip install tomli coveralls
-          coveralls --service=github
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: ${{ matrix.python-version }}-${{ matrix.sqlalchemy-version }}-${{ matrix.postgres-drivername }}
+          files: coverage.xml
 
   finish:
     needs:
       - test
     runs-on: ubuntu-latest
     steps:
-      - name: Coveralls Finished
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Join
         run: |
-          pip install tomli coveralls
-          coveralls --service=github --finish
+          echo 'done'
