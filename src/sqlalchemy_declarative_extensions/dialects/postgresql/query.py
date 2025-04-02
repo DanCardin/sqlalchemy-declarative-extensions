@@ -196,11 +196,6 @@ def get_procedures_postgresql(connection: Connection) -> Sequence[BaseProcedure]
 
 def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
     functions = []
-    volatility_map = {
-        "v": FunctionVolatility.VOLATILE,
-        "s": FunctionVolatility.STABLE,
-        "i": FunctionVolatility.IMMUTABLE,
-    }
 
     for f in connection.execute(functions_query).fetchall():
         name = f.name
@@ -212,7 +207,7 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
             parameters=(
                 [p.strip() for p in f.parameters.split(",")] if f.parameters else None
             ),
-            volatility=volatility_map[f.volatility],
+            volatility=FunctionVolatility.from_provolatile(f.volatility),
             name=name,
             definition=definition,
             language=language,
