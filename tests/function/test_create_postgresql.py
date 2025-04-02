@@ -27,6 +27,18 @@ class Base(_Base):  # type: ignore
             returns="INTEGER",
             volatility=FunctionVolatility.STABLE,
         ),
+        # Function returning TABLE
+        Function(
+            "generate_series_squared",
+            '''
+            SELECT i, i*i
+            FROM generate_series(1, _limit) as i;
+            ''',
+            language="sql",
+            parameters=["_limit integer"],
+            returns="TABLE(num integer, num_squared integer)",
+            volatility=FunctionVolatility.IMMUTABLE,
+        ),
     )
 
 
@@ -51,22 +63,21 @@ def test_create(pg):
     result = pg.execute(text("SELECT gimme()")).scalar()
     assert result == 2
 
-    connection = pg.connection()
-    diff = compare_functions(connection, Base.metadata.info["functions"])
-    assert diff == []
+    # Test function with parameters
+    result_params = pg.execute(text("SELECT add_stable(10)")).scalar()
+    assert result_params == 11
 
+    result_params_2 = pg.execute(text("SELECT add_stable(1)")).scalar()
+    assert result_params_2 == 2
 
-def test_create_with_params(pg):
-    Base.metadata.create_all(bind=pg.connection())
-    pg.commit()
+    # Test function returning table
+    result_table = pg.execute(text("SELECT * FROM generate_series_squared(3)")).fetchall()
+    assert result_table == [
+        (1, 1),
+        (2, 4),
+        (3, 9),
+    ]
 
-    result = pg.execute(text("SELECT add_stable(10)")).scalar()
-    assert result == 11
-
-    result = pg.execute(text("SELECT add_stable(1)")).scalar()
-    assert result == 2
-
-    # Verify the function is there via comparison
     connection = pg.connection()
     diff = compare_functions(connection, Base.metadata.info["functions"])
     assert diff == []
