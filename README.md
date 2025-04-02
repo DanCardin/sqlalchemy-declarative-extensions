@@ -1,6 +1,6 @@
 # SQLAlchemy Declarative Extensions
 
-[![Actions Status](https://github.com/dancardin/sqlalchemy-declarative-extensions/workflows/test/badge.svg)](https://github.com/dancardin/sqlalchemy-declarative-extensions/actions)
+[![Actions Status](https://github.com/DanCardin/sqlalchemy-declarative-extensions/actions/workflows/test.yml/badge.svg)](https://github.com/dancardin/sqlalchemy-declarative-extensions/actions)
 [![codecov](https://codecov.io/gh/DanCardin/sqlalchemy-declarative-extensions/graph/badge.svg?token=DyS4xtntRo)](https://codecov.io/gh/DanCardin/sqlalchemy-declarative-extensions)
 [![Documentation Status](https://readthedocs.org/projects/sqlalchemy-declarative-extensions/badge/?version=latest)](https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/?badge=latest)
 
