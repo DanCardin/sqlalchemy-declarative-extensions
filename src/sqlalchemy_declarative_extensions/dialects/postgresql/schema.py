@@ -319,13 +319,13 @@ functions_query = (
         pg_proc.c.proname.label("name"),
         pg_namespace.c.nspname.label("schema"),
         pg_language.c.lanname.label("language"),
-        pg_type.c.typname.label("return_type"),
+        pg_type.c.typname.label("base_return_type"),
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
         pg_proc.c.prokind.label("kind"),
         func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
         pg_proc.c.provolatile.label("volatility"),
-
+        func.pg_get_function_result(pg_proc.c.oid).label("result_string"),
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)

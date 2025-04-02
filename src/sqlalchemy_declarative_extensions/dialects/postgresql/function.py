@@ -22,6 +22,29 @@ class FunctionVolatility(enum.Enum):
     IMMUTABLE = "IMMUTABLE"
 
 
+def normalize_arg(arg: str) -> str:
+    parts = arg.strip().split(maxsplit=1)
+    if len(parts) == 2:
+        name, type_str = parts
+        norm_type = type_map.get(type_str.lower(), type_str.lower())
+        # Handle array types
+        if norm_type.endswith("[]"):
+            base_type = norm_type[:-2]
+            norm_base_type = type_map.get(base_type, base_type)
+            norm_type = f"{norm_base_type}[]"
+
+        return f"{name} {norm_type}"
+    else:
+        # Handle case where it might just be the type (e.g., from DROP FUNCTION)
+        type_str = arg.strip()
+        norm_type = type_map.get(type_str.lower(), type_str.lower())
+        if norm_type.endswith("[]"):
+            base_type = norm_type[:-2]
+            norm_base_type = type_map.get(base_type, base_type)
+            norm_type = f"{norm_base_type}[]"
+        return norm_type
+
+
 @dataclass
 class Function(base.Function):
     """Describes a PostgreSQL function.
@@ -89,9 +112,35 @@ class Function(base.Function):
 
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition)
-        returns = self.returns.lower()
+
+        # Handle RETURNS TABLE(...) normalization
+        returns_lower = self.returns.lower()
+        if returns_lower.startswith("table("):
+            # Basic normalization: lowercase and remove extra spaces
+            # This might need refinement for complex TABLE definitions
+            inner_content = returns_lower[len("table("):-1].strip()
+            cols = [normalize_arg(c) for c in inner_content.split(',')]
+            normalized_returns = f"table({", ".join(cols)})"
+        else:
+            # Normalize base return type (including array types)
+            norm_type = type_map.get(returns_lower, returns_lower)
+            if norm_type.endswith("[]"):
+                base = norm_type[:-2]
+                norm_base = type_map.get(base, base)
+                normalized_returns = f"{norm_base}[]"
+            else:
+                normalized_returns = norm_type
+
+        # Normalize parameter types
+        normalized_parameters = None
+        if self.parameters:
+            normalized_parameters = [normalize_arg(p) for p in self.parameters]
+
         return replace(
-            self, definition=definition, returns=type_map.get(returns, returns)
+            self,
+            definition=definition,
+            returns=normalized_returns,
+            parameters=normalized_parameters, # Use normalized parameters
         )
 
 
