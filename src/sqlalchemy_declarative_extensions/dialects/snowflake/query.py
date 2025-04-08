@@ -55,7 +55,7 @@ def get_roles_snowflake(connection: Connection, exclude=None):
 def get_databases_snowflake(connection: Connection):
     from sqlalchemy_declarative_extensions.database.base import Database
 
-    databases_query = text("SELECT database_name" " FROM information_schema.databases")
+    databases_query = text("SELECT database_name FROM information_schema.databases")
 
     return {
         database: Database(database)
@@ -84,7 +84,6 @@ def get_views_snowflake(connection: Connection):
 
         assert v.definition.startswith("CREATE VIEW")
         *_, definition = v.definition.split(" ", 4)
-        assert definition.strip().startswith("SELECT")
 
         view = View(
             v.name,
