@@ -2,6 +2,12 @@
 
 ## 0.15
 
+### 0.15.8
+
+- fix: Snowflake - Stop asserting views start with SELECT (CTEs).
+
+### 0.15.7
+
 - fix: Snowflake - Strip whitespace from SQL def before asserting starts with SELECT
 
 ### 0.15.6
