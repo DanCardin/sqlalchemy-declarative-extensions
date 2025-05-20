@@ -155,11 +155,11 @@ class Trigger(base.Trigger):
             components.append("OR REPLACE")
 
         components.append("TRIGGER")
-        components.append(self.name)
+        components.append(f'"{self.name}"')
         components.append(self.time.value)
         components.append(" OR ".join([e.value for e in self.events]))
         components.append("ON")
-        components.append(self.on)
+        components.append(f'"{self.on}"')
         components.append("FOR EACH")
         components.append(self.for_each.value)
 
