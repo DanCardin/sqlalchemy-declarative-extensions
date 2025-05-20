@@ -2,6 +2,10 @@
 
 ## 0.15
 
+### 0.15.9
+
+- fix: Quote trigger name/tablenames.
+
 ### 0.15.8
 
 - fix: Snowflake - Stop asserting views start with SELECT (CTEs).
