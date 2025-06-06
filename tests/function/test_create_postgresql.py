@@ -1,8 +1,19 @@
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, Integer, text
 
-from sqlalchemy_declarative_extensions import Functions, declarative_database, register_sqlalchemy_events
-from sqlalchemy_declarative_extensions.dialects.postgresql import Function, FunctionVolatility
+from sqlalchemy_declarative_extensions import (
+    Functions,
+    declarative_database,
+    register_sqlalchemy_events,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    Function,
+    FunctionParam,
+    FunctionVolatility,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
+    FunctionReturn,
+)
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
@@ -30,14 +41,27 @@ class Base(_Base):  # type: ignore
         # Function returning TABLE
         Function(
             "generate_series_squared",
-            '''
+            """
             SELECT i, i*i
             FROM generate_series(1, _limit) as i;
-            ''',
+            """,
             language="sql",
-            parameters=["_limit integer"],
-            returns="TABLE(num integer, num_squared integer)",
+            parameters=[FunctionParam("_limit", "integer", default=1)],
+            returns=FunctionReturn(table=["num integer", "num_squared integer"]),
             volatility=FunctionVolatility.IMMUTABLE,
+        ),
+        Function(
+            "get_users_by_group",
+            """
+            BEGIN
+                -- Dummy implementation for testing definition
+                RETURN QUERY SELECT dt.id, dt.id::text as name FROM dummy_table dt WHERE dt.id = any(group_ids);
+            END;
+            """,
+            parameters=["group_ids integer[]"],
+            returns=FunctionReturn(table=["id integer", "name text"]),
+            language="plpgsql",  # Requires plpgsql
+            volatility=FunctionVolatility.STABLE,
         ),
     )
 
@@ -71,7 +95,9 @@ def test_create(pg):
     assert result_params_2 == 2
 
     # Test function returning table
-    result_table = pg.execute(text("SELECT * FROM generate_series_squared(3)")).fetchall()
+    result_table = pg.execute(
+        text("SELECT * FROM generate_series_squared(3)")
+    ).fetchall()
     assert result_table == [
         (1, 1),
         (2, 4),

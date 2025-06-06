@@ -87,7 +87,9 @@ parameters_subquery = (
     select(
         column("SPECIFIC_NAME").label("routine_name"),
         func.group_concat(
-            text("concat(PARAMETER_NAME, ' ', DTD_IDENTIFIER) ORDER BY ORDINAL_POSITION SEPARATOR ', '"),
+            text(
+                "concat(PARAMETER_NAME, ' ', DTD_IDENTIFIER) ORDER BY ORDINAL_POSITION SEPARATOR ', '"
+            ),
         ).label("parameters"),
     )
     .select_from(table("PARAMETERS", schema="INFORMATION_SCHEMA"))
@@ -107,7 +109,7 @@ functions_query = (
         routine_table.c.sql_data_access.label("data_access"),
         parameters_subquery.c.parameters.label("parameters"),
     )
-    .select_from( # Join routines with the parameter subquery
+    .select_from(  # Join routines with the parameter subquery
         routine_table.outerjoin(
             parameters_subquery,
             routine_table.c.routine_name == parameters_subquery.c.routine_name,

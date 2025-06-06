@@ -34,7 +34,7 @@ class Base(_Base):  # type: ignore
             END
             """,
             returns="INTEGER",
-            deterministic=False, # Explicitly non-deterministic due to insert
+            deterministic=False,  # Explicitly non-deterministic due to insert
             data_access=FunctionDataAccess.modifies_sql,
         ),
         # Function with parameters and deterministic
@@ -44,7 +44,7 @@ class Base(_Base):  # type: ignore
             parameters=["i integer"],
             returns="INTEGER",
             deterministic=True,
-            data_access=FunctionDataAccess.no_sql, # No SQL access
+            data_access=FunctionDataAccess.no_sql,  # No SQL access
         ),
         # Complex function with multiple parameters and specific characteristics
         Function(
@@ -54,7 +54,7 @@ class Base(_Base):  # type: ignore
             returns="VARCHAR(100)",
             deterministic=True,
             data_access=FunctionDataAccess.no_sql,
-            security=FunctionSecurity.invoker, # Explicitly set security
+            security=FunctionSecurity.invoker,  # Explicitly set security
         ),
     )
 
@@ -91,13 +91,17 @@ def test_create_mysql(mysql):
     assert result_add_2 == 2
 
     # Test complex_processor
-    result_complex = mysql.execute(text("SELECT complex_processor(123, 'Test')")).scalar()
+    result_complex = mysql.execute(
+        text("SELECT complex_processor(123, 'Test')")
+    ).scalar()
     assert result_complex == "Test: 123"
 
-    result_complex_2 = mysql.execute(text("SELECT complex_processor(45, 'Another')")).scalar()
+    result_complex_2 = mysql.execute(
+        text("SELECT complex_processor(45, 'Another')")
+    ).scalar()
     assert result_complex_2 == "Another: 45"
 
     # Verify comparison
     connection = mysql.connection()
     diff = compare_functions(connection, Base.metadata.info["functions"])
-    assert diff == [], f"Diff was: {diff}" # Added detail to assertion
+    assert diff == [], f"Diff was: {diff}"  # Added detail to assertion
