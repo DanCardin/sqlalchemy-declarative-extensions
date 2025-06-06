@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, Sequence
 
 from sqlalchemy import MetaData
 from typing_extensions import Self
@@ -25,7 +25,7 @@ class Function:
     schema: str | None = None
 
     #: Defines the parameters for the function, e.g. ["param1 int", "param2 varchar"]
-    parameters: Optional[List[str]] = None
+    parameters: Sequence[str] | None = None
     """List of parameter definitions as strings, e.g., `['param1 int', 'param2 varchar']`.
     The comparison logic parses these strings to compare parameter names and types.
     """

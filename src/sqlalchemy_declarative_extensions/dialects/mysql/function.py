@@ -109,7 +109,9 @@ class Function(base.Function):
                     norm_type = type_map.get(type_str.lower(), type_str.lower())
                     normalized_parameters.append(f"{name} {norm_type}")
                 else:
-                    normalized_parameters.append(param) # Keep as is if format unexpected
+                    normalized_parameters.append(
+                        param
+                    )  # Keep as is if format unexpected
 
         return replace(
             self,

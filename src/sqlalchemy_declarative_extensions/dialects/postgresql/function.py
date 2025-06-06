@@ -3,7 +3,9 @@ from __future__ import annotations
 import enum
 import textwrap
 from dataclasses import dataclass, replace
-from typing import List, Optional
+from typing import Any, List, Literal, Sequence, Tuple, cast
+
+from sqlalchemy import Column
 
 from sqlalchemy_declarative_extensions.function import base
 from sqlalchemy_declarative_extensions.sql import quote_name
@@ -33,44 +35,38 @@ class FunctionVolatility(enum.Enum):
         raise ValueError(f"Invalid volatility: {provolatile}")
 
 
-def normalize_arg(arg: str) -> str:
-    parts = arg.strip().split(maxsplit=1)
-    if len(parts) == 2:
-        name, type_str = parts
-        norm_type = type_map.get(type_str.lower(), type_str.lower())
-        # Handle array types
-        if norm_type.endswith("[]"):
-            base_type = norm_type[:-2]
-            norm_base_type = type_map.get(base_type, base_type)
-            norm_type = f"{norm_base_type}[]"
-
-        return f"{name} {norm_type}"
-    else:
-        # Handle case where it might just be the type (e.g., from DROP FUNCTION)
-        type_str = arg.strip()
-        norm_type = type_map.get(type_str.lower(), type_str.lower())
-        if norm_type.endswith("[]"):
-            base_type = norm_type[:-2]
-            norm_base_type = type_map.get(base_type, base_type)
-            norm_type = f"{norm_base_type}[]"
-        return norm_type
+# def normalize_arg(arg: str) -> str:
+#     parts = arg.strip().split(maxsplit=1)
+#     if len(parts) == 2:
+#         name, type_str = parts
+#         norm_type = type_map.get(type_str.lower(), type_str.lower())
+#         # Handle array types
+#         if norm_type.endswith("[]"):
+#             base_type = norm_type[:-2]
+#             norm_base_type = type_map.get(base_type, base_type)
+#             norm_type = f"{norm_base_type}[]"
+#
+#         return f"{name} {norm_type}"
+#     # Handle case where it might just be the type (e.g., from DROP FUNCTION)
+#     type_str = arg.strip()
+#     norm_type = type_map.get(type_str.lower(), type_str.lower())
+#     if norm_type.endswith("[]"):
+#         base_type = norm_type[:-2]
+#         norm_base_type = type_map.get(base_type, base_type)
+#         norm_type = f"{norm_base_type}[]"
+#     return norm_type
 
 
 @dataclass
 class Function(base.Function):
     """Describes a PostgreSQL function.
 
-    Many attributes are not currently supported. Support is **currently**
-    minimal due to being a means to an end for defining triggers, but can certainly
-    be evaluated/added on request.
+    Not all functionality is currently implemented, but can be evaluated/added on request.
     """
 
     security: FunctionSecurity = FunctionSecurity.invoker
-
-    #: Defines the parameters for the function, e.g. ["param1 int", "param2 varchar"]
-    parameters: Optional[List[str]] = None
-
-    #: Defines the volatility of the function.
+    returns: FunctionReturn | str | None = None  # type: ignore
+    parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
     volatility: FunctionVolatility = FunctionVolatility.VOLATILE
 
     def to_sql_create(self, replace=False) -> list[str]:
@@ -81,11 +77,15 @@ class Function(base.Function):
 
         parameter_str = ""
         if self.parameters:
-            parameter_str = ", ".join(self.parameters)
+            parameter_str = ", ".join(
+                cast(FunctionParam, p).to_sql_create() for p in self.parameters
+            )
 
         components.append("FUNCTION")
         components.append(quote_name(self.qualified_name) + f"({parameter_str})")
-        components.append(f"RETURNS {self.returns}")
+
+        returns = cast(FunctionReturn, self.returns)
+        components.append(f"RETURNS {returns.to_sql_create()}")
 
         if self.security == FunctionSecurity.definer:
             components.append("SECURITY DEFINER")
@@ -102,17 +102,12 @@ class Function(base.Function):
         return self.to_sql_create(replace=True)
 
     def to_sql_drop(self) -> list[str]:
-        param_types = []
+        param_str = ""
         if self.parameters:
-            for param in self.parameters:
-                # Naive split, assumes 'name type' or just 'type' format
-                parts = param.split(maxsplit=1)
-                if len(parts) == 2:
-                    param_types.append(parts[1])
-                else:
-                    param_types.append(param) # Assume it's just the type if no space
+            param_str = ", ".join(
+                cast(FunctionParam, p).to_sql_drop() for p in self.parameters
+            )
 
-        param_str = ", ".join(param_types)
         return [f"DROP FUNCTION {self.qualified_name}({param_str});"]
 
     def with_security(self, security: FunctionSecurity):
@@ -124,35 +119,191 @@ class Function(base.Function):
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition)
 
-        # Handle RETURNS TABLE(...) normalization
-        returns_lower = self.returns.lower().strip()
-        if returns_lower.startswith("table("):
-            # Basic normalization: lowercase and remove extra spaces
-            # This might need refinement for complex TABLE definitions
-            inner_content = returns_lower[len("table("):-1].strip()
-            cols = [normalize_arg(c) for c in inner_content.split(',')]
-            normalized_returns = f"table({', '.join(cols)})"
-        else:
-            # Normalize base return type (including array types)
-            norm_type = type_map.get(returns_lower, returns_lower)
-            if norm_type.endswith("[]"):
-                base = norm_type[:-2]
-                norm_base = type_map.get(base, base)
-                normalized_returns = f"{norm_base}[]"
-            else:
-                normalized_returns = norm_type
-
         # Normalize parameter types
-        normalized_parameters = None
+        parameters = []
         if self.parameters:
-            normalized_parameters = [normalize_arg(p) for p in self.parameters]
+            parameters = [
+                FunctionParam.from_unknown(p).normalize() for p in self.parameters
+            ]
+
+        input_parameters = [p for p in parameters if p.is_input]
+        table_parameters = [p for p in parameters if p.is_table]
+
+        returns = FunctionReturn.from_unknown(self.returns, parameters=table_parameters)
+        if returns:
+            returns = returns.normalize()
 
         return replace(
             self,
             definition=definition,
-            returns=normalized_returns,
-            parameters=normalized_parameters, # Use normalized parameters
+            returns=returns,
+            parameters=input_parameters,
         )
+
+
+@dataclass
+class FunctionParam:
+    name: str
+    type: str
+    default: Any | None = None
+    mode: Literal["i", "o", "b", "v", "t"] | None = None
+
+    @classmethod
+    def input(cls, name: str, type: str, default: Any | None = None) -> FunctionParam:
+        """Create an input parameter."""
+        return cls(name=name, type=type, default=default, mode="i")
+
+    @classmethod
+    def output(cls, name: str, type: str, default: Any | None = None) -> FunctionParam:
+        """Create an input parameter."""
+        return cls(name=name, type=type, default=default, mode="o")
+
+    @classmethod
+    def inout(cls, name: str, type: str, default: Any | None = None) -> FunctionParam:
+        """Create an input parameter."""
+        return cls(name=name, type=type, default=default, mode="b")
+
+    @classmethod
+    def variadic(
+        cls, name: str, type: str, default: Any | None = None
+    ) -> FunctionParam:
+        """Create an input parameter."""
+        return cls(name=name, type=type, default=default, mode="v")
+
+    @classmethod
+    def table(cls, name: str, type: str, default: Any | None = None) -> FunctionParam:
+        """Create an input parameter."""
+        return cls(name=name, type=type, default=default, mode="t")
+
+    @classmethod
+    def from_unknown(
+        cls, source_param: str | tuple[str, str] | FunctionParam
+    ) -> FunctionParam:
+        if isinstance(source_param, FunctionParam):
+            return source_param
+
+        if isinstance(source_param, tuple):
+            return cls(*source_param)
+
+        name, type = source_param.strip().split(maxsplit=1)
+        return cls(name, type)
+
+    def normalize(self) -> FunctionParam:
+        type = self.type.lower()
+        return replace(
+            self,
+            name=self.name.lower(),
+            mode=self.mode or "i",
+            type=type_map.get(type, type),
+            default=str(self.default) if self.default is not None else None,
+        )
+
+    def to_sql_create(self) -> str:
+        result = ""
+        if self.mode:
+            result += {"o": "OUT ", "b": "INOUT ", "v": "VARIADIC ", "t": "TABLE "}.get(
+                self.mode, ""
+            )
+
+        result += f"{self.name} {self.type}"
+
+        if self.default is not None:
+            result += f" DEFAULT {self.default}"
+        return result
+
+    def to_sql_drop(self) -> str:
+        return self.type
+
+    @property
+    def is_input(self) -> bool:
+        """Check if the parameter is an input parameter."""
+        return self.mode not in {"o", "t"}
+
+    @property
+    def is_table(self) -> bool:
+        return self.mode == "t"
+
+
+@dataclass
+class FunctionReturn:
+    value: str | None = None
+    table: Sequence[Column | tuple[str, str] | str] | None = None
+
+    @classmethod
+    def from_unknown(
+        cls,
+        source: str | FunctionReturn | None,
+        parameters: list[FunctionParam] | None = None,
+    ) -> FunctionReturn | None:
+        if source is None:
+            return None
+
+        if isinstance(source, FunctionReturn):
+            return source
+
+        # Handle RETURNS TABLE(...) normalization
+        returns_lower = source.lower().strip()
+        if returns_lower.startswith("table("):
+            table_return_params = [
+                (p.name, p.type) for p in (parameters or []) if p.mode == "t"
+            ]
+
+            if not table_return_params:
+                raise NotImplementedError(
+                    "TABLE return types must either be provided as a `FunctionReturn(table=...)` construct "
+                    "or as input parameters of type `FunctionParam.table(...)."
+                )
+
+            return cls(table=table_return_params)
+            # # Basic normalization: lowercase and remove extra spaces
+            # # This might need refinement for complex TABLE definitions
+            # inner_content = returns_lower[len("table(") : -1].strip()
+            # cols = [normalize_arg(c) for c in inner_content.split(",")]
+            # normalized_returns = f"table({', '.join(cols)})"
+            # return cls()
+
+        # Normalize base return type (including array types)
+        norm_type = type_map.get(returns_lower, returns_lower)
+        if norm_type.endswith("[]"):
+            base = norm_type[:-2]
+            norm_base = type_map.get(base, base)
+            normalized_returns = f"{norm_base}[]"
+        else:
+            normalized_returns = norm_type
+
+        return cls(value=normalized_returns)
+
+    def normalize(self) -> FunctionReturn:
+        value = self.value
+
+        table = self.table
+        if self.table:
+            table = []
+            for arg in self.table:
+                if isinstance(arg, Column):
+                    arg_name = arg.name
+                    arg_type = arg.type.compile()
+                elif isinstance(arg, tuple):
+                    arg_name, arg_type = arg
+                else:
+                    arg_name, arg_type = arg.strip().split(maxsplit=1)
+
+                arg_type = arg_type.lower()
+                arg_type = type_map.get(arg_type, arg_type)
+                table.append((arg_name.lower(), arg_type))
+
+        return replace(self, value=value, table=table)
+
+    def to_sql_create(self) -> str:
+        if self.value:
+            return self.value
+
+        if self.table:
+            table = cast(List[Tuple[str, str]], self.table)
+            table_args = ", ".join(f"{name} {type}" for name, type in table)
+            return f"TABLE({table_args})"
+
+        return "void"
 
 
 type_map = {
@@ -169,4 +320,11 @@ type_map = {
     "serial": "serial4",
     "time with time zone": "timetz",
     "timestamp with time zone": "timestamptz",
+    "char[]": "_char",
+    "varchar[]": "_varchar",
+    "text[]": "_text",
+    "int4[]": "_int4",
+    "integer[]": "_int4",
+    "bool[]": "_bool",
+    "boolean[]": "_bool",
 }

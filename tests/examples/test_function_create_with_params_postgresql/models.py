@@ -2,13 +2,19 @@ from sqlalchemy import Column, types
 from sqlalchemy.orm import declarative_base
 
 from sqlalchemy_declarative_extensions import Functions, declarative_database
-from sqlalchemy_declarative_extensions.dialects.postgresql import Function, FunctionVolatility
+from sqlalchemy_declarative_extensions.dialects.postgresql import (
+    Function,
+    FunctionVolatility,
+)
+from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
+    FunctionReturn,
+)
 
 _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base): # type: ignore
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     functions = Functions().are(
@@ -29,8 +35,8 @@ class Base(_Base): # type: ignore
             END;
             """,
             parameters=["group_ids integer[]"],
-            returns="TABLE(id integer, name text)",
-            language="plpgsql", # Requires plpgsql
+            returns=FunctionReturn(table=["id integer", "name text"]),
+            language="plpgsql",  # Requires plpgsql
             volatility=FunctionVolatility.STABLE,
         ),
     )
