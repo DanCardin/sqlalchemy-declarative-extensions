@@ -1,7 +1,7 @@
 from alembic import context
 
 # isort: split
-from models import Base # Imports from the example's models.py
+from models import Base  # Imports from the example's models.py
 from sqlalchemy import engine_from_config, pool
 
 from sqlalchemy_declarative_extensions import register_alembic_events

@@ -92,7 +92,7 @@ def get_functions_mysql(connection: Connection) -> Sequence[BaseFunction]:
     functions = []
     for f in connection.execute(functions_query, {"schema": database}).fetchall():
         parameters = None
-        if f.parameters: # Parameter string might be None if no parameters
+        if f.parameters:  # Parameter string might be None if no parameters
             parameters = [p.strip() for p in f.parameters.split(",")]
 
         functions.append(

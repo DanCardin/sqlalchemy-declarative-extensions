@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from itertools import zip_longest
 from typing import Container, List, cast
 
 from sqlalchemy import Index, UniqueConstraint
@@ -13,6 +14,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
+    FunctionParam,
     FunctionSecurity,
     FunctionVolatility,
 )
@@ -204,9 +206,15 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
         schema = f.schema if f.schema != "public" else None
 
         function = Function(
-            parameters=(
-                [p.strip() for p in f.parameters.split(",")] if f.parameters else None
-            ),
+            parameters=[
+                FunctionParam(name, type, default, mode)
+                for name, type, default, mode in zip_longest(
+                    f.arg_names or [],
+                    f.arg_types or [],
+                    f.arg_defaults or [],
+                    f.arg_modes or [],
+                )
+            ],
             volatility=FunctionVolatility.from_provolatile(f.volatility),
             name=name,
             definition=definition,

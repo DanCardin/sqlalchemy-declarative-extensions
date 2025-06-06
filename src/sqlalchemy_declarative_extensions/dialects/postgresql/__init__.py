@@ -1,5 +1,7 @@
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
+    FunctionParam,
+    FunctionReturn,
     FunctionSecurity,
     FunctionVolatility,
 )
@@ -43,6 +45,8 @@ __all__ = [
     "DefaultGrantTypes",
     "Function",
     "FunctionGrants",
+    "FunctionParam",
+    "FunctionReturn",
     "FunctionSecurity",
     "FunctionVolatility",
     "Grant",

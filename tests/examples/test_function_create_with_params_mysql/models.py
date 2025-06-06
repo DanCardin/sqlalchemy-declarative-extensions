@@ -12,7 +12,7 @@ _Base = declarative_base()
 
 
 @declarative_database
-class Base(_Base): # type: ignore
+class Base(_Base):  # type: ignore
     __abstract__ = True
 
     functions = Functions().are(
