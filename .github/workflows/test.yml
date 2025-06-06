@@ -30,7 +30,7 @@ jobs:
             sqlalchemy-version: 1.4.0
 
     env:
-      PMR_POSTGRES_IMAGE: postgres:13
+      PMR_POSTGRES_IMAGE: postgis/postgis:13-3.5
 
     steps:
       - uses: actions/checkout@v3

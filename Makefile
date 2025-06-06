@@ -2,6 +2,7 @@
 .DEFAULT_GOAL := help
 
 WORKER_COUNT ?= 4
+POSTGRES_IMAGE ?= postgis/postgis:13-3.5
 
 install:
 	uv sync --all-extras
@@ -9,6 +10,7 @@ install:
 test:
 	SQLALCHEMY_WARN_20=1 \
 	COVERAGE_PROCESS_START="$(PWD)/pyproject.toml" \
+	PMR_POSTGRES_IMAGE="$(POSTGRES_IMAGE)" \
 	uv run \
 	coverage run -m pytest -n $(WORKER_COUNT) -vv src tests
 	uv run coverage combine
