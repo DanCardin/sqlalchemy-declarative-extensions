@@ -159,7 +159,11 @@ class Trigger(base.Trigger):
         components.append(self.time.value)
         components.append(" OR ".join([e.value for e in self.events]))
         components.append("ON")
-        components.append(f'"{self.on}"')
+
+        on_components = [f'"{component}"' for component in self.on.split(".")]
+        on = ".".join(on_components)
+        components.append(on)
+
         components.append("FOR EACH")
         components.append(self.for_each.value)
 

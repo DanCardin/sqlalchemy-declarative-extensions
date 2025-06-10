@@ -2,6 +2,11 @@
 
 ## 0.15
 
+### 0.15.10
+
+- feat: Support alembic check.
+- fix: Quote trigger name/tablenames.
+
 ### 0.15.9
 
 - fix: Quote trigger name/tablenames.

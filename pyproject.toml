@@ -1,12 +1,11 @@
 [project]
 name = "sqlalchemy-declarative-extensions"
-version = "0.15.9"
+version = "0.15.10"
 authors = [
     {name = "Dan Cardin", email = "ddcardin@gmail.com"},
 ]
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
 license = {file = "LICENSE"}
-repository = "https://github.com/dancardin/sqlalchemy-declarative-extensions"
 readme = 'README.md'
 
 keywords = [
@@ -35,6 +34,12 @@ requires-python = ">=3.8,<4"
 dependencies = [
   "sqlalchemy >= 1.3",
 ]
+
+[project.urls]
+documentation = "https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/"
+homepage = "https://sqlalchemy-declarative-extensions.readthedocs.io/en/latest/"
+repository = "https://github.com/dancardin/sqlalchemy-declarative-extensions"
+changelog = "https://github.com/DanCardin/sqlalchemy-declarative-extensions/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 alembic = ["alembic >= 1.0"]
