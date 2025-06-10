@@ -7,11 +7,12 @@ from typing import Sequence, Union
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_procedure_cls, get_procedures
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.procedure.base import Procedure, Procedures
 
 
 @dataclass
-class CreateProcedureOp:
+class CreateProcedureOp(ExecuteOp):
     procedure: Procedure
 
     def reverse(self):
@@ -22,7 +23,7 @@ class CreateProcedureOp:
 
 
 @dataclass
-class UpdateProcedureOp:
+class UpdateProcedureOp(ExecuteOp):
     from_procedure: Procedure
     procedure: Procedure
 
@@ -34,7 +35,7 @@ class UpdateProcedureOp:
 
 
 @dataclass
-class DropProcedureOp:
+class DropProcedureOp(ExecuteOp):
     procedure: Procedure
 
     def reverse(self):

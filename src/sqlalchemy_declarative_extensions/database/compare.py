@@ -7,12 +7,13 @@ from sqlalchemy.engine.base import Connection
 
 from sqlalchemy_declarative_extensions.database.base import Database, Databases
 from sqlalchemy_declarative_extensions.dialects import get_databases
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.role.compare import UseRoleOp
 from sqlalchemy_declarative_extensions.role.state import RoleState
 
 
 @dataclass
-class CreateDatabaseOp:
+class CreateDatabaseOp(ExecuteOp):
     database: Database
     use_role_ops: list[UseRoleOp] | None = None
 
@@ -30,7 +31,7 @@ class CreateDatabaseOp:
 
 
 @dataclass
-class DropDatabaseOp:
+class DropDatabaseOp(ExecuteOp):
     database: Database
     use_role_ops: list[UseRoleOp] | None = None
 

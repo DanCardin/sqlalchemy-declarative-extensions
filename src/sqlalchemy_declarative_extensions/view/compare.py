@@ -6,45 +6,43 @@ from fnmatch import fnmatch
 from typing import Union
 
 from sqlalchemy.engine import Connection, Dialect
-from sqlalchemy import MetaData
-from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
-from sqlalchemy_declarative_extensions.op import Op
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 
 @dataclass
-class CreateViewOp(Op):
+class CreateViewOp(ExecuteOp):
     view: View
 
     def reverse(self):
         return DropViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
+    def to_sql(self, dialect: Dialect | None = None) -> list[str]:
         return self.view.to_sql_create(dialect)
 
 
 @dataclass
-class UpdateViewOp(Op):
+class UpdateViewOp(ExecuteOp):
     from_view: View
     view: View
 
     def reverse(self):
         return UpdateViewOp(from_view=self.view, view=self.from_view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
+    def to_sql(self, dialect: Dialect | None = None) -> list[str]:
         return self.view.to_sql_update(self.from_view, dialect)
 
 
 @dataclass
-class DropViewOp(Op):
+class DropViewOp(ExecuteOp):
     view: View
 
     def reverse(self):
         return CreateViewOp(self.view)
 
-    def to_sql(self, dialect: Dialect) -> list[str]:
+    def to_sql(self, dialect: Dialect | None = None) -> list[str]:
         return self.view.to_sql_drop(dialect)
 
 

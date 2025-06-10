@@ -8,10 +8,11 @@ from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_function_cls, get_functions
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 
 
 @dataclass
-class CreateFunctionOp:
+class CreateFunctionOp(ExecuteOp):
     function: Function
 
     def reverse(self):
@@ -22,7 +23,7 @@ class CreateFunctionOp:
 
 
 @dataclass
-class UpdateFunctionOp:
+class UpdateFunctionOp(ExecuteOp):
     from_function: Function
     function: Function
 
@@ -34,7 +35,7 @@ class UpdateFunctionOp:
 
 
 @dataclass
-class DropFunctionOp:
+class DropFunctionOp(ExecuteOp):
     function: Function
 
     def reverse(self):

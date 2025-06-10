@@ -17,11 +17,12 @@ from sqlalchemy_declarative_extensions.dialects.postgresql import (
     GrantTypes,
 )
 from sqlalchemy_declarative_extensions.grant.base import Grants
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.role.base import Roles
 
 
 @dataclass
-class GrantPrivilegesOp:
+class GrantPrivilegesOp(ExecuteOp):
     grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):
@@ -32,7 +33,7 @@ class GrantPrivilegesOp:
 
 
 @dataclass
-class RevokePrivilegesOp:
+class RevokePrivilegesOp(ExecuteOp):
     grant: DefaultGrantStatement | GrantStatement
 
     def reverse(self):

@@ -1,13 +1,17 @@
-from dataclasses import dataclass
+from typing import Any
 
 
-@dataclass
-class Op:
-    def reverse(self):
+class MigrateOp:
+    def reverse(self) -> "MigrateOp":
         raise NotImplementedError()
 
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        raise NotImplementedError()
+
+
+class ExecuteOp(MigrateOp):
     def to_sql(self) -> list[str]:
         raise NotImplementedError()
 
-    def to_diff_tuple(self) -> tuple[str, str]:
-        return ("execute", self.to_sql())
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "execute", *self.to_sql()
