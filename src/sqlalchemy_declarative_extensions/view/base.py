@@ -219,7 +219,7 @@ class View:
     def qualified_name(self):
         return qualify_name(self.schema, self.name)
 
-    def compile_definition(self, dialect: Dialect) -> str:
+    def compile_definition(self, dialect: Dialect | None = None) -> str:
         if isinstance(self.definition, str):
             return self.definition
 
@@ -319,7 +319,7 @@ class View:
             constraints=constraints,
         )
 
-    def to_sql_create(self, dialect: Dialect) -> list[str]:
+    def to_sql_create(self, dialect: Dialect | None = None) -> list[str]:
         assert self.materialized is False
 
         definition = self.compile_definition(dialect)
@@ -332,7 +332,9 @@ class View:
 
         return result
 
-    def to_sql_update(self, from_view: View, dialect: Dialect) -> list[str]:
+    def to_sql_update(
+        self, from_view: View, dialect: Dialect | None = None
+    ) -> list[str]:
         result = []
         if (
             from_view.definition != self.definition
@@ -352,7 +354,7 @@ class View:
 
         return result
 
-    def to_sql_drop(self, dialect: Dialect) -> list[str]:
+    def to_sql_drop(self, dialect: Dialect | None = None) -> list[str]:
         components = ["DROP"]
         if self.materialized:
             components.append("MATERIALIZED")

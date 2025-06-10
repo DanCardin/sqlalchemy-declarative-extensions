@@ -24,7 +24,7 @@ class Trigger:
     def to_sql_create(self):
         raise NotImplementedError()
 
-    def to_sql_update(self, connection: Connection):
+    def to_sql_update(self, connection: Connection | None = None):
         return [
             self.to_sql_drop(),
             self.to_sql_create(),

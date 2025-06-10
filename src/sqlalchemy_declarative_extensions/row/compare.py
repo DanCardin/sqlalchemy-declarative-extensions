@@ -10,13 +10,14 @@ from sqlalchemy.sql.schema import MetaData, Table
 from sqlalchemy_declarative_extensions.dialects import (
     check_table_exists,
 )
+from sqlalchemy_declarative_extensions.op import MigrateOp
 from sqlalchemy_declarative_extensions.row.base import Row, Rows
 from sqlalchemy_declarative_extensions.sql import match_name, split_schema
 from sqlalchemy_declarative_extensions.sqlalchemy import row_to_dict, select
 
 
 @dataclass
-class InsertRowOp:
+class InsertRowOp(MigrateOp):
     table: str
     values: dict[str, Any] | list[dict[str, Any]]
 
@@ -39,9 +40,12 @@ class InsertRowOp:
     def reverse(self):
         return DeleteRowOp(self.table, self.values)
 
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "insert_table_row", self.table, self.values
+
 
 @dataclass
-class UpdateRowOp:
+class UpdateRowOp(MigrateOp):
     table: str
     from_values: dict[str, Any] | list[dict[str, Any]]
     to_values: dict[str, Any] | list[dict[str, Any]]
@@ -81,9 +85,12 @@ class UpdateRowOp:
     def reverse(self):
         return UpdateRowOp(self.table, self.to_values, self.from_values)
 
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "update_table_row", self.table, self.to_values, self.from_values
+
 
 @dataclass
-class DeleteRowOp:
+class DeleteRowOp(MigrateOp):
     table: str
     values: dict[str, Any] | list[dict[str, Any]]
 
@@ -125,6 +132,9 @@ class DeleteRowOp:
 
     def reverse(self):
         return InsertRowOp(self.table, self.values)
+
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "delete_table_row", self.table, self.values
 
 
 def get_metadata(conn: Connection, tablename: str):

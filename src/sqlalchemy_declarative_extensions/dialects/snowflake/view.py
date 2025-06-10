@@ -34,7 +34,7 @@ class View(base.View):
             schema=result.schema.upper() if result.schema else None,
         )
 
-    def to_sql_create(self, dialect: Dialect) -> list[str]:
+    def to_sql_create(self, dialect: Dialect | None = None) -> list[str]:
         definition = self.compile_definition(dialect).strip(";")
 
         components = ["CREATE"]

@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.sql.base import Executable
 
 from sqlalchemy_declarative_extensions.dialects import get_schema_cls, get_schemas
+from sqlalchemy_declarative_extensions.op import MigrateOp
 from sqlalchemy_declarative_extensions.role.compare import UseRoleOp
 from sqlalchemy_declarative_extensions.role.state import RoleState
 from sqlalchemy_declarative_extensions.schema.base import Schema, Schemas
 
 
 @dataclass
-class CreateSchemaOp:
+class CreateSchemaOp(MigrateOp):
     schema: Schema
     use_role_ops: list[UseRoleOp] | None = None
 
@@ -29,9 +30,12 @@ class CreateSchemaOp:
         role_sql = UseRoleOp.to_sql_from_use_role_ops(self.use_role_ops)
         return [*role_sql, self.schema.to_sql_create()]
 
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "execute", *self.to_sql()
+
 
 @dataclass
-class DropSchemaOp:
+class DropSchemaOp(MigrateOp):
     schema: Schema
     role_ops: list[UseRoleOp] | None = None
 
@@ -46,6 +50,9 @@ class DropSchemaOp:
     def to_sql(self) -> list[Executable | str]:
         role_sql = UseRoleOp.to_sql_from_use_role_ops(self.role_ops)
         return [*role_sql, self.schema.to_sql_drop()]
+
+    def to_diff_tuple(self) -> tuple[Any, ...]:
+        return "execute", *self.to_sql()
 
 
 SchemaOp = Union[CreateSchemaOp, DropSchemaOp, UseRoleOp]

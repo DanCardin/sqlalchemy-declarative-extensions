@@ -6,40 +6,41 @@ from typing import Union
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_triggers
+from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.trigger.base import Trigger, Triggers
 
 
 @dataclass
-class CreateTriggerOp:
+class CreateTriggerOp(ExecuteOp):
     trigger: Trigger
 
     def reverse(self):
         return DropTriggerOp(self.trigger)
 
-    def to_sql(self, _) -> list[str]:
+    def to_sql(self, connection: Connection | None = None) -> list[str]:
         return [self.trigger.to_sql_create()]
 
 
 @dataclass
-class UpdateTriggerOp:
+class UpdateTriggerOp(ExecuteOp):
     from_trigger: Trigger
     trigger: Trigger
 
     def reverse(self):
         return UpdateTriggerOp(from_trigger=self.trigger, trigger=self.from_trigger)
 
-    def to_sql(self, connection: Connection) -> list[str]:
+    def to_sql(self, connection: Connection | None = None) -> list[str]:
         return self.trigger.to_sql_update(connection)
 
 
 @dataclass
-class DropTriggerOp:
+class DropTriggerOp(ExecuteOp):
     trigger: Trigger
 
     def reverse(self):
         return CreateTriggerOp(self.trigger)
 
-    def to_sql(self, _) -> list[str]:
+    def to_sql(self, connection: Connection | None = None) -> list[str]:
         return [self.trigger.to_sql_drop()]
 
 
