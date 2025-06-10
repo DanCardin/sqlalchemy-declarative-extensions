@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import Any
 
 
 class MigrateOp:
-    def reverse(self) -> "MigrateOp":
+    def reverse(self) -> MigrateOp:
         raise NotImplementedError()
 
     def to_diff_tuple(self) -> tuple[Any, ...]:
