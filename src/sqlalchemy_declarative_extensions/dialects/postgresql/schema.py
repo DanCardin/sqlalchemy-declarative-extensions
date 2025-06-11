@@ -154,6 +154,10 @@ def _schema_not_pg(column=pg_namespace.c.nspname):
     )
 
 
+def _schema_not_from_extension(namespace_oid_column=pg_namespace.c.oid):
+    return _not_from_extension(namespace_oid_column, "pg_namespace")
+
+
 def _not_from_extension(obj_id_col, class_name):
     return ~exists().where(pg_depend.c.objid == obj_id_col).where(
         pg_depend.c.classid == literal(class_name).cast(REGCLASS)
@@ -164,7 +168,10 @@ _schema_not_public = pg_namespace.c.nspname != "public"
 _table_not_pg = pg_class.c.relname.notlike("pg_%")
 
 schemas_query = (
-    select(pg_namespace.c.nspname).where(_schema_not_pg()).where(_schema_not_public)
+    select(pg_namespace.c.nspname)
+    .where(_schema_not_pg())
+    .where(_schema_not_public)
+    .where(_schema_not_from_extension())
 )
 
 
@@ -252,6 +259,7 @@ objects_query = (
     )
     .where(_table_not_pg)
     .where(_schema_not_pg())
+    .where(_schema_not_from_extension())
 )
 
 views_query = (
@@ -266,6 +274,7 @@ views_query = (
     )
     .where(pg_class.c.relkind.in_(["v", "m"]))
     .where(_schema_not_pg(pg_namespace.c.nspname))
+    .where(_schema_not_from_extension())
     .where(_not_from_extension(pg_class.c.oid, "pg_class"))
 )
 
@@ -294,6 +303,7 @@ procedures_query = (
     )
     .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
     .where(pg_proc.c.prokind == "p")
+    .where(_schema_not_from_extension())
     .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
 )
 
@@ -348,5 +358,6 @@ triggers_query = (
         .join(proc_nsp, pg_proc.c.pronamespace == proc_nsp.c.oid)
     )
     .where(pg_trigger.c.tgisinternal.is_(False))
+    .where(_schema_not_from_extension())
     .where(_not_from_extension(pg_trigger.c.oid, "pg_trigger"))
 )
