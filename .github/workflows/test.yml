@@ -29,9 +29,6 @@ jobs:
           - postgres-drivername: postgresql+psycopg
             sqlalchemy-version: 1.4.0
 
-    env:
-      PMR_POSTGRES_IMAGE: postgis/postgis:13-3.5
-
     steps:
       - uses: actions/checkout@v3
 

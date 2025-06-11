@@ -1,4 +1,3 @@
-
 from alembic import context
 
 # isort: split
