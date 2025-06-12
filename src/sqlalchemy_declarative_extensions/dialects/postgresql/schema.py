@@ -3,13 +3,14 @@ from sqlalchemy import (
     and_,
     bindparam,
     column,
+    exists,
     func,
     literal,
     table,
     text,
     union,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, CHAR
+from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
@@ -37,6 +38,21 @@ pg_database = table(
     "pg_database",
     column("oid"),
     column("datname"),
+)
+
+pg_depend = table(
+    "pg_depend",
+    column("objid"),
+    column("classid"),
+    column("deptype"),
+)
+
+pg_extension = table(
+    "pg_extension",
+    column("oid"),
+    column("extname"),
+    column("extversion"),
+    column("extconfig"),
 )
 
 pg_namespace = table(
@@ -146,11 +162,24 @@ def _schema_not_pg(column=pg_namespace.c.nspname):
     )
 
 
+def _schema_not_from_extension(namespace_oid_column=pg_namespace.c.oid):
+    return _not_from_extension(namespace_oid_column, "pg_namespace")
+
+
+def _not_from_extension(obj_id_col, class_name):
+    return ~exists().where(pg_depend.c.objid == obj_id_col).where(
+        pg_depend.c.classid == literal(class_name).cast(REGCLASS)
+    ).where(pg_depend.c.deptype == literal("e"))
+
+
 _schema_not_public = pg_namespace.c.nspname != "public"
 _table_not_pg = pg_class.c.relname.notlike("pg_%")
 
 schemas_query = (
-    select(pg_namespace.c.nspname).where(_schema_not_pg()).where(_schema_not_public)
+    select(pg_namespace.c.nspname)
+    .where(_schema_not_pg())
+    .where(_schema_not_public)
+    .where(_schema_not_from_extension())
 )
 
 
@@ -158,6 +187,10 @@ databases_query = (
     select(pg_database.c.datname)
     .where(pg_database.c.datname.notin_(["template0", "template1"]))
     .where(_schema_not_public)
+)
+
+extensions_query = select(
+    pg_extension.c.extname.label("name"), pg_extension.c.extversion.label("version")
 )
 
 schema_exists_query = text(
@@ -238,25 +271,24 @@ objects_query = (
     )
     .where(_table_not_pg)
     .where(_schema_not_pg())
+    .where(_schema_not_from_extension())
 )
 
-views_query = union(
+views_query = (
     select(
-        pg_views.c.schemaname.label("schema"),
-        pg_views.c.viewname.label("name"),
-        pg_views.c.definition.label("definition"),
-        literal(False).label("materialized"),
+        pg_namespace.c.nspname.label("schema"),
+        pg_class.c.relname.label("name"),
+        func.pg_get_viewdef(pg_class.c.oid).label("definition"),
+        (pg_class.c.relkind == literal("m")).label("materialized"),
     )
-    .where(_schema_not_pg(pg_views.c.schemaname))
-    .where(pg_views.c.viewname.notin_(["pg_stat_statements"])),
-    select(
-        pg_matviews.c.schemaname.label("schema"),
-        pg_matviews.c.matviewname.label("name"),
-        pg_matviews.c.definition.label("definition"),
-        literal(True).label("materialized"),
-    ).where(_schema_not_pg(pg_matviews.c.schemaname)),
+    .select_from(
+        pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
+    )
+    .where(pg_class.c.relkind.in_(["v", "m"]))
+    .where(_schema_not_pg(pg_namespace.c.nspname))
+    .where(_schema_not_from_extension())
+    .where(_not_from_extension(pg_class.c.oid, "pg_class"))
 )
-
 
 views_subquery = views_query.cte()
 view_query = (
@@ -283,6 +315,8 @@ procedures_query = (
     )
     .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
     .where(pg_proc.c.prokind == "p")
+    .where(_schema_not_from_extension())
+    .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
 )
 
 functions_query = (
@@ -302,6 +336,7 @@ functions_query = (
     )
     .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
     .where(pg_proc.c.prokind != "p")
+    .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
 )
 
 
@@ -335,4 +370,6 @@ triggers_query = (
         .join(proc_nsp, pg_proc.c.pronamespace == proc_nsp.c.oid)
     )
     .where(pg_trigger.c.tgisinternal.is_(False))
+    .where(_schema_not_from_extension())
+    .where(_not_from_extension(pg_trigger.c.oid, "pg_trigger"))
 )

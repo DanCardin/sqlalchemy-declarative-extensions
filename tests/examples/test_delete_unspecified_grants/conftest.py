@@ -12,4 +12,4 @@ def alembic_engine(_alembic_engine):
 
 @pytest.fixture(scope="session")
 def pmr_postgres_config():
-    return PostgresConfig(port=None, ci_port=None)
+    return PostgresConfig(image="postgres:13", port=None, ci_port=None)
