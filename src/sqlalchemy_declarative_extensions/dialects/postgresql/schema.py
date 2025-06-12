@@ -47,6 +47,14 @@ pg_depend = table(
     column("deptype"),
 )
 
+pg_extension = table(
+    "pg_extension",
+    column("oid"),
+    column("extname"),
+    column("extversion"),
+    column("extconfig"),
+)
+
 pg_namespace = table(
     "pg_namespace",
     column("oid"),
@@ -179,6 +187,10 @@ databases_query = (
     select(pg_database.c.datname)
     .where(pg_database.c.datname.notin_(["template0", "template1"]))
     .where(_schema_not_public)
+)
+
+extensions_query = select(
+    pg_extension.c.extname.label("name"), pg_extension.c.extversion.label("version")
 )
 
 schema_exists_query = text(
