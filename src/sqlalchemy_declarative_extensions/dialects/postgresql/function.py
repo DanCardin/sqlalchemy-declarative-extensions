@@ -5,6 +5,7 @@ import textwrap
 from dataclasses import dataclass, replace
 
 from sqlalchemy_declarative_extensions.function import base
+from sqlalchemy_declarative_extensions.sql import quote_name
 
 
 @enum.unique
@@ -31,7 +32,7 @@ class Function(base.Function):
             components.append("OR REPLACE")
 
         components.append("FUNCTION")
-        components.append(self.qualified_name + "()")
+        components.append(quote_name(self.qualified_name) + "()")
         components.append(f"RETURNS {self.returns}")
 
         if self.security == FunctionSecurity.definer:

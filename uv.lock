@@ -1415,7 +1415,7 @@ mypy = [
 
 [[package]]
 name = "sqlalchemy-declarative-extensions"
-version = "0.15.9"
+version = "0.15.11"
 source = { editable = "." }
 dependencies = [
     { name = "sqlalchemy" },

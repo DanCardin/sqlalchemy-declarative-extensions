@@ -10,6 +10,7 @@ from sqlalchemy_declarative_extensions import (
     register_trigger,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.trigger import Trigger
+from sqlalchemy_declarative_extensions.sql import quote_name
 
 default_primary_key = Column(
     "audit_pk", types.Integer(), primary_key=True, autoincrement=True
@@ -192,7 +193,7 @@ def create_audit_functions(
         if column.name == AUDIT_PK:
             continue
 
-        audit_columns.append(column.name)
+        audit_columns.append(quote_name(column.name))
 
         if column.name in {
             AUDIT_PK,
@@ -211,8 +212,8 @@ def create_audit_functions(
             old_elements.append(value)
             new_elements.append(value)
         else:
-            old_elements.append(f"OLD.{column.name}")
-            new_elements.append(f"NEW.{column.name}")
+            old_elements.append(f'OLD."{column.name}"')
+            new_elements.append(f'NEW."{column.name}"')
 
     audit_columns_str = ", ".join(audit_columns)
     old_elements_str = ", ".join(old_elements)
@@ -234,7 +235,7 @@ def create_audit_functions(
             "_".join([function_name, op.lower()]),
             f"""
             BEGIN
-            INSERT INTO {audit_table.fullname} ({audit_columns_str})
+            INSERT INTO {quote_name(audit_table.fullname)} ({audit_columns_str})
             SELECT '{op_key}', now(), current_user, {elements};
             RETURN NULL;
             END

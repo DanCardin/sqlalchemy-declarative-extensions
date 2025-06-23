@@ -2,6 +2,10 @@
 
 ## 0.15
 
+### 0.15.11
+- fix: Exclude extension-created objects from comparisons.
+- fix: Quote audit column names.
+
 ### 0.15.10
 
 - feat: Support alembic check.
