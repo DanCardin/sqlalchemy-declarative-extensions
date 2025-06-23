@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.procedure import base
+from sqlalchemy_declarative_extensions.sql import quote_name
 
 
 @enum.unique
@@ -33,7 +34,7 @@ class Procedure(base.Procedure):
             components.append("OR REPLACE")
 
         components.append("PROCEDURE")
-        components.append(self.qualified_name + "()")
+        components.append(quote_name(self.qualified_name) + "()")
 
         if self.security == ProcedureSecurity.definer:
             components.append("SECURITY DEFINER")

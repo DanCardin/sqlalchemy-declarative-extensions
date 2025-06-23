@@ -12,9 +12,10 @@ def qualify_name(schema: str | None, name: str, quote=False) -> str:
             return f'"{name}"'
         return name
 
+    result = f"{schema}.{name}"
     if quote:
-        return f'"{schema}"."{name}"'
-    return f"{schema}.{name}"
+        return quote_name(result)
+    return result
 
 
 def split_schema(
@@ -46,3 +47,8 @@ def coerce_name(name: str | HasName):
     if isinstance(name, HasName):
         return name.name
     return name
+
+
+def quote_name(name: str) -> str:
+    components = [f'"{component}"' for component in name.split(".")]
+    return ".".join(components)

@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
+from sqlalchemy_declarative_extensions.sql import quote_name
 from sqlalchemy_declarative_extensions.trigger import base
 
 
@@ -155,14 +156,12 @@ class Trigger(base.Trigger):
             components.append("OR REPLACE")
 
         components.append("TRIGGER")
-        components.append(f'"{self.name}"')
+        components.append(quote_name(self.name))
         components.append(self.time.value)
         components.append(" OR ".join([e.value for e in self.events]))
         components.append("ON")
 
-        on_components = [f'"{component}"' for component in self.on.split(".")]
-        on = ".".join(on_components)
-        components.append(on)
+        components.append(quote_name(self.on))
 
         components.append("FOR EACH")
         components.append(self.for_each.value)
@@ -175,7 +174,7 @@ class Trigger(base.Trigger):
         args_quoted = (
             tuple(f"'{arg}'" for arg in self.arguments) if self.arguments else ()
         )
-        components.append(self.execute + f"({','.join(args_quoted)})")
+        components.append(quote_name(self.execute) + f"({','.join(args_quoted)})")
         return " ".join(components) + ";"
 
     def to_sql_update(self, connection: Connection | None = None):

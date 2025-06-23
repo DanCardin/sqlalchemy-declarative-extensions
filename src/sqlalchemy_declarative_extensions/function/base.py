@@ -6,7 +6,7 @@ from typing import Iterable, Sequence
 from sqlalchemy import MetaData
 from typing_extensions import Self
 
-from sqlalchemy_declarative_extensions.sql import qualify_name
+from sqlalchemy_declarative_extensions.sql import qualify_name, quote_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 
@@ -54,7 +54,7 @@ class Function:
         ]
 
     def to_sql_drop(self) -> list[str]:
-        return [f"DROP FUNCTION {self.qualified_name}();"]
+        return [f"DROP FUNCTION {quote_name(self.qualified_name)}();"]
 
     def with_name(self, name: str):
         return replace(self, name=name)
