@@ -23,6 +23,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.role import Role
 from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     databases_query,
     default_acl_query,
+    extensions_query,
     functions_query,
     object_acl_query,
     objects_query,
@@ -47,13 +48,33 @@ from sqlalchemy_declarative_extensions.function import Function as BaseFunction
 from sqlalchemy_declarative_extensions.procedure import Procedure as BaseProcedure
 from sqlalchemy_declarative_extensions.sql import qualify_name
 
+EXTENSION_SCHEMAS = {
+    "postgis_topology": ["topology"],
+    "postgis_tiger_geocoder": ["tiger", "tiger_data"],
+    "pg_partman": ["partman"],
+    "timescaledb": ["timescaledb_internal"],
+    "pgmq": ["pgmq"],
+    "pgrouting": ["pgrouting"],
+    "orafce": ["orafce"],
+    "pgagent": ["pgagent"],
+}
+EXTENSION_TRIGGERS = {
+    "postgis_topology": {"layer_integrity_checks": "topology.layer"},
+}
+
 
 def get_schemas_postgresql(connection: Connection):
     from sqlalchemy_declarative_extensions.schema.base import Schema
 
+    extension_schemas = []
+    for name, _ in connection.execute(extensions_query).fetchall():
+        if name in EXTENSION_SCHEMAS:
+            extension_schemas.extend(EXTENSION_SCHEMAS[name])
+
     return {
         schema: Schema(schema)
         for schema, *_ in connection.execute(schemas_query).fetchall()
+        if schema not in extension_schemas
     }
 
 
@@ -220,8 +241,18 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
 
 def get_triggers_postgresql(connection: Connection):
     triggers = []
+
+    extension_triggers = {}
+    for name, _ in connection.execute(extensions_query).fetchall():
+        if name in EXTENSION_TRIGGERS:
+            extension_triggers.update(EXTENSION_TRIGGERS[name])
+
     for t in connection.execute(triggers_query).fetchall():
         on = t.on_name if t.on_schema == "public" else f"{t.on_schema}.{t.on_name}"
+
+        if extension_triggers.get(t.name) == on:
+            continue
+
         execute = (
             t.execute_name
             if t.execute_schema == "public"
