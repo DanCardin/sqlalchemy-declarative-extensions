@@ -1,4 +1,7 @@
+from typing import Collection
+
 from sqlalchemy import (
+    BindParameter,
     String,
     and_,
     bindparam,
@@ -15,6 +18,11 @@ from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
 char = CHAR(1)
+
+
+def char_literals(*literals: str) -> Collection[BindParameter]:
+    """Create a collection of CHAR literals."""
+    return [literal(lit, char) for lit in literals]
 
 
 tables = table(
@@ -209,6 +217,8 @@ default_acl_query = select(
     )
 )
 
+object_acl_relkinds = char_literals("r", "S", "f", "n", "T", "v")
+namespace_acl_relkind = literal("n", char)
 object_acl_query = union(
     select(
         pg_namespace.c.nspname.label("schema"),
@@ -222,24 +232,13 @@ object_acl_query = union(
             pg_roles, pg_class.c.relowner == pg_roles.c.oid
         )
     )
-    .where(
-        pg_class.c.relkind.cast(char).in_(
-            [
-                literal("r", char),
-                literal("S", char),
-                literal("f", char),
-                literal("n", char),
-                literal("T", char),
-                literal("v", char),
-            ]
-        )
-    )
+    .where(pg_class.c.relkind.cast(char).in_(object_acl_relkinds))
     .where(_table_not_pg)
     .where(_schema_not_pg()),
     select(
         literal(None).label("schema"),
         pg_namespace.c.nspname.label("name"),
-        literal("n").cast(char).label("relkind"),
+        namespace_acl_relkind.label("relkind"),
         pg_roles.c.rolname.label("owner"),
         pg_namespace.c.nspacl.cast(ARRAY(String)),
     )
@@ -257,34 +256,25 @@ objects_query = (
     .select_from(
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
     )
-    .where(
-        pg_class.c.relkind.cast(char).in_(
-            [
-                literal("r", char),
-                literal("S", char),
-                literal("f", char),
-                literal("n", char),
-                literal("T", char),
-                literal("v", char),
-            ]
-        )
-    )
+    .where(pg_class.c.relkind.cast(char).in_(object_acl_relkinds))
     .where(_table_not_pg)
     .where(_schema_not_pg())
     .where(_schema_not_from_extension())
 )
 
+view_relkinds = char_literals("v", "m")
+materialized_relkind = literal("m", char)
 views_query = (
     select(
         pg_namespace.c.nspname.label("schema"),
         pg_class.c.relname.label("name"),
         func.pg_get_viewdef(pg_class.c.oid).label("definition"),
-        (pg_class.c.relkind == literal("m")).label("materialized"),
+        (pg_class.c.relkind.cast(char) == materialized_relkind).label("materialized"),
     )
     .select_from(
         pg_class.join(pg_namespace, pg_class.c.relnamespace == pg_namespace.c.oid)
     )
-    .where(pg_class.c.relkind.in_(["v", "m"]))
+    .where(pg_class.c.relkind.cast(char).in_(view_relkinds))
     .where(_schema_not_pg(pg_namespace.c.nspname))
     .where(_schema_not_from_extension())
     .where(_not_from_extension(pg_class.c.oid, "pg_class"))

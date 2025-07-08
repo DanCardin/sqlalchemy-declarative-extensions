@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, replace
+from typing import Sequence
 
 from sqlalchemy_declarative_extensions.context import context
 
@@ -78,10 +79,9 @@ class Role:
         )
 
     def to_sql_create(self, raw: bool = True) -> list[str]:
-        statement = f'CREATE ROLE "{self.name}"'
+        statement = f"CREATE ROLE {quote_name(self.name)}"
         if self.in_roles is not None:
-            in_roles = ", ".join(role_names(self.in_roles))
-            statement += f"IN ROLE {in_roles}"
+            statement += f"IN ROLE {quote_names(self.in_roles)}"
         return [statement + ";"]
 
     def to_sql_update(self, to_role, raw: bool = True) -> list[str]:
@@ -90,7 +90,7 @@ class Role:
         )
 
     def to_sql_drop(self, raw: bool = True) -> list[str]:
-        return [f'DROP ROLE "{self.name}";']
+        return [f"DROP ROLE {quote_name(self.name)};"]
 
     def to_sql_use(self, undo: bool) -> list[str]:
         raise NotImplementedError()
@@ -132,3 +132,11 @@ def role_name(role: Role | str) -> str:
 
 def role_names(roles: list[Role | str]) -> list[str]:
     return [role_name(r) for r in roles]
+
+
+def quote_name(role: Role | str) -> str:
+    return f'"{role_name(role)}"'
+
+
+def quote_names(roles: Sequence[Role | str]) -> str:
+    return ", ".join(quote_name(role) for role in roles)

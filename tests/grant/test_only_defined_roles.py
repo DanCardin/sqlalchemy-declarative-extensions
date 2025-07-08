@@ -18,6 +18,7 @@ _Base = declarative_base()
 class Base(_Base):  # type: ignore
     __abstract__ = True
 
+    roles = ["user"]
     grants = Grants(only_defined_roles=False, ignore_self_grants=False).are(
         DefaultGrant.on_tables_in_schema("public").grant(
             "select",

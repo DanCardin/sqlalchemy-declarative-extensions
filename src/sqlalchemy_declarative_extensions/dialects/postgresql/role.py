@@ -91,7 +91,7 @@ class Role(generic.Role):
         return f'{cls_name}("{self.name}", {options})'
 
     def to_sql_create(self, raw: bool = True) -> list[str]:
-        segments = ["CREATE ROLE", self.name]
+        segments = ["CREATE ROLE", generic.quote_name(self.name)]
 
         options = postgres_render_role_options(self, raw=raw)
         if options:
@@ -99,21 +99,20 @@ class Role(generic.Role):
         segments.extend(options)
 
         if self.in_roles is not None:
-            in_roles = ", ".join(generic.role_names(self.in_roles))
-            segment = f"IN ROLE {in_roles}"
+            segment = f"IN ROLE {generic.quote_names(self.in_roles)}"
             segments.append(segment)
 
         command = " ".join(segments) + ";"
         return [command]
 
     def to_sql_update(self, to_role: Role, raw: bool = True) -> list[str]:
-        role_name = to_role.name
+        role_name = generic.quote_name(to_role.name)
         diff = RoleDiff.diff(self, to_role)
 
         result = []
 
         if self.use_role:
-            result.append(f"SET ROLE {self.use_role};")
+            result.append(f"""SET ROLE "{generic.quote_name(self.use_role)}";""")
 
         diff_options = postgres_render_role_options(diff, raw=raw)
         if diff_options:
@@ -122,10 +121,12 @@ class Role(generic.Role):
             result.append(alter_role)
 
         for add_name in diff.add_roles:
-            result.append(f"GRANT {add_name} TO {role_name};")
+            result.append(f"""GRANT {generic.quote_name(add_name)} TO {role_name};""")
 
         for remove_name in diff.remove_roles:
-            result.append(f"REVOKE {remove_name} FROM {role_name};")
+            result.append(
+                f"""REVOKE {generic.quote_name(remove_name)} FROM {role_name};"""
+            )
 
         if self.use_role:
             result.append("RESET ROLE")

@@ -41,12 +41,12 @@ def test_createall_role(pg):
 
     child_no_parent_diff = result[0].to_sql()
     assert child_no_parent_diff == [
-        "REVOKE parent1 FROM child_no_parent;",
-        "REVOKE parent2 FROM child_no_parent;",
+        """REVOKE "parent1" FROM "child_no_parent";""",
+        """REVOKE "parent2" FROM "child_no_parent";""",
     ]
 
     child_with_parent_diff = result[1].to_sql()
     assert child_with_parent_diff == [
-        "GRANT parent1 TO child_with_parent;",
-        "GRANT parent2 TO child_with_parent;",
+        """GRANT "parent1" TO "child_with_parent";""",
+        """GRANT "parent2" TO "child_with_parent";""",
     ]

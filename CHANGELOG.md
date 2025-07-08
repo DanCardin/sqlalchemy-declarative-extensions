@@ -2,6 +2,11 @@
 
 ## 0.15
 
+### 0.15.12
+- fix: Enable registering zero objects (enable without declaring anything).
+- fix: Add explicit relkind casts to ensure compatibility with postgres 11.
+- fix: Improve quoting of role names, particularly in postgres.
+
 ### 0.15.11
 - fix: Exclude extension-created objects from comparisons.
 - fix: Quote audit column names.

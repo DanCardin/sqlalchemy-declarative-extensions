@@ -22,7 +22,7 @@ def test_valid_until_date_being_removed(pg):
         result = compare_roles(conn, roles)
     assert len(result) == 1
     sql = result[0].to_sql()
-    assert sql == ["ALTER ROLE forever_valid WITH VALID UNTIL 'infinity';"]
+    assert sql == ["""ALTER ROLE "forever_valid" WITH VALID UNTIL 'infinity';"""]
 
 
 def test_valid_until_infinity_ignored(pg):
