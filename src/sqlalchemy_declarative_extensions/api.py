@@ -224,17 +224,17 @@ def register_create_events(
     from sqlalchemy_declarative_extensions.trigger.ddl import trigger_ddl
     from sqlalchemy_declarative_extensions.view.ddl import view_ddl
 
-    concrete_schemas = metadata.info.get("schemas")
-    concrete_roles = metadata.info.get("roles")
-    concrete_grants = metadata.info.get("grants")
-    concrete_views = Views.extract(metadata)
-    concrete_procedures = metadata.info.get("procedures")
-    concrete_functions = metadata.info.get("functions")
-    concrete_triggers = metadata.info.get("triggers")
-    concrete_databases = metadata.info.get("databases")
-    concrete_rows = metadata.info.get("rows")
+    concrete_schemas = metadata.info.get("schemas") or Schemas()
+    concrete_roles = metadata.info.get("roles") or Roles()
+    concrete_grants = metadata.info.get("grants") or Grants()
+    concrete_views = Views.extract(metadata) or Views()
+    concrete_procedures = metadata.info.get("procedures") or Procedures()
+    concrete_functions = metadata.info.get("functions") or Functions()
+    concrete_triggers = metadata.info.get("triggers") or Triggers()
+    concrete_databases = metadata.info.get("databases") or Databases()
+    concrete_rows = metadata.info.get("rows") or Rows()
 
-    if concrete_databases and databases:
+    if databases:
         database_filter = databases if isinstance(databases, list) else None
         event.listen(
             metadata,
@@ -242,7 +242,7 @@ def register_create_events(
             database_ddl(concrete_databases, database_filter),
         )
 
-    if concrete_schemas and schemas:
+    if schemas:
         schema_filter = schemas if isinstance(schemas, list) else None
         event.listen(
             metadata,
@@ -250,7 +250,7 @@ def register_create_events(
             schema_ddl(concrete_schemas, schema_filter),
         )
 
-    if concrete_roles and roles:
+    if roles:
         role_filter = roles if isinstance(roles, list) else None
         event.listen(
             metadata,
@@ -258,7 +258,7 @@ def register_create_events(
             role_ddl(concrete_roles, role_filter),
         )
 
-    if concrete_grants and grants:
+    if grants:
         event.listen(
             metadata,
             "before_create",
@@ -267,7 +267,7 @@ def register_create_events(
         # There should(?) be no need to handle dropping for grants,
         # they will be handled directly by table handling.
 
-    if concrete_views and views:
+    if views:
         view_filter = views if isinstance(views, list) else None
         event.listen(
             metadata,
@@ -275,7 +275,7 @@ def register_create_events(
             view_ddl(concrete_views, view_filter),
         )
 
-    if concrete_procedures and procedures:
+    if procedures:
         procedure_filter = procedures if isinstance(procedures, list) else None
         event.listen(
             metadata,
@@ -283,7 +283,7 @@ def register_create_events(
             procedure_ddl(concrete_procedures, procedure_filter),
         )
 
-    if concrete_functions and functions:
+    if functions:
         function_filter = functions if isinstance(functions, list) else None
         event.listen(
             metadata,
@@ -291,7 +291,7 @@ def register_create_events(
             function_ddl(concrete_functions, function_filter),
         )
 
-    if concrete_triggers and triggers:
+    if triggers:
         trigger_filter = triggers if isinstance(triggers, list) else None
         event.listen(
             metadata,
@@ -299,7 +299,7 @@ def register_create_events(
             trigger_ddl(concrete_triggers, trigger_filter),
         )
 
-    if concrete_rows and rows:
+    if rows:
         row_filter = rows if isinstance(rows, list) else None
         event.listen(
             metadata,

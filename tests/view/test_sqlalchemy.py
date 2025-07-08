@@ -55,7 +55,7 @@ class Baz:
     id = Column(types.Integer(), primary_key=True)
 
 
-register_sqlalchemy_events(Base.metadata, schemas=True, views=True, rows=True)
+register_sqlalchemy_events(Base.metadata, schemas=False, views=True, rows=True)
 
 pg = create_postgres_fixture(
     scope="function", engine_kwargs={"echo": True}, session=True
