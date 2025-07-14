@@ -1,7 +1,8 @@
-from typing import Collection
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Collection
 
 from sqlalchemy import (
-    BindParameter,
     String,
     and_,
     bindparam,
@@ -16,6 +17,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import BindParameter
 
 char = CHAR(1)
 
