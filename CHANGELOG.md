@@ -2,6 +2,9 @@
 
 ## 0.15
 
+### 0.15.13
+- fix: sqlalchemy<2 import-time regression.
+
 ### 0.15.12
 - fix: Enable registering zero objects (enable without declaring anything).
 - fix: Add explicit relkind casts to ensure compatibility with postgres 11.
