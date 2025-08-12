@@ -14,7 +14,7 @@ from sqlalchemy import (
     text,
     union,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS
+from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS, aggregate_order_by
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
@@ -113,6 +113,12 @@ pg_proc = table(
     column("prorettype"),
     column("prosecdef"),
     column("prokind"),
+    column("provolatile"),
+    column("proargnames"),
+    column("proargmodes"),
+    column("proargtypes"),
+    column("proallargtypes"),
+    column("proargdefaults"),
 )
 
 pg_language = table(
@@ -292,6 +298,21 @@ view_query = (
 )
 
 
+def get_types(arg_type_oids):
+    arg_type = (
+        func.unnest(arg_type_oids)
+        .table_valued("unnested", with_ordinality="ordinality")
+        .alias("unnested")
+    )
+    return (
+        select(
+            func.array_agg(aggregate_order_by(pg_type.c.typname, arg_type.c.ordinality))
+        )
+        .select_from(arg_type.join(pg_type, pg_type.c.oid == arg_type.c.unnested))
+        .scalar_subquery()
+    )
+
+
 procedures_query = (
     select(
         pg_proc.c.proname.label("name"),
@@ -301,6 +322,14 @@ procedures_query = (
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
         pg_proc.c.prokind.label("kind"),
+        pg_proc.c.proargnames.label("arg_names"),
+        pg_proc.c.proargmodes.label("arg_modes"),
+        func.coalesce(
+            get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
+        ).label("arg_types"),
+        func.pg_get_expr(
+            pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
+        ).label("arg_defaults"),
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
@@ -318,10 +347,21 @@ functions_query = (
         pg_proc.c.proname.label("name"),
         pg_namespace.c.nspname.label("schema"),
         pg_language.c.lanname.label("language"),
-        pg_type.c.typname.label("return_type"),
+        pg_type.c.typname.label("base_return_type"),
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
         pg_proc.c.prokind.label("kind"),
+        func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
+        pg_proc.c.provolatile.label("volatility"),
+        func.pg_get_function_result(pg_proc.c.oid).label("return_type_string"),
+        pg_proc.c.proargnames.label("arg_names"),
+        pg_proc.c.proargmodes.label("arg_modes"),
+        func.coalesce(
+            get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
+        ).label("arg_types"),
+        func.pg_get_expr(
+            pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
+        ).label("arg_defaults"),
     )
     .select_from(
         pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
