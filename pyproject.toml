@@ -1,6 +1,6 @@
 [project]
 name = "sqlalchemy-declarative-extensions"
-version = "0.15.13"
+version = "0.16.0"
 authors = [
     {name = "Dan Cardin", email = "ddcardin@gmail.com"},
 ]
