@@ -1,10 +1,12 @@
 # Changelog
 
-## 0.15
+## 0.16
 
 ### 0.16.0
 - feat: Add parameters and volatility to Function.
 - fix: Filter snowflake schema query to current_database().
+
+## 0.15
 
 ### 0.15.13
 - fix: sqlalchemy<2 import-time regression.
