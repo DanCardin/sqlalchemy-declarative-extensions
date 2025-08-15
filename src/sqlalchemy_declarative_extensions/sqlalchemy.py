@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Callable, TypeVar
 
 import sqlalchemy
@@ -50,8 +51,12 @@ def dialect_dispatch(
     return dispatch
 
 
+# https://github.com/sqlalchemy/sqlalchemy/blob/2e9902a34fafff0ac6d6c521a86c7dea3d96a392/lib/sqlalchemy/sql/elements.py#L2334
+_sqlalchemy_bind_params_regex = re.compile(r"(?<![:\w\x5c]):(\w+)(?!:)", re.UNICODE)
+
+
 def escape_params(query: str) -> str:
-    return query.replace(":", r"\:")
+    return _sqlalchemy_bind_params_regex.sub(r"\\:\1", query)
 
 
 if version.startswith("1.3"):
