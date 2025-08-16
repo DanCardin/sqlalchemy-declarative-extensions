@@ -171,12 +171,15 @@ class Trigger(base.Trigger):
 
         components.append(quote_name(self.on))
 
-        if self.old_table or self.new_table:
+        referencing_clauses = []
+        if self.old_table:
+            referencing_clauses.append(f"OLD TABLE AS {quote_name(self.old_table)}")
+        if self.new_table:
+            referencing_clauses.append(f"NEW TABLE AS {quote_name(self.new_table)}")
+
+        if referencing_clauses:
             components.append("REFERENCING")
-            if self.old_table:
-                components.append(f"OLD TABLE AS {quote_name(self.old_table)}")
-            if self.new_table:
-                components.append(f"NEW TABLE AS {quote_name(self.new_table)}")
+            components.extend(referencing_clauses)
 
         components.append("FOR EACH")
         components.append(self.for_each.value)
