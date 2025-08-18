@@ -195,6 +195,9 @@ class Trigger(base.Trigger):
         components.append(quote_name(self.execute) + f"({','.join(args_quoted)})")
         return " ".join(components) + ";"
 
+    def to_sql_drop(self):
+        return f"DROP TRIGGER {quote_name(self.name)} ON {quote_name(self.on)};"
+
     def to_sql_update(self, connection: Connection | None = None):
         if connection is not None:
             assert connection.dialect.server_version_info
