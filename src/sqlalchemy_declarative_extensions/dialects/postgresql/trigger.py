@@ -91,6 +91,8 @@ class Trigger(base.Trigger):
     for_each: TriggerForEach = TriggerForEach.statement
     condition: str | None = None
     arguments: tuple[str, ...] | None = None
+    old_table: str | None = None
+    new_table: str | None = None
 
     @classmethod
     def before(
@@ -125,6 +127,12 @@ class Trigger(base.Trigger):
             execute=execute,
             name=name,
         )
+
+    def referencing_old_table_as(self, table_name: str):
+        return replace(self, old_table=table_name)
+
+    def referencing_new_table_as(self, table_name: str):
+        return replace(self, new_table=table_name)
 
     def for_each_row(self):
         return replace(self, for_each=TriggerForEach.row)
@@ -162,6 +170,16 @@ class Trigger(base.Trigger):
         components.append("ON")
 
         components.append(quote_name(self.on))
+
+        referencing_clauses = []
+        if self.old_table:
+            referencing_clauses.append(f"OLD TABLE AS {quote_name(self.old_table)}")
+        if self.new_table:
+            referencing_clauses.append(f"NEW TABLE AS {quote_name(self.new_table)}")
+
+        if referencing_clauses:
+            components.append("REFERENCING")
+            components.extend(referencing_clauses)
 
         components.append("FOR EACH")
         components.append(self.for_each.value)

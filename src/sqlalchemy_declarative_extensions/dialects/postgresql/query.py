@@ -292,6 +292,8 @@ def get_triggers_postgresql(connection: Connection):
             for_each=TriggerForEach.from_bit_string(t.type),
             condition=condition,
             arguments=tuple(t.args) if t.args else None,
+            old_table=t.old_table,
+            new_table=t.new_table,
         )
         triggers.append(trigger)
 

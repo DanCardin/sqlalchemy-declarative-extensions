@@ -137,6 +137,8 @@ pg_trigger = table(
     column("tgargs"),
     column("tgqual"),
     column("tgisinternal"),
+    column("tgoldtable"),
+    column("tgnewtable"),
 )
 
 pg_type = table(
@@ -396,6 +398,8 @@ triggers_query = (
         rel_nsp.c.nspname.label("on_schema"),
         pg_proc.c.proname.label("execute_name"),
         proc_nsp.c.nspname.label("execute_schema"),
+        pg_trigger.c.tgoldtable.label("old_table"),
+        pg_trigger.c.tgnewtable.label("new_table"),
     )
     .select_from(
         pg_trigger.join(pg_class, pg_trigger.c.tgrelid == pg_class.c.oid)
