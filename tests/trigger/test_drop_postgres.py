@@ -25,6 +25,12 @@ class Foo(Base):
     id = Column(types.Integer(), primary_key=True)
 
 
+class TableWithSpecialName(Base):
+    __tablename__ = "user" # This name will trip up unquoted identifiers
+
+    id = Column(types.Integer(), primary_key=True)
+
+
 register_sqlalchemy_events(Base.metadata, triggers=True)
 
 pg = create_postgres_fixture(engine_kwargs={"echo": True}, session=True)
@@ -32,6 +38,7 @@ pg = create_postgres_fixture(engine_kwargs={"echo": True}, session=True)
 
 def test_drop(pg):
     pg.execute(text("CREATE TABLE foo (id integer primary key);"))
+    pg.execute(text('CREATE TABLE "user" (id integer primary key);'))
     pg.execute(
         text(
             """
@@ -49,16 +56,27 @@ def test_drop(pg):
             "WHEN (pg_trigger_depth() < 1) EXECUTE PROCEDURE gimme();"
         )
     )
+    pg.execute(
+        text(
+            'CREATE TRIGGER "Quoted Name" AFTER INSERT ON "user" FOR EACH ROW '
+            "WHEN (pg_trigger_depth() < 1) EXECUTE PROCEDURE gimme();"
+        )
+    )
+
     pg.commit()
 
     Base.metadata.create_all(bind=pg.connection())
     pg.commit()
 
     pg.add(Foo(id=5))
+    pg.add(TableWithSpecialName(id=6))
     pg.commit()
 
     result = [r.id for r in pg.query(Foo).all()]
     assert result == [5]
+
+    quoted_result = [r.id for r in pg.query(TableWithSpecialName).all()]
+    assert quoted_result == [6]
 
     connection = pg.connection()
     diff = compare_triggers(connection, Base.metadata.info["triggers"])
