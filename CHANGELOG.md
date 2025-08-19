@@ -2,6 +2,12 @@
 
 ## 0.16
 
+### 0.16.1
+
+- fix: Use bind params regex from sqlalchemy while escaping colons.
+- fix: Quote the Postgres identifiers mentioned in DROP TRIGGER.
+- feat: Add REFERENCING OLD/NEW TABLE support to pg triggers.
+
 ### 0.16.0
 - feat: Add parameters and volatility to Function.
 - fix: Filter snowflake schema query to current_database().
