@@ -6,7 +6,11 @@ from sqlalchemy_declarative_extensions import (
     register_sqlalchemy_events,
     view,
 )
+from sqlalchemy_declarative_extensions.alembic.view import UpdateViewOp
+from sqlalchemy_declarative_extensions.dialects import postgresql
+from sqlalchemy_declarative_extensions.dialects.postgresql import View
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
+from sqlalchemy_declarative_extensions.view.compare import compare_views
 
 _Base = declarative_base()
 
@@ -41,3 +45,9 @@ def test_escape_bindparam_postgres(pg):
 
     result = pg.execute(text("select * from bar")).fetchall()
     assert result == []
+
+    # Make sure that bindparams escaping doesn't create unnecessary escapes
+    # for the literal casts that appear after view definition round-tripping
+    rendered = View("simple_select", "SELECT 'a' as col1").render_definition(pg.connection())
+    assert "::" in rendered, "Literals in the view definition are expected to get explicit type casts"
+    assert "\\:\\:" not in rendered, "Bind parameters escaping should leave type casts unescaped"
