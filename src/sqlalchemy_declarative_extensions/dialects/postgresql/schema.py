@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING, Collection
 
 from sqlalchemy import (
     String,
+    Text,
     and_,
     bindparam,
+    cast,
     column,
     exists,
     func,
@@ -352,9 +354,9 @@ functions_query = (
         pg_type.c.typname.label("base_return_type"),
         pg_proc.c.prosrc.label("source"),
         pg_proc.c.prosecdef.label("security_definer"),
-        pg_proc.c.prokind.label("kind"),
+        cast(pg_proc.c.prokind, Text).label("kind"),
         func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
-        pg_proc.c.provolatile.label("volatility"),
+        cast(pg_proc.c.provolatile, Text).label("volatility"),
         func.pg_get_function_result(pg_proc.c.oid).label("return_type_string"),
         pg_proc.c.proargnames.label("arg_names"),
         pg_proc.c.proargmodes.label("arg_modes"),
