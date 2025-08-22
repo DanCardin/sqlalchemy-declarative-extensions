@@ -2,6 +2,10 @@
 
 ## 0.16
 
+### 0.16.2
+
+- fix: Cast pg_proc char columns to Text explicitly
+
 ### 0.16.1
 
 - fix: Use bind params regex from sqlalchemy while escaping colons.
