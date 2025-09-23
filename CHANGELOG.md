@@ -2,6 +2,10 @@
 
 ## 0.16
 
+### 0.16.3
+
+- fix: Ensure existing functions are normalized in all cases.
+
 ### 0.16.2
 
 - fix: Cast pg_proc char columns to Text explicitly

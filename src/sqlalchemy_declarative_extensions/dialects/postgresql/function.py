@@ -255,12 +255,6 @@ class FunctionReturn:
                 )
 
             return cls(table=table_return_params)
-            # # Basic normalization: lowercase and remove extra spaces
-            # # This might need refinement for complex TABLE definitions
-            # inner_content = returns_lower[len("table(") : -1].strip()
-            # cols = [normalize_arg(c) for c in inner_content.split(",")]
-            # normalized_returns = f"table({', '.join(cols)})"
-            # return cls()
 
         # Normalize base return type (including array types)
         norm_type = type_map.get(returns_lower, returns_lower)

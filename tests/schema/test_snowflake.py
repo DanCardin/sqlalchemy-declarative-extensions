@@ -1,10 +1,9 @@
-from sqlalchemy import Column, text, types
+from sqlalchemy import text
 from sqlalchemy.engine import Engine, create_engine
 
 from sqlalchemy_declarative_extensions import (
     declarative_database,
     register_sqlalchemy_events,
-    view,
 )
 from sqlalchemy_declarative_extensions.sqlalchemy import declarative_base
 
@@ -31,7 +30,7 @@ def test_create_schemas_filtered_to_database(snowflake: Engine):
     """
     Base.metadata.create_all(bind=snowflake)
 
-    engine = create_engine('snowflake://user:password@account/db/schema')
+    engine = create_engine("snowflake://user:password@account/db/schema")
     with engine.connect() as conn:
         Base.metadata.create_all(engine)
 
