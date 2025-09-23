@@ -56,7 +56,9 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
 
     raw_existing_functions = get_functions(connection)
     existing_functions = filter_functions(raw_existing_functions, functions.ignore)
-    existing_functions_by_name = {r.qualified_name: r for r in existing_functions}
+    existing_functions_by_name = {
+        f.qualified_name: f.normalize() for f in existing_functions
+    }
     existing_function_names = set(existing_functions_by_name)
 
     new_function_names = expected_function_names - existing_function_names
@@ -75,8 +77,7 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
             result.append(CreateFunctionOp(normalized_function))
         else:
             existing_function = existing_functions_by_name[function_name]
-
-            normalized_existing_function = existing_function.normalize()
+            normalized_existing_function = existing_function
 
             if normalized_existing_function != normalized_function:
                 result.append(

@@ -26,7 +26,7 @@ class Foo(Base):
 
 
 class TableWithSpecialName(Base):
-    __tablename__ = "user" # This name will trip up unquoted identifiers
+    __tablename__ = "user"  # This name will trip up unquoted identifiers
 
     id = Column(types.Integer(), primary_key=True)
 
