@@ -35,28 +35,6 @@ class FunctionVolatility(enum.Enum):
         raise ValueError(f"Invalid volatility: {provolatile}")
 
 
-# def normalize_arg(arg: str) -> str:
-#     parts = arg.strip().split(maxsplit=1)
-#     if len(parts) == 2:
-#         name, type_str = parts
-#         norm_type = type_map.get(type_str.lower(), type_str.lower())
-#         # Handle array types
-#         if norm_type.endswith("[]"):
-#             base_type = norm_type[:-2]
-#             norm_base_type = type_map.get(base_type, base_type)
-#             norm_type = f"{norm_base_type}[]"
-#
-#         return f"{name} {norm_type}"
-#     # Handle case where it might just be the type (e.g., from DROP FUNCTION)
-#     type_str = arg.strip()
-#     norm_type = type_map.get(type_str.lower(), type_str.lower())
-#     if norm_type.endswith("[]"):
-#         base_type = norm_type[:-2]
-#         norm_base_type = type_map.get(base_type, base_type)
-#         norm_type = f"{norm_base_type}[]"
-#     return norm_type
-
-
 @dataclass
 class Function(base.Function):
     """Describes a PostgreSQL function.
@@ -143,7 +121,7 @@ class Function(base.Function):
 
 @dataclass
 class FunctionParam:
-    name: str
+    name: str | None
     type: str
     default: Any | None = None
     mode: Literal["i", "o", "b", "v", "t"] | None = None
@@ -185,31 +163,40 @@ class FunctionParam:
         if isinstance(source_param, tuple):
             return cls(*source_param)
 
-        name, type = source_param.strip().split(maxsplit=1)
+        try:
+            name, type = source_param.strip().split(maxsplit=1)
+        except ValueError:
+            name = None
+            type = source_param.strip()
+
         return cls(name, type)
 
     def normalize(self) -> FunctionParam:
         type = self.type.lower()
         return replace(
             self,
-            name=self.name.lower(),
+            name=self.name.lower() if self.name is not None else None,
             mode=self.mode or "i",
             type=type_map.get(type, type),
             default=str(self.default) if self.default is not None else None,
         )
 
     def to_sql_create(self) -> str:
-        result = ""
+        segments = []
         if self.mode:
-            result += {"o": "OUT ", "b": "INOUT ", "v": "VARIADIC ", "t": "TABLE "}.get(
-                self.mode, ""
-            )
+            modes = {"o": "OUT ", "b": "INOUT ", "v": "VARIADIC ", "t": "TABLE "}
+            mode = modes.get(self.mode)
+            if mode:
+                segments.append(mode)
 
-        result += f"{self.name} {self.type}"
+        if self.name:
+            segments.append(self.name)
+
+        segments.append(self.type)
 
         if self.default is not None:
-            result += f" DEFAULT {self.default}"
-        return result
+            segments.append(f"DEFAULT {self.default}")
+        return " ".join(segments)
 
     def to_sql_drop(self) -> str:
         return self.type
@@ -245,7 +232,7 @@ class FunctionReturn:
         returns_lower = source.lower().strip()
         if returns_lower.startswith("table("):
             table_return_params = [
-                (p.name, p.type) for p in (parameters or []) if p.mode == "t"
+                (p.name, p.type) for p in (parameters or []) if p.name and p.mode == "t"
             ]
 
             if not table_return_params:
