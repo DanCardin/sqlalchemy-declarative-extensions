@@ -2,6 +2,10 @@
 
 ## 0.16
 
+### 0.16.4
+
+- fix: Handle unnamed parameters during normalization and CREATE statements.
+
 ### 0.16.3
 
 - fix: Ensure existing functions are normalized in all cases.
