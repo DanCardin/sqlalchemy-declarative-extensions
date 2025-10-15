@@ -27,10 +27,10 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.schema import (
     databases_query,
     default_acl_query,
     extensions_query,
-    functions_query,
+    get_functions_query,
+    get_procedures_query,
     object_acl_query,
     objects_query,
-    procedures_query,
     roles_query,
     schema_exists_query,
     schemas_query,
@@ -195,6 +195,7 @@ def get_view_postgresql(connection: Connection, name: str, schema: str = "public
 
 def get_procedures_postgresql(connection: Connection) -> Sequence[BaseProcedure]:
     procedures = []
+    procedures_query = get_procedures_query(connection.dialect.server_version_info)
     for f in connection.execute(procedures_query).fetchall():
         name = f.name
         definition = f.source
@@ -225,6 +226,7 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
         )
 
     functions = []
+    functions_query = get_functions_query(connection.dialect.server_version_info)
 
     for f in connection.execute(functions_query).fetchall():
         name = f.name
