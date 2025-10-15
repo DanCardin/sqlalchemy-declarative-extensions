@@ -58,7 +58,7 @@ dev-dependencies = [
   "pytest-xdist",
   "ruff >= 0.5.0",
   "sqlalchemy[mypy] >= 1.4",
-  "psycopg",
+  "psycopg[binary]",
   "psycopg2-binary",
 
   # snowflake
