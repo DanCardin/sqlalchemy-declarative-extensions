@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import re
 import textwrap
 from dataclasses import dataclass, replace
 
@@ -8,6 +9,18 @@ from typing_extensions import Self
 
 from sqlalchemy_declarative_extensions.procedure import base
 from sqlalchemy_declarative_extensions.sql import quote_name
+
+_sqlbody_regex = re.compile(r"\W?(BEGIN ATOMIC)\W", re.IGNORECASE | re.MULTILINE)
+"""sql_body
+The body of a LANGUAGE SQL procedure. This should be a block
+
+BEGIN ATOMIC
+  statement;
+  statement;
+  ...
+  statement;
+END
+"""
 
 
 @enum.unique
@@ -40,7 +53,10 @@ class Procedure(base.Procedure):
             components.append("SECURITY DEFINER")
 
         components.append(f"LANGUAGE {self.language}")
-        components.append(f"AS $${self.definition}$$")
+        if self.language.lower() == "sql" and _sqlbody_regex.match(self.definition):
+            components.append(self.definition)
+        else:
+            components.append(f"AS $${self.definition}$$")
 
         return [" ".join(components) + ";"]
 
