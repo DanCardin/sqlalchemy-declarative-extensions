@@ -64,6 +64,10 @@ class Function(base.Function):
     parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
     volatility: FunctionVolatility = FunctionVolatility.VOLATILE
 
+    @property
+    def _has_sqlbody(self) -> bool:
+        return self.language.lower() == "sql" and _sqlbody_regex.match(self.definition)
+
     def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
@@ -89,7 +93,7 @@ class Function(base.Function):
             components.append(self.volatility.value)
 
         components.append(f"LANGUAGE {self.language}")
-        if self.language.lower() == "sql" and _sqlbody_regex.match(self.definition):
+        if self._has_sqlbody:
             components.append(self.definition)
         else:
             components.append(f"AS $${self.definition}$$")
@@ -115,7 +119,9 @@ class Function(base.Function):
         return replace(self, security=FunctionSecurity.definer)
 
     def normalize(self) -> Function:
-        definition = textwrap.dedent(self.definition).strip()
+        definition = textwrap.dedent(self.definition)
+        if self._has_sqlbody:
+            definition = definition.strip()
 
         # Normalize parameter types
         parameters = []

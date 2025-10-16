@@ -40,6 +40,10 @@ class Procedure(base.Procedure):
 
     security: ProcedureSecurity = ProcedureSecurity.invoker
 
+    @property
+    def _has_sqlbody(self) -> bool:
+        return self.language.lower() == "sql" and _sqlbody_regex.match(self.definition)
+
     def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
@@ -53,7 +57,7 @@ class Procedure(base.Procedure):
             components.append("SECURITY DEFINER")
 
         components.append(f"LANGUAGE {self.language}")
-        if self.language.lower() == "sql" and _sqlbody_regex.match(self.definition):
+        if self._has_sqlbody:
             components.append(self.definition)
         else:
             components.append(f"AS $${self.definition}$$")
@@ -65,6 +69,8 @@ class Procedure(base.Procedure):
 
     def normalize(self) -> Self:
         definition = textwrap.dedent(self.definition)
+        if self._has_sqlbody:
+            definition = definition.strip()
         return replace(self, definition=definition)
 
     def with_security(self, security: ProcedureSecurity):
