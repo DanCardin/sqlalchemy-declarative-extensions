@@ -1,6 +1,6 @@
 [project]
 name = "sqlalchemy-declarative-extensions"
-version = "0.16.4"
+version = "0.16.5"
 authors = [
     {name = "Dan Cardin", email = "ddcardin@gmail.com"},
 ]
@@ -45,9 +45,8 @@ changelog = "https://github.com/DanCardin/sqlalchemy-declarative-extensions/blob
 alembic = ["alembic >= 1.0"]
 parse = ["sqlglot"]
 
-[tool.uv]
-environments = ["python_version < '3.9'", "python_version >= '3.9' and python_version < '4'"]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "alembic-utils >= 0.8.1",
   "coverage >= 5",
   "mypy == 1.8.0",
@@ -66,6 +65,9 @@ dev-dependencies = [
   "snowflake-connector-python >= 3.7; python_version >= '3.9'",
   "snowflake-sqlalchemy >= 1.6.0; python_version >= '3.9'",
 ]
+
+[tool.uv]
+environments = ["python_version < '3.9'", "python_version >= '3.9' and python_version < '4'"]
 
 [tool.mypy]
 strict_optional = true

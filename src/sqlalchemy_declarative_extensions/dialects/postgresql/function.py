@@ -66,7 +66,9 @@ class Function(base.Function):
 
     @property
     def _has_sqlbody(self) -> bool:
-        return self.language.lower() == "sql" and _sqlbody_regex.match(self.definition)
+        return self.language.lower() == "sql" and bool(
+            _sqlbody_regex.match(self.definition)
+        )
 
     def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
