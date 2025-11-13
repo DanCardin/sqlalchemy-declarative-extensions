@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.17.0
+
+- feat: Add support for Postgres sqlbody functions.
+
 ## 0.16
 
 ### 0.16.4

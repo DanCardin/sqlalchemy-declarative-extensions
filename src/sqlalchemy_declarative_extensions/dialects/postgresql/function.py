@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import re
 import textwrap
 from dataclasses import dataclass, replace
 from typing import Any, List, Literal, Sequence, Tuple, cast
@@ -9,6 +10,22 @@ from sqlalchemy import Column
 
 from sqlalchemy_declarative_extensions.function import base
 from sqlalchemy_declarative_extensions.sql import quote_name
+
+_sqlbody_regex = re.compile(r"\W*(BEGIN ATOMIC|RETURN)\W", re.IGNORECASE | re.MULTILINE)
+"""sql_body
+The body of a LANGUAGE SQL function. This can either be a single statement
+
+RETURN expression
+
+or a block
+
+BEGIN ATOMIC
+  statement;
+  statement;
+  ...
+  statement;
+END
+"""
 
 
 @enum.unique
@@ -47,6 +64,12 @@ class Function(base.Function):
     parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
     volatility: FunctionVolatility = FunctionVolatility.VOLATILE
 
+    @property
+    def _has_sqlbody(self) -> bool:
+        return self.language.lower() == "sql" and bool(
+            _sqlbody_regex.match(self.definition)
+        )
+
     def to_sql_create(self, replace=False) -> list[str]:
         components = ["CREATE"]
 
@@ -72,7 +95,10 @@ class Function(base.Function):
             components.append(self.volatility.value)
 
         components.append(f"LANGUAGE {self.language}")
-        components.append(f"AS $${self.definition}$$")
+        if self._has_sqlbody:
+            components.append(self.definition)
+        else:
+            components.append(f"AS $${self.definition}$$")
 
         return [" ".join(components) + ";"]
 
@@ -96,6 +122,8 @@ class Function(base.Function):
 
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition)
+        if self._has_sqlbody:
+            definition = definition.strip()
 
         # Normalize parameter types
         parameters = []

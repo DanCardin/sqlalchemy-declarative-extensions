@@ -17,6 +17,7 @@ from sqlalchemy import (
     union,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, CHAR, REGCLASS, aggregate_order_by
+from sqlalchemy.sql.functions import coalesce
 
 from sqlalchemy_declarative_extensions.sqlalchemy import select
 
@@ -317,65 +318,90 @@ def get_types(arg_type_oids):
     )
 
 
-procedures_query = (
-    select(
-        pg_proc.c.proname.label("name"),
-        pg_namespace.c.nspname.label("schema"),
-        pg_language.c.lanname.label("language"),
-        pg_type.c.typname.label("return_type"),
-        pg_proc.c.prosrc.label("source"),
-        pg_proc.c.prosecdef.label("security_definer"),
-        pg_proc.c.prokind.label("kind"),
-        pg_proc.c.proargnames.label("arg_names"),
-        pg_proc.c.proargmodes.label("arg_modes"),
-        func.coalesce(
-            get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
-        ).label("arg_types"),
-        func.pg_get_expr(
-            pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
-        ).label("arg_defaults"),
+def get_procedures_query(version_info):
+    source = get_source_column(version_info)
+    return (
+        select(
+            pg_proc.c.proname.label("name"),
+            pg_namespace.c.nspname.label("schema"),
+            pg_language.c.lanname.label("language"),
+            pg_type.c.typname.label("return_type"),
+            source.label("source"),
+            pg_proc.c.prosecdef.label("security_definer"),
+            pg_proc.c.prokind.label("kind"),
+            pg_proc.c.proargnames.label("arg_names"),
+            pg_proc.c.proargmodes.label("arg_modes"),
+            func.coalesce(
+                get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
+            ).label("arg_types"),
+            func.pg_get_expr(
+                pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
+            ).label("arg_defaults"),
+        )
+        .select_from(
+            pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
+            .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
+            .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
+        )
+        .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
+        .where(pg_proc.c.prokind == "p")
+        .where(_schema_not_from_extension())
+        .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
     )
-    .select_from(
-        pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
-        .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
-        .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
-    )
-    .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
-    .where(pg_proc.c.prokind == "p")
-    .where(_schema_not_from_extension())
-    .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
-)
 
-functions_query = (
-    select(
-        pg_proc.c.proname.label("name"),
-        pg_namespace.c.nspname.label("schema"),
-        pg_language.c.lanname.label("language"),
-        pg_type.c.typname.label("base_return_type"),
-        pg_proc.c.prosrc.label("source"),
-        pg_proc.c.prosecdef.label("security_definer"),
-        cast(pg_proc.c.prokind, Text).label("kind"),
-        func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
-        cast(pg_proc.c.provolatile, Text).label("volatility"),
-        func.pg_get_function_result(pg_proc.c.oid).label("return_type_string"),
-        pg_proc.c.proargnames.label("arg_names"),
-        pg_proc.c.proargmodes.label("arg_modes"),
-        func.coalesce(
-            get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
-        ).label("arg_types"),
-        func.pg_get_expr(
-            pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
-        ).label("arg_defaults"),
+
+def get_functions_query(version_info):
+    source = get_source_column(version_info)
+    return (
+        select(
+            pg_proc.c.proname.label("name"),
+            pg_namespace.c.nspname.label("schema"),
+            pg_language.c.lanname.label("language"),
+            pg_type.c.typname.label("base_return_type"),
+            source.label("source"),
+            pg_proc.c.prosecdef.label("security_definer"),
+            cast(pg_proc.c.prokind, Text).label("kind"),
+            func.pg_get_function_arguments(pg_proc.c.oid).label("parameters"),
+            cast(pg_proc.c.provolatile, Text).label("volatility"),
+            func.pg_get_function_result(pg_proc.c.oid).label("return_type_string"),
+            pg_proc.c.proargnames.label("arg_names"),
+            pg_proc.c.proargmodes.label("arg_modes"),
+            func.coalesce(
+                get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
+            ).label("arg_types"),
+            func.pg_get_expr(
+                pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
+            ).label("arg_defaults"),
+        )
+        .select_from(
+            pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
+            .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
+            .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
+        )
+        .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
+        .where(pg_proc.c.prokind != "p")
+        .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
     )
-    .select_from(
-        pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
-        .join(pg_language, pg_proc.c.prolang == pg_language.c.oid)
-        .join(pg_type, pg_proc.c.prorettype == pg_type.c.oid)
-    )
-    .where(pg_namespace.c.nspname.notin_(["pg_catalog", "information_schema"]))
-    .where(pg_proc.c.prokind != "p")
-    .where(_not_from_extension(pg_proc.c.oid, "pg_proc"))
-)
+
+
+def get_source_column(version_info):
+    """Postgres 14 introduced SQL-standard function and procedure bodies.
+
+    When writing a function or procedure in SQL-standard syntax, the body is parsed
+    immediately and stored as a parse tree. This allows better tracking of function
+    dependencies, and can have security benefits.
+
+    For these sqlbody functions, the pg_proc.prosrc column is an empty string.
+    The pre-parsed SQL function body is stored in pg_proc.prosqlbody as pg_node_tree.
+    The text representation can be returned along with the full ddl with
+    pg_get_functiondef.
+    Alternatively pg_get_function_sqlbody(pg_proc.oid) can be called to just get the
+    body. This function is not documented, see source:
+    https://doxygen.postgresql.org/ruleutils_8c.html#a99a3f975518b6b1707a3159c5f80427e
+    """
+    if version_info >= (14, 0):
+        return coalesce(func.pg_get_function_sqlbody(pg_proc.c.oid), pg_proc.c.prosrc)
+    return pg_proc.c.prosrc
 
 
 rel_nsp = pg_namespace.alias("rel_nsp")
