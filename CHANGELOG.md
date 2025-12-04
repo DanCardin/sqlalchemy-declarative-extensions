@@ -2,9 +2,15 @@
 
 ### 0.17.0
 
-- feat: Add support for Postgres sqlbody functions.
-
 ## 0.16
+
+### 0.16.6
+
+- fix: postgresql parsing of existing function defaults.
+
+### 0.16.5
+
+- feat: Add support for Postgres sqlbody functions.
 
 ### 0.16.4
 
