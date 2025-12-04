@@ -117,6 +117,7 @@ pg_proc = table(
     column("prosecdef"),
     column("prokind"),
     column("provolatile"),
+    column("pronargs"),
     column("proargnames"),
     column("proargmodes"),
     column("proargtypes"),
@@ -318,6 +319,23 @@ def get_types(arg_type_oids):
     )
 
 
+def get_defaults():
+    arg_num = (
+        func.generate_series(1, pg_proc.c.pronargs)
+        .table_valued("arg_num", with_ordinality="ordinality")
+        .alias("arg_num")
+    )
+    return (
+        select(
+            func.array_agg(
+                func.pg_get_function_arg_default(pg_proc.c.oid, arg_num.c.arg_num)
+            )
+        )
+        .select_from(arg_num)
+        .scalar_subquery()
+    )
+
+
 def get_procedures_query(version_info):
     source = get_source_column(version_info)
     return (
@@ -334,9 +352,7 @@ def get_procedures_query(version_info):
             func.coalesce(
                 get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
             ).label("arg_types"),
-            func.pg_get_expr(
-                pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
-            ).label("arg_defaults"),
+            get_defaults().label("arg_defaults"),
         )
         .select_from(
             pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
@@ -369,9 +385,7 @@ def get_functions_query(version_info):
             func.coalesce(
                 get_types(pg_proc.c.proallargtypes), get_types(pg_proc.c.proargtypes)
             ).label("arg_types"),
-            func.pg_get_expr(
-                pg_proc.c.proargdefaults, func.cast(literal("pg_proc"), REGCLASS)
-            ).label("arg_defaults"),
+            get_defaults().label("arg_defaults"),
         )
         .select_from(
             pg_proc.join(pg_namespace, pg_proc.c.pronamespace == pg_namespace.c.oid)
