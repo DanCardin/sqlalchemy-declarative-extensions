@@ -13,9 +13,6 @@ from sqlalchemy_declarative_extensions.function.compare import compare_functions
 pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
 
 
-@pytest.fixture
-def pmr_postgres_config():
-    return PostgresConfig(image="postgres:11", port=None, ci_port=None)
 
 
 @pytest.mark.parametrize(
