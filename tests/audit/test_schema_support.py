@@ -1,4 +1,5 @@
 """Tests for schema-aware audit function and trigger creation."""
+
 from pytest_mock_resources import create_postgres_fixture
 from sqlalchemy import Column, text, types
 
@@ -187,7 +188,9 @@ def test_audit_functionality_with_schema(pg):
 
     # Check audit trail
     result = pg.execute(
-        text("SELECT audit_operation, name, price FROM myschema.product_audit ORDER BY audit_pk")
+        text(
+            "SELECT audit_operation, name, price FROM myschema.product_audit ORDER BY audit_pk"
+        )
     ).fetchall()
 
     assert len(result) == 1
@@ -200,7 +203,9 @@ def test_audit_functionality_with_schema(pg):
     pg.commit()
 
     result = pg.execute(
-        text("SELECT audit_operation, name, price FROM myschema.product_audit ORDER BY audit_pk")
+        text(
+            "SELECT audit_operation, name, price FROM myschema.product_audit ORDER BY audit_pk"
+        )
     ).fetchall()
 
     assert len(result) == 2
@@ -246,7 +251,9 @@ def test_audit_functions_default_schema(pg):
     pg.commit()
 
     result = pg.execute(
-        text("SELECT audit_operation, name FROM public.customer_audit ORDER BY audit_pk")
+        text(
+            "SELECT audit_operation, name FROM public.customer_audit ORDER BY audit_pk"
+        )
     ).fetchall()
 
     assert len(result) == 1

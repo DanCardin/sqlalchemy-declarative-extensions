@@ -4,6 +4,10 @@
 
 ## 0.16
 
+### 0.16.10
+
+- fix: TypeError breaking constraints on declared views.
+
 ### 0.16.9
 
 - fix: Support for duplicate PostgreSQL trigger names.
