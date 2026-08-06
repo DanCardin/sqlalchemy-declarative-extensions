@@ -12,10 +12,13 @@ def register_alembic_events(
     procedures: bool = True,
     triggers: bool = True,
     rows: bool = True,
+    snowflake_dynamic_tables: bool = False,
 ):
     """Register handlers into alembic's event system for the supported object types.
 
     By default all object types are enabled, but each can be individually disabled.
+    Snowflake-specific types (e.g. ``snowflake_dynamic_tables``) are opt-in and
+    default to disabled since they are dialect-specific.
 
     Note this is the opposite of the defaults when registering against SQLAlchemy's
     event system.
@@ -46,6 +49,9 @@ def register_alembic_events(
 
     if rows:
         import sqlalchemy_declarative_extensions.alembic.row  # noqa
+
+    if snowflake_dynamic_tables:
+        import sqlalchemy_declarative_extensions.alembic.dynamic_table  # noqa
 
 
 def _traverse_any_directive(self, context, revision, directive) -> None:
