@@ -371,6 +371,15 @@ class View:
         return result
 
 
+def _col_name(c: Any) -> str:
+    if isinstance(c, str):
+        return c
+    name = c.key
+    if name is None:
+        raise ValueError(f"Index column {c!r} has no name")
+    return name
+
+
 @dataclass
 class ViewIndex:
     columns: list[str]
@@ -391,14 +400,14 @@ class ViewIndex:
         elif isinstance(index, Index):
             convention = "ix"
             instance = ViewIndex(
-                columns=cast(List[str], list(index.expressions)),
+                columns=[_col_name(c) for c in index.expressions],
                 name=index.name,
                 unique=index.unique,
             )
         elif isinstance(index, UniqueConstraint):
             convention = "uq"
             instance = ViewIndex(
-                columns=cast(List[str], list(index._pending_colargs)),
+                columns=[_col_name(c) for c in index._pending_colargs],
                 name=str(index.name) if index.name else None,
                 unique=True,
             )
