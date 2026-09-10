@@ -4,6 +4,10 @@
 
 ## 0.16
 
+### 0.16.11
+
+- fix: Correlate the extension-schema check in pg triggers_query.
+
 ### 0.16.10
 
 - fix: TypeError breaking constraints on declared views.
