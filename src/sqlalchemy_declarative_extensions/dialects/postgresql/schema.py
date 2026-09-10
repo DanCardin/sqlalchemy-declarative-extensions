@@ -450,6 +450,6 @@ triggers_query = (
         .join(proc_nsp, pg_proc.c.pronamespace == proc_nsp.c.oid)
     )
     .where(pg_trigger.c.tgisinternal.is_(False))
-    .where(_schema_not_from_extension())
+    .where(_schema_not_from_extension(rel_nsp.c.oid))
     .where(_not_from_extension(pg_trigger.c.oid, "pg_trigger"))
 )
