@@ -14,6 +14,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.acl import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     Function,
+    FunctionParallel,
     FunctionParam,
     FunctionSecurity,
     FunctionVolatility,
@@ -63,6 +64,21 @@ EXTENSION_SCHEMAS = {
 }
 EXTENSION_TRIGGERS = {
     "postgis_topology": {"layer_integrity_checks": "topology.layer"},
+}
+
+FUNCTION_SECURITY = {
+    True: FunctionSecurity.definer,
+    False: FunctionSecurity.invoker,
+}
+FUNCTION_VOLATILITY = {
+    "v": FunctionVolatility.VOLATILE,
+    "s": FunctionVolatility.STABLE,
+    "i": FunctionVolatility.IMMUTABLE,
+}
+FUNCTION_PARALLEL = {
+    "u": FunctionParallel.UNSAFE,
+    "r": FunctionParallel.RESTRICTED,
+    "s": FunctionParallel.SAFE,
 }
 
 
@@ -227,33 +243,31 @@ def get_functions_postgresql(connection: Connection) -> Sequence[BaseFunction]:
 
     functions = []
     functions_query = get_functions_query(connection.dialect.server_version_info)
-
     for f in connection.execute(functions_query).fetchall():
         name = f.name
         definition = f.source
         language = f.language
         schema = f.schema if f.schema != "public" else None
-
+        parameters = [
+            FunctionParam(name, type, default, mode)
+            for name, type, default, mode in zip_longest(
+                f.arg_names or [],
+                f.arg_types or [],
+                f.arg_defaults or [],
+                f.arg_modes or [],
+            )
+        ]
         function = Function(
-            parameters=[
-                FunctionParam(name, type, default, mode)
-                for name, type, default, mode in zip_longest(
-                    f.arg_names or [],
-                    f.arg_types or [],
-                    f.arg_defaults or [],
-                    f.arg_modes or [],
-                )
-            ],
-            volatility=FunctionVolatility.from_provolatile(f.volatility),
+            parameters=parameters,
             name=name,
             definition=definition,
             language=language,
             schema=schema,
-            security=(
-                FunctionSecurity.definer
-                if f.security_definer
-                else FunctionSecurity.invoker
-            ),
+            volatility=FUNCTION_VOLATILITY[f.volatility],
+            security=FUNCTION_SECURITY[f.security_definer],
+            parallel=FUNCTION_PARALLEL[f.parallel],
+            strict=f.strict,
+            leakproof=f.leakproof,
             returns=f.return_type_string or f.base_return_type,
         )
         functions.append(function)

@@ -40,16 +40,12 @@ class FunctionVolatility(enum.Enum):
     STABLE = "STABLE"
     IMMUTABLE = "IMMUTABLE"
 
-    @classmethod
-    def from_provolatile(cls, provolatile: str) -> FunctionVolatility:
-        """Convert a `pg_proc.provolatile` value to a `FunctionVolatility` enum."""
-        if provolatile == "v":
-            return cls.VOLATILE
-        if provolatile == "s":
-            return cls.STABLE
-        if provolatile == "i":
-            return cls.IMMUTABLE
-        raise ValueError(f"Invalid volatility: {provolatile}")
+
+@enum.unique
+class FunctionParallel(enum.Enum):
+    UNSAFE = "UNSAFE"
+    RESTRICTED = "RESTRICTED"
+    SAFE = "SAFE"
 
 
 @dataclass
@@ -63,6 +59,9 @@ class Function(base.Function):
     returns: FunctionReturn | str | None = None  # type: ignore
     parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
     volatility: FunctionVolatility = FunctionVolatility.VOLATILE
+    parallel: FunctionParallel = FunctionParallel.UNSAFE
+    strict: bool = False
+    leakproof: bool = False
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -93,6 +92,15 @@ class Function(base.Function):
 
         if self.volatility != FunctionVolatility.VOLATILE:
             components.append(self.volatility.value)
+
+        if self.strict:
+            components.append("STRICT")
+
+        if self.leakproof:
+            components.append("LEAKPROOF")
+
+        if self.parallel != FunctionParallel.UNSAFE:
+            components.append(f"PARALLEL {self.parallel.value}")
 
         components.append(f"LANGUAGE {self.language}")
         if self._has_sqlbody:
