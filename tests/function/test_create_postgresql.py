@@ -8,6 +8,7 @@ from sqlalchemy_declarative_extensions import (
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql import (
     Function,
+    FunctionParallel,
     FunctionParam,
     FunctionVolatility,
 )
@@ -63,6 +64,16 @@ class Base(_Base):  # type: ignore
             language="plpgsql",  # Requires plpgsql
             volatility=FunctionVolatility.STABLE,
         ),
+        Function(
+            "add_parallel_safe",
+            "SELECT i + j;",
+            parameters=["i integer", "j integer"],
+            returns="INTEGER",
+            volatility=FunctionVolatility.IMMUTABLE,
+            parallel=FunctionParallel.SAFE,
+            strict=True,
+            leakproof=True,
+        ),
     )
 
 
@@ -103,6 +114,9 @@ def test_create(pg):
         (2, 4),
         (3, 9),
     ]
+
+    result_parallel_safe = pg.execute(text("SELECT add_parallel_safe(1, 2)")).scalar()
+    assert result_parallel_safe == 3
 
     connection = pg.connection()
     diff = compare_functions(connection, Base.metadata.info["functions"])
