@@ -48,8 +48,9 @@ class Trigger(base.Trigger):
     def before(
         cls,
         event: TriggerEvents | str,
-        on: str,
+        *,
         execute: str,
+        on: str = "",
         name: str = "",
     ):
         return cls(
@@ -64,8 +65,9 @@ class Trigger(base.Trigger):
     def after(
         cls,
         event: TriggerEvents | str,
-        on: str,
+        *,
         execute: str,
+        on: str = "",
         name: str = "",
     ):
         return cls(
