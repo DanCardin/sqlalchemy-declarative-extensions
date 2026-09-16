@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Hashable, Iterable, Sequence
+from typing import Any, Hashable, Iterable, Sequence
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
+from sqlalchemy.sql.schema import SchemaItem
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 
 @dataclass
-class Trigger:
+class Trigger(SchemaItem):
     """Describes a generic trigger."""
 
     name: str
@@ -25,6 +27,25 @@ class Trigger:
 
     def named(self, name: str):
         return replace(self, name=name)
+
+    def _set_parent(self, parent: Any, **kw: Any) -> None:
+        """Attach to the `Table` __table_args__ it was declared in."""
+        if not isinstance(parent, Table):
+            raise ValueError(
+                f"Trigger can only be attached to a `Table`, got: {parent}."
+            )
+
+        on = qualify_name(parent.schema, parent.name)
+        if not self.name:
+            raise ValueError(f"Trigger attached to table '{on}' must have a name.")
+
+        if self.on and self.on != on:
+            raise ValueError(
+                f"Trigger '{self.name}' declares `on='{self.on}'`,"
+                f" which conflicts with the table it is attached to: '{on}'."
+            )
+
+        register_trigger(parent.metadata, replace(self, on=on))
 
     def to_sql_create(self):
         raise NotImplementedError()

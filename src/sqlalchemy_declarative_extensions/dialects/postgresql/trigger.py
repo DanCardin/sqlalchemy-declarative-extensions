@@ -100,7 +100,7 @@ class Trigger(base.Trigger):
 
     @classmethod
     def before(
-        cls, *events: TriggerEvents | str, on: str, execute: str, name: str = ""
+        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
     ):
         return cls(
             time=TriggerTimes.before,
@@ -111,7 +111,9 @@ class Trigger(base.Trigger):
         )
 
     @classmethod
-    def after(cls, *events: TriggerEvents | str, on: str, execute: str, name: str = ""):
+    def after(
+        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
+    ):
         return cls(
             time=TriggerTimes.after,
             events=TriggerEvents.from_strings(events),
@@ -122,7 +124,7 @@ class Trigger(base.Trigger):
 
     @classmethod
     def instead_of(
-        cls, *events: TriggerEvents | str, on: str, execute: str, name: str = ""
+        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
     ):
         return cls(
             time=TriggerTimes.instead_of,
