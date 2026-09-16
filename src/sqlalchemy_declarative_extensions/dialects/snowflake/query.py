@@ -69,6 +69,41 @@ def get_databases_snowflake(connection: Connection):
     }
 
 
+def get_dynamic_tables_snowflake(connection: Connection):
+    from sqlalchemy_declarative_extensions.dialects.snowflake.dynamic_table import (
+        DynamicTable,
+    )
+
+    query = text(
+        """
+            SELECT table_schema, table_name, target_lag, warehouse, text
+            FROM information_schema.dynamic_tables
+            WHERE table_schema != 'INFORMATION_SCHEMA'
+            AND table_catalog = current_database()
+        """
+    )
+
+    tables = []
+    for row in connection.execute(query).fetchall():
+        text_str: str = row.text
+        text_lower = text_str.lower()
+        warehouse_pos = text_lower.find("warehouse")
+        as_pos = text_lower.find(" as ", warehouse_pos)
+        definition = text_str[as_pos + 4:].strip() if as_pos != -1 else text_str
+
+        schema = row.table_schema if row.table_schema != "PUBLIC" else None
+        tables.append(
+            DynamicTable(
+                name=row.table_name,
+                definition=definition,
+                target_lag=row.target_lag,
+                warehouse=row.warehouse,
+                schema=schema,
+            )
+        )
+    return tables
+
+
 def get_views_snowflake(connection: Connection):
     views_query = text(
         """
