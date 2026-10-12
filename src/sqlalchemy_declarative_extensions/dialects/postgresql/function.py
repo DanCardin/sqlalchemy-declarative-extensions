@@ -8,6 +8,7 @@ from typing import Any, List, Literal, Sequence, Tuple, cast
 
 from sqlalchemy import Column
 
+from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
 from sqlalchemy_declarative_extensions.function import base
 from sqlalchemy_declarative_extensions.sql import quote_name
 
@@ -29,12 +30,12 @@ END
 
 
 @enum.unique
-class FunctionSecurity(enum.Enum):
+class FunctionSecurity(FromStrings):
     invoker = "INVOKER"
     definer = "DEFINER"
 
 
-class FunctionVolatility(enum.Enum):
+class FunctionVolatility(FromStrings):
     volatile = "VOLATILE"
     stable = "STABLE"
     immutable = "IMMUTABLE"
@@ -44,7 +45,7 @@ class FunctionVolatility(enum.Enum):
     IMMUTABLE = immutable
 
 
-class FunctionParallel(enum.Enum):
+class FunctionParallel(FromStrings):
     unsafe = "UNSAFE"
     restricted = "RESTRICTED"
     safe = "SAFE"
@@ -68,6 +69,11 @@ class Function(base.Function):
     parallel: FunctionParallel = FunctionParallel.unsafe
     strict: bool = False
     leakproof: bool = False
+
+    def __post_init__(self):
+        self.security = FunctionSecurity.from_string(self.security)
+        self.volatility = FunctionVolatility.from_string(self.volatility)
+        self.parallel = FunctionParallel.from_string(self.parallel)
 
     @property
     def _has_sqlbody(self) -> bool:
@@ -128,11 +134,17 @@ class Function(base.Function):
 
         return [f"DROP FUNCTION {self.qualified_name}({param_str});"]
 
-    def with_security(self, security: FunctionSecurity):
-        return replace(self, security=security)
+    def with_security(self, security: FunctionSecurity | str):
+        return replace(self, security=FunctionSecurity.from_string(security))
 
     def with_security_definer(self):
         return replace(self, security=FunctionSecurity.definer)
+
+    def with_volatility(self, volatility: FunctionVolatility | str):
+        return replace(self, volatility=FunctionVolatility.from_string(volatility))
+
+    def with_parallel(self, parallel: FunctionParallel | str):
+        return replace(self, parallel=FunctionParallel.from_string(parallel))
 
     def normalize(self) -> Function:
         definition = textwrap.dedent(self.definition)
