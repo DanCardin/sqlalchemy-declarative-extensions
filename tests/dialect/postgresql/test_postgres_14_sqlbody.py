@@ -23,7 +23,7 @@ def test_functions(pg):
         definition="RETURN (i + 1)",
         parameters=["i integer"],
         returns="INTEGER",
-        volatility=FunctionVolatility.STABLE,
+        volatility=FunctionVolatility.stable,
     ).normalize()
     create_function = add_stable_function.to_sql_create()
     functions = Functions([add_stable_function])
