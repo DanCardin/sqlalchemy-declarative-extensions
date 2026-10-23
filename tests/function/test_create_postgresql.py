@@ -37,7 +37,7 @@ class Base(_Base):  # type: ignore
             "SELECT i + 1;",
             parameters=["i integer"],
             returns="INTEGER",
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
         # Function returning TABLE
         Function(
@@ -49,7 +49,7 @@ class Base(_Base):  # type: ignore
             language="sql",
             parameters=[FunctionParam("_limit", "integer", default=1)],
             returns=FunctionReturn(table=["num integer", "num_squared integer"]),
-            volatility=FunctionVolatility.IMMUTABLE,
+            volatility=FunctionVolatility.immutable,
         ),
         Function(
             "get_users_by_group",
@@ -62,15 +62,15 @@ class Base(_Base):  # type: ignore
             parameters=["group_ids integer[]"],
             returns=FunctionReturn(table=["id integer", "name text"]),
             language="plpgsql",  # Requires plpgsql
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
         Function(
             "add_parallel_safe",
             "SELECT i + j;",
             parameters=["i integer", "j integer"],
             returns="INTEGER",
-            volatility=FunctionVolatility.IMMUTABLE,
-            parallel=FunctionParallel.SAFE,
+            volatility=FunctionVolatility.immutable,
+            parallel=FunctionParallel.safe,
             strict=True,
             leakproof=True,
         ),

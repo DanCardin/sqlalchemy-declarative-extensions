@@ -23,7 +23,7 @@ class Base(_Base):  # type: ignore
             "RETURN (i + 1)",
             parameters=["i integer"],
             returns="INTEGER",
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
         # NEW FUNCTION: Multiple params, RETURNS TABLE
         Function(
@@ -39,7 +39,7 @@ class Base(_Base):  # type: ignore
             parameters=["group_ids integer[]"],
             returns=FunctionReturn(table=["id integer", "name text"]),
             language="sql",
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
     )
 

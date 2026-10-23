@@ -34,18 +34,24 @@ class FunctionSecurity(enum.Enum):
     definer = "DEFINER"
 
 
-@enum.unique
 class FunctionVolatility(enum.Enum):
-    VOLATILE = "VOLATILE"
-    STABLE = "STABLE"
-    IMMUTABLE = "IMMUTABLE"
+    volatile = "VOLATILE"
+    stable = "STABLE"
+    immutable = "IMMUTABLE"
+
+    VOLATILE = volatile
+    STABLE = stable
+    IMMUTABLE = immutable
 
 
-@enum.unique
 class FunctionParallel(enum.Enum):
-    UNSAFE = "UNSAFE"
-    RESTRICTED = "RESTRICTED"
-    SAFE = "SAFE"
+    unsafe = "UNSAFE"
+    restricted = "RESTRICTED"
+    safe = "SAFE"
+
+    UNSAFE = unsafe
+    RESTRICTED = restricted
+    SAFE = safe
 
 
 @dataclass
@@ -58,8 +64,8 @@ class Function(base.Function):
     security: FunctionSecurity = FunctionSecurity.invoker
     returns: FunctionReturn | str | None = None  # type: ignore
     parameters: Sequence[FunctionParam | str] | None = None  # type: ignore
-    volatility: FunctionVolatility = FunctionVolatility.VOLATILE
-    parallel: FunctionParallel = FunctionParallel.UNSAFE
+    volatility: FunctionVolatility = FunctionVolatility.volatile
+    parallel: FunctionParallel = FunctionParallel.unsafe
     strict: bool = False
     leakproof: bool = False
 
@@ -90,7 +96,7 @@ class Function(base.Function):
         if self.security == FunctionSecurity.definer:
             components.append("SECURITY DEFINER")
 
-        if self.volatility != FunctionVolatility.VOLATILE:
+        if self.volatility != FunctionVolatility.volatile:
             components.append(self.volatility.value)
 
         if self.strict:
@@ -99,7 +105,7 @@ class Function(base.Function):
         if self.leakproof:
             components.append("LEAKPROOF")
 
-        if self.parallel != FunctionParallel.UNSAFE:
+        if self.parallel != FunctionParallel.unsafe:
             components.append(f"PARALLEL {self.parallel.value}")
 
         components.append(f"LANGUAGE {self.language}")

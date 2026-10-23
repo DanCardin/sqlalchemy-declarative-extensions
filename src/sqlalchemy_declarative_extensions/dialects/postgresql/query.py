@@ -71,14 +71,14 @@ FUNCTION_SECURITY = {
     False: FunctionSecurity.invoker,
 }
 FUNCTION_VOLATILITY = {
-    "v": FunctionVolatility.VOLATILE,
-    "s": FunctionVolatility.STABLE,
-    "i": FunctionVolatility.IMMUTABLE,
+    "v": FunctionVolatility.volatile,
+    "s": FunctionVolatility.stable,
+    "i": FunctionVolatility.immutable,
 }
 FUNCTION_PARALLEL = {
-    "u": FunctionParallel.UNSAFE,
-    "r": FunctionParallel.RESTRICTED,
-    "s": FunctionParallel.SAFE,
+    "u": FunctionParallel.unsafe,
+    "r": FunctionParallel.restricted,
+    "s": FunctionParallel.safe,
 }
 
 

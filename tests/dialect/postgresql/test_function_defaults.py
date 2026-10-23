@@ -31,7 +31,7 @@ def test_function_argument_defaults(pg, default_a, default_b, default_c):
             FunctionParam("c", "text", default=default_c),
         ],
         returns="TEXT",
-        volatility=FunctionVolatility.STABLE,
+        volatility=FunctionVolatility.stable,
         language="plpgsql",
     ).normalize()
     create_function = add_label_function.to_sql_create()

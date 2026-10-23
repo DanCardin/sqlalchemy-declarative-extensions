@@ -6,6 +6,7 @@ from sqlalchemy_declarative_extensions import Functions
 from sqlalchemy_declarative_extensions.dialects.postgresql import (
     Function,
     FunctionParallel,
+    FunctionVolatility,
 )
 from sqlalchemy_declarative_extensions.function.compare import compare_functions
 
@@ -16,11 +17,11 @@ pg = create_postgres_fixture(scope="function", engine_kwargs={"echo": True})
     "attributes",
     [
         {},
-        {"parallel": FunctionParallel.RESTRICTED},
-        {"parallel": FunctionParallel.SAFE},
+        {"parallel": FunctionParallel.restricted},
+        {"parallel": FunctionParallel.safe},
         {"strict": True},
         {"leakproof": True},
-        {"parallel": FunctionParallel.SAFE, "strict": True, "leakproof": True},
+        {"parallel": FunctionParallel.safe, "strict": True, "leakproof": True},
     ],
 )
 def test_function_attributes(pg, attributes):
@@ -36,3 +37,14 @@ def test_function_attributes(pg, attributes):
         connection.execute(text("\n".join(add_function.to_sql_create())))
         diff = compare_functions(connection, functions)
     assert diff == []
+
+
+@pytest.mark.parametrize(
+    "alias, member",
+    [
+        (FunctionVolatility.STABLE, FunctionVolatility.stable),
+        (FunctionParallel.SAFE, FunctionParallel.safe),
+    ],
+)
+def test_uppercase_alias_is_lowercase_member(alias, member):
+    assert alias is member

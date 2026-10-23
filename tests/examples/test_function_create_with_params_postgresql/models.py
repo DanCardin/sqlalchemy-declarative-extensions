@@ -23,7 +23,7 @@ class Base(_Base):  # type: ignore
             "SELECT i + 1;",
             parameters=["i integer"],
             returns="INTEGER",
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
         # NEW FUNCTION: Multiple params, RETURNS TABLE, plpgsql
         Function(
@@ -37,7 +37,7 @@ class Base(_Base):  # type: ignore
             parameters=["group_ids integer[]"],
             returns=FunctionReturn(table=["id integer", "name text"]),
             language="plpgsql",  # Requires plpgsql
-            volatility=FunctionVolatility.STABLE,
+            volatility=FunctionVolatility.stable,
         ),
     )
 
