@@ -1,6 +1,12 @@
 # Changelog
 
+## 0.17
+
 ### 0.17.0
+
+- feat: Add support for declaring triggers in __table_args__.
+- feat: Add PARALLEL, STRICT and LEAKPROOF support to pg functions.
+- fix: Rename FunctionVolatility and FunctionParallel members to lowercase.
 
 ## 0.16
 
