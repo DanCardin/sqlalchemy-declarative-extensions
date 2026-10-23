@@ -6,6 +6,11 @@ from sqlalchemy import event
 from sqlalchemy.sql.schema import MetaData
 
 from sqlalchemy_declarative_extensions.database.base import Databases
+from sqlalchemy_declarative_extensions.dialects.snowflake.dynamic_table import (
+    DynamicTable,
+    DynamicTables,
+    dynamic_table_ddl,
+)
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
 from sqlalchemy_declarative_extensions.grant.base import Grants
 from sqlalchemy_declarative_extensions.procedure.base import Procedure, Procedures
@@ -67,6 +72,7 @@ def declarative_database(base: T) -> T:
     raw_triggers = getattr(base, "triggers", None)
     raw_databases = getattr(base, "databases", None)
     raw_rows = getattr(base, "rows", None)
+    raw_dynamic_tables = getattr(base, "snowflake_dynamic_tables", None)
 
     metadata = getattr(base, "metadata", None)
     if metadata is None:  # pragma: no cover
@@ -83,6 +89,7 @@ def declarative_database(base: T) -> T:
         triggers=raw_triggers,
         databases=raw_databases,
         rows=raw_rows,
+        snowflake_dynamic_tables=raw_dynamic_tables,
     )
     return base
 
@@ -99,6 +106,7 @@ def declare_database(
     triggers: None | Iterable[Trigger] | Triggers = None,
     databases: None | Iterable[Database] | Databases = None,
     rows: None | Iterable[Row] | Rows = None,
+    snowflake_dynamic_tables: None | Iterable[DynamicTable] | DynamicTables = None,
 ):
     """Register declaratively specified database extension handlers.
 
@@ -140,6 +148,7 @@ def declare_database(
     metadata.info["triggers"] = Triggers.coerce_from_unknown(triggers)
     metadata.info["databases"] = Databases.coerce_from_unknown(databases)
     metadata.info["rows"] = Rows.coerce_from_unknown(rows)
+    metadata.info["dynamic_tables"] = DynamicTables.coerce_from_unknown(snowflake_dynamic_tables)
 
 
 def register_sqlalchemy_events(
@@ -154,6 +163,7 @@ def register_sqlalchemy_events(
     functions: bool | list[str] = False,
     triggers: bool | list[str] = False,
     rows: bool | list[str] = False,
+    snowflake_dynamic_tables: bool | list[str] = False,
 ):
     """Register handlers for supported object types into SQLAlchemy's event system.
 
@@ -187,6 +197,7 @@ def register_sqlalchemy_events(
         functions=functions,
         triggers=triggers,
         rows=rows,
+        snowflake_dynamic_tables=snowflake_dynamic_tables,
     )
 
     register_drop_events(
@@ -198,6 +209,7 @@ def register_sqlalchemy_events(
         procedures=procedures,
         functions=functions,
         triggers=triggers,
+        snowflake_dynamic_tables=snowflake_dynamic_tables,
     )
 
 
@@ -213,6 +225,7 @@ def register_create_events(
     functions: bool | list[str] = False,
     triggers: bool | list[str] = False,
     rows: bool | list[str] = False,
+    snowflake_dynamic_tables: bool | list[str] = False,
 ):
     from sqlalchemy_declarative_extensions.database.ddl import database_ddl
     from sqlalchemy_declarative_extensions.function.ddl import function_ddl
@@ -233,6 +246,7 @@ def register_create_events(
     concrete_triggers = metadata.info.get("triggers") or Triggers()
     concrete_databases = metadata.info.get("databases") or Databases()
     concrete_rows = metadata.info.get("rows") or Rows()
+    concrete_dynamic_tables = DynamicTables.extract(metadata) or DynamicTables()
 
     if databases:
         database_filter = databases if isinstance(databases, list) else None
@@ -307,6 +321,14 @@ def register_create_events(
             rows_query(concrete_rows, row_filter),
         )
 
+    if snowflake_dynamic_tables:
+        table_filter = snowflake_dynamic_tables if isinstance(snowflake_dynamic_tables, list) else None
+        event.listen(
+            metadata,
+            "after_create",
+            dynamic_table_ddl(concrete_dynamic_tables, table_filter),
+        )
+
 
 def register_drop_events(
     metadata: MetaData,
@@ -318,6 +340,7 @@ def register_drop_events(
     procedures: bool | list[str] = False,
     functions: bool | list[str] = False,
     triggers: bool | list[str] = False,
+    snowflake_dynamic_tables: bool | list[str] = False,
 ):
     # Note grants and rows are (currently) omitted. Rows should handled by tables being dropped.
     # Grants should be handled by everything else being dropped.
@@ -336,6 +359,7 @@ def register_drop_events(
     concrete_functions = metadata.info.get("functions")
     concrete_triggers = metadata.info.get("triggers")
     concrete_databases = metadata.info.get("databases")
+    concrete_dynamic_tables = metadata.info.get("dynamic_tables")
 
     if concrete_procedures and procedures:
         procedure_filter = procedures if isinstance(procedures, list) else None
@@ -391,4 +415,12 @@ def register_drop_events(
             metadata,
             "after_drop",
             database_ddl(concrete_databases.are(), database_filter),
+        )
+
+    if concrete_dynamic_tables and snowflake_dynamic_tables:
+        table_filter = snowflake_dynamic_tables if isinstance(snowflake_dynamic_tables, list) else None
+        event.listen(
+            metadata,
+            "before_drop",
+            dynamic_table_ddl(concrete_dynamic_tables.are(), table_filter),
         )
