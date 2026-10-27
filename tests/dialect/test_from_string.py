@@ -91,6 +91,45 @@ def test_postgresql_function_builders_accept_uppercase_aliases():
     )
 
 
+@pytest.mark.parametrize(
+    "obj, builder, value, attr, expected",
+    [
+        (
+            mysql.Function("f", "RETURN 1;", returns="INTEGER"),
+            "with_security",
+            "invoker",
+            "security",
+            mysql.FunctionSecurity.invoker,
+        ),
+        (
+            mysql.Function("f", "RETURN 1;", returns="INTEGER"),
+            "with_data_access",
+            "reads sql data",
+            "data_access",
+            mysql.FunctionDataAccess.reads_sql,
+        ),
+        (
+            mysql.Procedure("p", "SELECT 1;"),
+            "with_security",
+            "invoker",
+            "security",
+            mysql.ProcedureSecurity.invoker,
+        ),
+        (
+            postgresql.Procedure("p", "SELECT 1;"),
+            "with_security",
+            "definer",
+            "security",
+            postgresql.ProcedureSecurity.definer,
+        ),
+    ],
+)
+def test_builders_accept_strings(
+    obj: object, builder: str, value: str, attr: str, expected: enum.Enum
+):
+    assert getattr(getattr(obj, builder)(value), attr) is expected
+
+
 def test_postgresql_procedure_coerces_strings():
     procedure = postgresql.Procedure("p", "SELECT 1;", security="definer")
 
