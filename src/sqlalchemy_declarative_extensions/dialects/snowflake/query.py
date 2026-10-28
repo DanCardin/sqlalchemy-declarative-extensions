@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import warnings
+from collections.abc import Iterable
+
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.snowflake import Role, View
+from sqlalchemy_declarative_extensions.sql import is_ignored, qualify_name
 
 
 def get_schemas_snowflake(connection: Connection):
@@ -69,7 +73,20 @@ def get_databases_snowflake(connection: Connection):
     }
 
 
-def get_views_snowflake(connection: Connection):
+def get_views_snowflake(
+    connection: Connection,
+    ignore: Iterable[str] = (),
+    include: Iterable[str] | None = None,
+):
+    """Fetch the views of the current database.
+
+    Views matching any of the `ignore` globs, or (when `include` is given) none of the
+    `include` globs, are never introspected, so (for example) views which the current
+    role cannot see the definition of, but which are excluded anyway, do not interfere.
+    """
+    ignore = list(ignore)
+    include = None if include is None else list(include)
+
     views_query = text(
         """
             SELECT table_schema AS schema, table_name AS name, view_definition AS definition
@@ -82,6 +99,23 @@ def get_views_snowflake(connection: Connection):
     views = []
     for v in connection.execute(views_query).fetchall():
         schema = v.schema if v.schema != "public" else None
+
+        # Snowflake identifiers are case-insensitive unless quoted, and it reports them uppercase.
+        qualified_name = qualify_name(schema, v.name)
+        if is_ignored(qualified_name, ignore, include=include, case_sensitive=False):
+            continue
+
+        # `view_definition` is NULL for views the current role does not have access to. Since we
+        # cant do anything with them, we'll loudly skip them to avoid a confusing autogenerate result
+        # where it tries to edit those views.
+        if v.definition is None:
+            warnings.warn(
+                f"Skipping view '{qualified_name}': its definition is not visible to the"
+                " current role. Ignore it explicitly (`Views(ignore=[...])`), or leave it out of"
+                " `Views(include=[...])`, to silence this.",
+                stacklevel=2,
+            )
+            continue
 
         assert v.definition.startswith("CREATE VIEW")
         *_, definition = v.definition.split(" ", 4)

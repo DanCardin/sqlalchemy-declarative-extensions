@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, replace
-from fnmatch import fnmatch
+from glob import escape
 from typing import Union
 
 from sqlalchemy.engine import Connection, Dialect
 
 from sqlalchemy_declarative_extensions.dialects import get_view_cls, get_views
 from sqlalchemy_declarative_extensions.op import ExecuteOp
+from sqlalchemy_declarative_extensions.sql import is_ignored
 from sqlalchemy_declarative_extensions.view.base import View, Views
 
 
@@ -70,7 +71,13 @@ def compare_views(
     views_by_name = {r.qualified_name: r for r in concrete_defined_views}
     expected_view_names = set(views_by_name)
 
-    existing_views = get_views(connection)
+    # Declared views are always compared. Otherwise a declared view outside of `include` would
+    # not be found, and so would be created again (and fail) on every run.
+    include = views.include
+    if include is not None:
+        include = [*include, *(escape(name) for name in expected_view_names)]
+
+    existing_views = get_views(connection, ignore=views.ignore, include=include)
     existing_views_by_name = {r.qualified_name: r for r in existing_views}
     existing_view_names = set(existing_views_by_name)
 
@@ -84,10 +91,7 @@ def compare_views(
 
         view_name = normalized_view.qualified_name
 
-        ignore_matches = any(
-            fnmatch(view_name, view_pattern) for view_pattern in views.ignore
-        )
-        if ignore_matches:
+        if is_ignored(view_name, views.ignore):
             continue
 
         view_created = view_name in new_view_names
@@ -113,10 +117,7 @@ def compare_views(
 
     if not views.ignore_unspecified:
         for removed_view in removed_view_names:
-            ignore_matches = any(
-                fnmatch(removed_view, view_pattern) for view_pattern in views.ignore
-            )
-            if ignore_matches:
+            if is_ignored(removed_view, views.ignore):
                 continue
 
             view = existing_views_by_name[removed_view]

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import fnmatch
 from dataclasses import dataclass
-from typing import Sequence, Union
+from typing import Union
 
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_procedure_cls, get_procedures
 from sqlalchemy_declarative_extensions.op import ExecuteOp
 from sqlalchemy_declarative_extensions.procedure.base import Procedure, Procedures
+from sqlalchemy_declarative_extensions.sql import filter_ignored
 
 
 @dataclass
@@ -56,8 +56,8 @@ def compare_procedures(
     procedures_by_name = {f.qualified_name: f for f in procedures.procedures}
     expected_procedure_names = set(procedures_by_name)
 
-    existing_procedures = filter_procedures(
-        get_procedures(connection), procedures.ignore
+    existing_procedures = filter_ignored(
+        get_procedures(connection), procedures.ignore, include=procedures.include
     )
     existing_procedures_by_name = {r.qualified_name: r for r in existing_procedures}
     existing_procedure_names = set(existing_procedures_by_name)
@@ -94,15 +94,3 @@ def compare_procedures(
             result.append(DropProcedureOp(procedure))
 
     return result
-
-
-def filter_procedures(
-    procedures: Sequence[Procedure], exclude: list[str]
-) -> list[Procedure]:
-    return [
-        f
-        for f in procedures
-        if not any(
-            fnmatch.fnmatch(f.qualified_name, exclusion) for exclusion in exclude
-        )
-    ]

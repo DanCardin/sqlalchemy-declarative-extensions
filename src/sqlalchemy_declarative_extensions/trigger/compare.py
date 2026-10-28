@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import fnmatch
 from dataclasses import dataclass
-from typing import Sequence, Union
+from typing import Union
 
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_triggers
 from sqlalchemy_declarative_extensions.op import ExecuteOp
+from sqlalchemy_declarative_extensions.sql import filter_ignored
 from sqlalchemy_declarative_extensions.trigger.base import Trigger, Triggers
 
 
@@ -55,8 +55,11 @@ def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operati
     expected_trigger_identities = set(triggers_by_identity)
 
     raw_existing_triggers = get_triggers(connection)
-    existing_triggers = filter_triggers(
-        raw_existing_triggers, exclude=triggers.ignore, include=triggers.include
+    existing_triggers = filter_ignored(
+        raw_existing_triggers,
+        triggers.ignore,
+        include=triggers.include,
+        key=lambda t: t.name,
     )
 
     existing_triggers_by_identity = {r.identity: r for r in existing_triggers}
@@ -84,17 +87,3 @@ def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operati
             result.append(DropTriggerOp(trigger))
 
     return result
-
-
-def filter_triggers(
-    triggers: Sequence[Trigger], *, exclude: list[str], include: list[str] | None
-) -> list[Trigger]:
-    return [
-        t
-        for t in triggers
-        if (
-            include is None
-            or any(fnmatch.fnmatch(t.name, inclusion) for inclusion in include)
-        )
-        and not any(fnmatch.fnmatch(t.name, exclusion) for exclusion in exclude)
-    ]

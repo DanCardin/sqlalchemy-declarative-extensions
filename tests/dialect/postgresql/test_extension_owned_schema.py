@@ -37,7 +37,7 @@ def test_extension_owned_schema_only_excludes_triggers_on_own_tables(pg):
     with pg.connect() as connection:
         connection.execute(text(setup))
         connection.commit()
-        
+
         trigger_names = [trigger.name for trigger in get_triggers(connection)]
         assert trigger_names == ["on_insert_foo"]
 

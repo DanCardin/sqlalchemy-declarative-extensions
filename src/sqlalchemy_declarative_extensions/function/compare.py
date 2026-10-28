@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import fnmatch
 from dataclasses import dataclass
-from typing import Sequence, Union
+from typing import Union
 
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects import get_function_cls, get_functions
 from sqlalchemy_declarative_extensions.function.base import Function, Functions
 from sqlalchemy_declarative_extensions.op import ExecuteOp
+from sqlalchemy_declarative_extensions.sql import filter_ignored
 
 
 @dataclass
@@ -55,8 +55,8 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
     expected_function_names = set(functions_by_name)
 
     raw_existing_functions = get_functions(connection)
-    existing_functions = filter_functions(
-        raw_existing_functions, exclude=functions.ignore, include=functions.include
+    existing_functions = filter_ignored(
+        raw_existing_functions, functions.ignore, include=functions.include
     )
     existing_functions_by_name = {
         f.qualified_name: f.normalize() for f in existing_functions
@@ -92,21 +92,3 @@ def compare_functions(connection: Connection, functions: Functions) -> list[Oper
             result.append(DropFunctionOp(function))
 
     return result
-
-
-def filter_functions(
-    functions: Sequence[Function], *, exclude: list[str], include: list[str] | None
-) -> list[Function]:
-    return [
-        f
-        for f in functions
-        if (
-            include is None
-            or any(
-                fnmatch.fnmatch(f.qualified_name, inclusion) for inclusion in include
-            )
-        )
-        and not any(
-            fnmatch.fnmatch(f.qualified_name, exclusion) for exclusion in exclude
-        )
-    ]

@@ -523,6 +523,12 @@ class Views:
     Note: `ignore` option accepts a list of strings. Each string is individually
         interpreted as a "glob". This means a string like "foo.*" would ignore all views
         contained within the schema "foo".
+
+    Note: `include` is the inverse of `ignore`. When set, only existing views matching one
+        of its globs are compared at all, so ``Views(include=["foo.*"])`` manages the
+        views in the schema "foo" (including dropping those no longer declared) and
+        leaves every other view in a shared database alone. Declared views are always
+        compared, whether or not they match. `ignore` still applies on top of `include`.
     """
 
     views: list[View | DeclarativeView] = field(default_factory=list)
@@ -531,6 +537,7 @@ class Views:
 
     ignore: Iterable[str] = field(default_factory=set)
     ignore_views: Iterable[str] = field(default_factory=set)
+    include: list[str] | None = None
     naming_convention: NamingConvention | None = None
 
     @classmethod
@@ -590,6 +597,12 @@ class Views:
         ignore = [s for instance in instances for s in instance.ignore]
         ignore_views = [s for instance in instances for s in instance.ignore_views]
 
+        # Preserve None if all instances have include=None, otherwise combine all non-None includes
+        include_values = [
+            instance.include for instance in instances if instance.include is not None
+        ]
+        include = [s for inc in include_values for s in inc] if include_values else None
+
         ignore_unspecified = instances[0].ignore_unspecified
         naming_convention: NamingConvention = instances[0].naming_convention  # type: ignore
 
@@ -604,6 +617,7 @@ class Views:
             ignore_unspecified=ignore_unspecified,
             ignore=ignore,
             ignore_views=ignore_views,
+            include=include,
             naming_convention=naming_convention,
         )
 

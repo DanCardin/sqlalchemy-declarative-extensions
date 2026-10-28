@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from itertools import zip_longest
 from typing import Container, List, cast
 
@@ -50,7 +50,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.view import (
 )
 from sqlalchemy_declarative_extensions.function import Function as BaseFunction
 from sqlalchemy_declarative_extensions.procedure import Procedure as BaseProcedure
-from sqlalchemy_declarative_extensions.sql import qualify_name
+from sqlalchemy_declarative_extensions.sql import is_ignored, qualify_name
 
 EXTENSION_SCHEMAS = {
     "postgis_topology": ["topology"],
@@ -175,10 +175,18 @@ def get_roles_postgresql(connection: Connection, exclude=None):
     return result
 
 
-def get_views_postgresql(connection: Connection):
+def get_views_postgresql(
+    connection: Connection,
+    ignore: Iterable[str] = (),
+    include: Iterable[str] | None = None,
+):
     views = []
     for v in connection.execute(views_query).fetchall():
         schema = v.schema if v.schema != "public" else None
+
+        # Avoids the per-view index introspection for views which are ignored anyway.
+        if is_ignored(qualify_name(schema, v.name), ignore, include=include):
+            continue
 
         indexes: list[ViewIndex | Index | UniqueConstraint] = [
             ViewIndex(
