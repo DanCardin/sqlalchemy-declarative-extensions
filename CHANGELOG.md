@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18
+
+- chore: Drop official support for python 3.8/3.9. In this release code is not
+  changed which breaks support, but it's no longer being tested and so will likely
+  break once we start adopting newer syntax features.
+
 ## 0.17
 
 ### 0.17.0
