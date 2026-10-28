@@ -94,6 +94,11 @@ class Trigger(base.Trigger):
     old_table: str | None = None
     new_table: str | None = None
 
+    def __post_init__(self):
+        self.events = TriggerEvents.from_strings(self.events)
+        self.time = TriggerTimes.from_string(self.time)
+        self.for_each = TriggerForEach.from_string(self.for_each)
+
     @property
     def identity(self) -> tuple[str, str]:
         return self.on, self.name

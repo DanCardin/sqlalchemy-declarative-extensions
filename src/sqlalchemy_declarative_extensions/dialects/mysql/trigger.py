@@ -32,6 +32,9 @@ class TriggerOrder:
     order: TriggerOrders
     other_trigger_name: str
 
+    def __post_init__(self):
+        self.order = TriggerOrders.from_string(self.order)
+
 
 @dataclass
 class Trigger(base.Trigger):
@@ -43,6 +46,10 @@ class Trigger(base.Trigger):
     time: TriggerTimes
     event: TriggerEvents
     order: TriggerOrder | None = None
+
+    def __post_init__(self):
+        self.time = TriggerTimes.from_string(self.time)
+        self.event = TriggerEvents.from_string(self.event)
 
     @classmethod
     def before(
