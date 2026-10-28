@@ -1,7 +1,10 @@
+from collections.abc import Iterable
+
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.sqlite.schema import views_query
+from sqlalchemy_declarative_extensions.sql import filter_ignored
 from sqlalchemy_declarative_extensions.view.base import View
 
 
@@ -27,10 +30,15 @@ def check_schema_exists_sqlite(connection: Connection, name: str) -> bool:
     return False
 
 
-def get_views_sqlite(connection: Connection):
+def get_views_sqlite(
+    connection: Connection,
+    ignore: Iterable[str] = (),
+    include: Iterable[str] | None = None,
+):
     schemas = get_schemas_sqlite(connection)
-    return [
+    views = [
         View(v.name, v.definition, schema=v.schema)
         for schema in [*schemas, None]
         for v in connection.execute(views_query(schema and schema)).fetchall()
     ]
+    return filter_ignored(views, ignore, include=include)

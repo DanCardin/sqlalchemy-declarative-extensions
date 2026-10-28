@@ -2,9 +2,16 @@
 
 ## 0.18
 
+
+### 0.18.0
+
 - chore: Drop official support for python 3.8/3.9. In this release code is not
   changed which breaks support, but it's no longer being tested and so will likely
   break once we start adopting newer syntax features.
+- feat: Accept plain strings for every enum-valued option.
+- feat: Add `Views(include=[...])`, mirroring `Functions`/`Triggers`.
+- feat: Add `Procedures(include=[...])`, mirroring `Functions`/`Triggers`/`Views`.
+- fix: (Snowflake) Skip views whose definition is NULL (inaccessible to the current role).
 
 ## 0.17
 

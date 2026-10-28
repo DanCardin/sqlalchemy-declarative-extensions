@@ -98,6 +98,22 @@ allows you to avoid duplicating the list of columns unnecessarily.
 Finally, you can directly call `register_view` to imperitively register a normal
 `View` object, if the class interface doesn't float your boat.
 
+## Managing a subset of a shared database
+
+Autogenerate drops any existing view that is not declared. When the database is
+shared with other metadata, `include` limits the comparison to existing views
+matching one of its globs (matched against the schema-qualified name):
+
+```python
+views = Views(include=["foo.*"]).are(...)
+```
+
+Views in `foo` are created, updated, and dropped when no longer declared, while
+every other view is left alone, including views added to the database later.
+Declared views are always compared, even when they fall outside of `include`.
+`ignore` still applies on top of `include`, and `ignore_unspecified` remains the
+blunter option which suppresses all drops.
+
 ## Materialized views
 
 Materialized views can be created by adding the `materialized=True` kwarg to the
