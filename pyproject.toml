@@ -1,6 +1,6 @@
 [project]
 name = "sqlalchemy-declarative-extensions"
-version = "0.17.0"
+version = "0.18.0"
 authors = [{ name = "Dan Cardin", email = "ddcardin@gmail.com" }]
 description = "Library to declare additional kinds of objects not natively supported by SQLAlchemy/Alembic."
 license = { file = "LICENSE" }
@@ -25,7 +25,7 @@ keywords = [
 ]
 classifiers = ["Topic :: Software Development :: Libraries :: Python Modules"]
 
-requires-python = ">=3.8,<4"
+requires-python = ">=3.10,<4"
 
 dependencies = ["sqlalchemy >= 1.3"]
 
@@ -54,14 +54,11 @@ dev = [
     "psycopg[binary]",
     "psycopg2-binary",
 
-    # snowflake
-    "fakesnow >= 0.9.21; python_version >= '3.9'",
-    "snowflake-connector-python >= 3.7; python_version >= '3.9'",
-    "snowflake-sqlalchemy >= 1.6.0; python_version >= '3.9'",
+    # snowflake (fakesnow>=0.12 requires python 3.11+)
+    "fakesnow >= 0.9.21; python_version >= '3.11'",
+    "snowflake-connector-python >= 3.7; python_version >= '3.11'",
+    "snowflake-sqlalchemy >= 1.6.0; python_version >= '3.11'",
 ]
-
-[tool.uv]
-environments = ["python_version < '3.9'", "python_version >= '3.9' and python_version < '4'"]
 
 [tool.mypy]
 strict_optional = true
@@ -94,6 +91,7 @@ filterwarnings = [
     'ignore:`ignore_views` is deprecated, use `ignore` instead:DeprecationWarning',
     'ignore:The GenericFunction.*:sqlalchemy.exc.SAWarning',
     'ignore:Did not recognize type.*:sqlalchemy.exc.SAWarning',
+    'ignore:Arrow output on a DB-API result.*:UserWarning',
 ]
 pytester_example_dir = "tests/examples"
 markers = ['grant', 'schema', 'role', 'row', 'alembic']
