@@ -229,7 +229,7 @@ def register_create_events(
     concrete_grants = metadata.info.get("grants") or Grants()
     concrete_views = Views.extract(metadata) or Views()
     concrete_procedures = metadata.info.get("procedures") or Procedures()
-    concrete_functions = metadata.info.get("functions") or Functions()
+    concrete_functions = Functions.extract(metadata) or Functions()
     concrete_triggers = metadata.info.get("triggers") or Triggers()
     concrete_databases = metadata.info.get("databases") or Databases()
     concrete_rows = metadata.info.get("rows") or Rows()
@@ -333,7 +333,7 @@ def register_drop_events(
     concrete_roles = metadata.info.get("roles")
     concrete_views = metadata.info.get("views")
     concrete_procedures = metadata.info.get("procedures")
-    concrete_functions = metadata.info.get("functions")
+    concrete_functions = Functions.extract(metadata)
     concrete_triggers = metadata.info.get("triggers")
     concrete_databases = metadata.info.get("databases")
 

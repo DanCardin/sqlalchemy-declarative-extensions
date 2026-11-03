@@ -26,3 +26,8 @@ def test_trigger_rewriter(pytester):
 @pytest.mark.alembic
 def test_trigger_table_args(pytester):
     successful_test_run(pytester, count=1)
+
+
+@pytest.mark.alembic
+def test_trigger_function_execute(pytester):
+    successful_test_run(pytester, count=1)

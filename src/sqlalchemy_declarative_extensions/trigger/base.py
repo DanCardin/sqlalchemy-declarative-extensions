@@ -8,22 +8,39 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.sql.schema import SchemaItem
 from typing_extensions import Self
 
+from sqlalchemy_declarative_extensions.function.base import Function, Functions
 from sqlalchemy_declarative_extensions.sql import qualify_name
 from sqlalchemy_declarative_extensions.sqlalchemy import HasMetaData
 
 
 @dataclass
 class Trigger(SchemaItem):
-    """Describes a generic trigger."""
+    """Describes a generic trigger.
+
+    `execute` is either the statement/name to execute, or (for dialects whose triggers
+    execute a function) a `Function`, which is then created alongside the trigger.
+    """
 
     name: str
     on: str
-    execute: str
+    execute: str | Function
 
     @property
     def identity(self) -> Hashable:
         """Return the dialect-specific identity used to compare triggers."""
         return self.name
+
+    @property
+    def execute_name(self) -> str:
+        if isinstance(self.execute, Function):
+            return self.execute.qualified_name
+        return self.execute
+
+    def normalize(self) -> Self:
+        """Return the trigger with any `Function` replaced by its qualified name."""
+        if isinstance(self.execute, Function):
+            return replace(self, execute=self.execute_name)
+        return self
 
     def named(self, name: str):
         return replace(self, name=name)
@@ -118,6 +135,11 @@ class Triggers:
             include=include,
         )
 
+    @property
+    def functions(self) -> list[Function]:
+        """The functions referenced as `execute` by the triggers."""
+        return [t.execute for t in self.triggers if isinstance(t.execute, Function)]
+
     def append(self, trigger: Trigger):
         self.triggers.append(trigger)
 
@@ -133,11 +155,19 @@ def register_trigger(base_or_metadata: HasMetaData | MetaData, trigger: Trigger)
 
     This can be used instead of the static registration through `Triggers` on a declarative base or
     `MetaData`, to imperitively register triggers.
+
+    If the trigger executes a `Function`, that function is registered as well.
     """
     if isinstance(base_or_metadata, MetaData):
         metadata = base_or_metadata
     else:
         metadata = base_or_metadata.metadata
+
+    if isinstance(trigger.execute, Function):
+        functions = metadata.info.get("functions")
+        if not functions:
+            functions = metadata.info["functions"] = Functions(include=[])
+        functions.append_managed(trigger.execute)
 
     if not metadata.info.get("triggers"):
         metadata.info["triggers"] = Triggers()
