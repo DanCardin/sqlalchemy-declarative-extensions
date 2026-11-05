@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19
+
+### 0.19.0
+
+- feat: Accept a `Function` as a trigger's `execute`, creating it alongside the trigger.
+
 ## 0.18
 
 
