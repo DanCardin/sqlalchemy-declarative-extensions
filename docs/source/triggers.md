@@ -91,6 +91,61 @@ the natural ordering, but it does mean that doing so afterwards will discard any
 already-attached table-level triggers.
 ```
 
+## Executing a function
+
+For dialects whose triggers execute a function (PostgreSQL), `execute` may be a
+`Function` rather than the name of one. The function is then created automatically
+alongside the trigger, so it need not be separately registered through `Functions`.
+
+```python
+from sqlalchemy_declarative_extensions.dialects.postgresql import Trigger, trigger_function
+
+audit = trigger_function(
+    "audit",
+    """
+    BEGIN
+    INSERT INTO log (message) VALUES (TG_TABLE_NAME);
+    RETURN NULL;
+    END
+    """,
+)
+
+
+class Foo(Base):
+    __tablename__ = "foo"
+    __table_args__ = (
+        Trigger.after("insert", execute=audit).named("on_insert_foo").for_each_row(),
+    )
+
+    id = Column(types.Integer(), primary_key=True)
+```
+
+This works however the trigger is declared (`Triggers`, `register_trigger` or
+`__table_args__`). Any number of triggers may share the same function, as with the generic
+audit function above, and it is created once. Declaring two *different* functions with the
+same qualified name is an error.
+
+`trigger_function` returns a PostgreSQL `Function` fixed to `RETURNS trigger LANGUAGE plpgsql`,
+and accepts neither `parameters` nor `returns`. A plain `Function` may be used in the
+same way when more control is needed.
+
+```{note}
+Trigger functions are collected when `register_sqlalchemy_events` is called, so call it
+after the models which declare triggers.
+```
+
+```{note}
+When a function is only declared through a trigger, only that function is managed:
+other functions in the database are left alone. If you also declare `Functions`, its
+`ignore_unspecified` and `include`/`ignore` settings apply to the combined set (with
+trigger functions added to `include`, if set).
+```
+
+```{note}
+MySQL triggers execute a raw statement, so passing a `Function` to a MySQL `Trigger`
+raises a `TypeError`.
+```
+
 ```{eval-rst}
 .. autoapimodule:: sqlalchemy_declarative_extensions.trigger.base
    :members: Trigger, Triggers, register_trigger

@@ -5,6 +5,7 @@ from sqlalchemy_declarative_extensions.dialects.postgresql.function import (
     FunctionReturn,
     FunctionSecurity,
     FunctionVolatility,
+    trigger_function,
 )
 from sqlalchemy_declarative_extensions.dialects.postgresql.grant import (
     DefaultGrant,
@@ -70,4 +71,5 @@ __all__ = [
     "TypeGrants",
     "View",
     "ViewIndex",
+    "trigger_function",
 ]

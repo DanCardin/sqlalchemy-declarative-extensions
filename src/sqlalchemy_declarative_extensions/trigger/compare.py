@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Union
 
 from sqlalchemy.engine import Connection
@@ -51,6 +51,7 @@ Operation = Union[CreateTriggerOp, UpdateTriggerOp, DropTriggerOp]
 def compare_triggers(connection: Connection, triggers: Triggers) -> list[Operation]:
     result: list[Operation] = []
 
+    triggers = replace(triggers, triggers=[t.normalize() for t in triggers])
     triggers_by_identity = {r.identity: r for r in triggers.triggers}
     expected_trigger_identities = set(triggers_by_identity)
 

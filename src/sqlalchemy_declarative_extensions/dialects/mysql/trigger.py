@@ -48,6 +48,11 @@ class Trigger(base.Trigger):
     order: TriggerOrder | None = None
 
     def __post_init__(self):
+        if not isinstance(self.execute, str):
+            raise TypeError(
+                f"MySQL trigger '{self.name}' must execute a statement string,"
+                " not a `Function`."
+            )
         self.time = TriggerTimes.from_string(self.time)
         self.event = TriggerEvents.from_string(self.event)
 
@@ -118,6 +123,7 @@ class Trigger(base.Trigger):
         if self.order:
             components.append(self.order.order.value)
             components.append(self.order.other_trigger_name)
+        assert isinstance(self.execute, str)
         components.append(self.execute)
 
         return " ".join(components) + ";"

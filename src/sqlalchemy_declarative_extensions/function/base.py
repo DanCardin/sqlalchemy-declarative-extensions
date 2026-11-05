@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import glob
 from dataclasses import dataclass, field, replace
 from typing import Iterable, Sequence
 
@@ -109,9 +110,35 @@ class Functions:
 
     @classmethod
     def extract(cls, metadata: MetaData | list[MetaData | None] | None) -> Self | None:
+        """Extract the declared functions, including those executed by declared triggers.
+
+        When a trigger function is not otherwise declared, only that function is managed
+        (through `include`), so unrelated functions in the database are left alone.
+        """
         if not isinstance(metadata, Sequence):
             metadata = [metadata]
 
+        declared = cls._extract_declared(metadata)
+        trigger_functions = [
+            function
+            for m in metadata
+            if m and m.info.get("triggers")
+            for function in m.info["triggers"].functions
+        ]
+        if not trigger_functions:
+            return declared
+
+        if declared is None:
+            result = cls(include=[])
+        else:
+            result = replace(declared, functions=list(declared.functions))
+
+        for function in trigger_functions:
+            result.append_managed(function)
+        return result
+
+    @classmethod
+    def _extract_declared(cls, metadata: Sequence[MetaData | None]) -> Self | None:
         instances: list[Self] = [
             m.info["functions"] for m in metadata if m and m.info.get("functions")
         ]
@@ -146,7 +173,34 @@ class Functions:
         )
 
     def append(self, function: Function):
+        """Add the function, unless an identical one is already present.
+
+        Raises a `ValueError` if a different function has the same qualified name.
+        """
+        qualified_name = function.qualified_name
+        existing = next(
+            (f for f in self.functions if f.qualified_name == qualified_name), None
+        )
+        if existing is not None:
+            if existing != function:
+                raise ValueError(
+                    f"Function '{qualified_name}' is declared more than once"
+                    " with differing definitions."
+                )
+            return
+
         self.functions.append(function)
+
+    def append_managed(self, function: Function):
+        """Append the function, and add it to `include` if this collection is restricted by it."""
+        self.append(function)
+
+        if self.include is None:
+            return
+
+        pattern = glob.escape(function.qualified_name)
+        if pattern not in self.include:
+            self.include = [*self.include, pattern]
 
     def __iter__(self):
         yield from self.functions

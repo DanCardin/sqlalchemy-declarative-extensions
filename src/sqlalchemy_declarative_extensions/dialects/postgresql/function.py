@@ -363,3 +363,21 @@ type_map = {
     "bool[]": "_bool",
     "boolean[]": "_bool",
 }
+
+
+def trigger_function(
+    name: str,
+    definition: str,
+    *,
+    schema: str | None = None,
+    security: FunctionSecurity = FunctionSecurity.invoker,
+) -> Function:
+    """Create a plpgsql `Function` returning `trigger`, suitable for `Trigger(execute=...)`."""
+    return Function(
+        name=name,
+        definition=definition,
+        schema=schema,
+        security=security,
+        returns="trigger",
+        language="plpgsql",
+    )

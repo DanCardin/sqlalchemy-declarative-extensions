@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from sqlalchemy.engine import Connection
 
 from sqlalchemy_declarative_extensions.dialects.from_string import FromStrings
+from sqlalchemy_declarative_extensions.function.base import Function
 from sqlalchemy_declarative_extensions.sql import quote_name
 from sqlalchemy_declarative_extensions.trigger import base
 
@@ -105,7 +106,11 @@ class Trigger(base.Trigger):
 
     @classmethod
     def before(
-        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
+        cls,
+        *events: TriggerEvents | str,
+        execute: str | Function,
+        on: str = "",
+        name: str = "",
     ):
         return cls(
             time=TriggerTimes.before,
@@ -117,7 +122,11 @@ class Trigger(base.Trigger):
 
     @classmethod
     def after(
-        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
+        cls,
+        *events: TriggerEvents | str,
+        execute: str | Function,
+        on: str = "",
+        name: str = "",
     ):
         return cls(
             time=TriggerTimes.after,
@@ -129,7 +138,11 @@ class Trigger(base.Trigger):
 
     @classmethod
     def instead_of(
-        cls, *events: TriggerEvents | str, execute: str, on: str = "", name: str = ""
+        cls,
+        *events: TriggerEvents | str,
+        execute: str | Function,
+        on: str = "",
+        name: str = "",
     ):
         return cls(
             time=TriggerTimes.instead_of,
@@ -203,7 +216,7 @@ class Trigger(base.Trigger):
         args_quoted = (
             tuple(f"'{arg}'" for arg in self.arguments) if self.arguments else ()
         )
-        components.append(quote_name(self.execute) + f"({','.join(args_quoted)})")
+        components.append(quote_name(self.execute_name) + f"({','.join(args_quoted)})")
         return " ".join(components) + ";"
 
     def to_sql_drop(self):
